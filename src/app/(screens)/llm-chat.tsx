@@ -28,7 +28,7 @@ function LlmChatTask() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
 
-  const llm = useLLMChatSession(MODEL, {
+  const session = useLLMChatSession(MODEL, {
     initialMessages: [{ role: 'system', content: SYSTEM_PROMPT }],
     generationConfig: { temperature: 0.2, maxNewTokens: 512, echo: false },
     preventLoad: !loaded,
@@ -40,7 +40,7 @@ function LlmChatTask() {
 
   const sendMessage = async () => {
     const trimmed = input.trim();
-    if (!trimmed || !llm.isReady || !llm.sendMessage || isGenerating) return;
+    if (!trimmed || !session.isReady || !session.sendMessage || isGenerating) return;
 
     const userMessage: ChatMessage = { role: 'user', content: trimmed };
 
@@ -50,7 +50,7 @@ function LlmChatTask() {
     setError(null);
 
     try {
-      const result = await llm.sendMessage(trimmed, (token) => {
+      const result = await session.sendMessage(trimmed, (token) => {
         setStreamingText((prev) => (prev !== null ? prev + token : token));
       });
 
@@ -69,16 +69,16 @@ function LlmChatTask() {
       title="LLM Chat"
       subtitle="LFM 2.5 1.2B · CPU"
       status={{
-        ...llm,
-        error: error ? new Error(error) : llm.error,
+        ...session,
+        error: error ? new Error(error) : session.error,
       }}
       onLoadModel={!loaded ? () => setLoaded(true) : undefined}
       canRun={false}
       busy={isGenerating}
       onRun={() => undefined}
       onDeleteModel={async () => {
-        llm.stop?.();
-        await deleteCachedFiles(llm.resource);
+        session.stop?.();
+        await deleteCachedFiles(session.resource);
         setLoaded(false);
         setMessages([]);
         setStreamingText(null);
@@ -90,11 +90,11 @@ function LlmChatTask() {
           onSubmit={sendMessage}
           placeholder="Ask LFM anything…"
           suggestions={SUGGESTIONS}
-          disabled={!llm.isReady}
-          canSubmit={!!input.trim() && llm.isReady && !isGenerating}
+          disabled={!session.isReady}
+          canSubmit={!!input.trim() && session.isReady && !isGenerating}
           isExecuting={isPrefilling}
           isPlaying={hasReceivedTokens}
-          onStop={() => llm.stop?.()}
+          onStop={() => session.stop?.()}
         />
       }
     >
