@@ -18,7 +18,7 @@ const SUGGESTIONS = [
 const SYSTEM_PROMPT =
   'You are a helpful on-device LLM assistant running in React Native ExecuTorch';
 
-const MODEL = models.llm.LFM2_5_1_2B.DEFAULT;
+const MODEL = models.llm.LFM2_5_1_2B.XNNPACK_8DA4W;
 
 function LlmChatTask() {
   const [loaded, setLoaded] = useState(false);

@@ -55,7 +55,7 @@ function TextToSpeechTask() {
   return (
     <TaskScreen
       title="Text to Speech"
-      subtitle="Kokoro 82M · EN_US"
+      subtitle="Kokoro 82M · English"
       status={{
         ...tts,
         error: error || (tts.error ? tts.error.message : null),
