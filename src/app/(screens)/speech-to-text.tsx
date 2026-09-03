@@ -60,7 +60,7 @@ function SpeechToTextTask() {
   return (
     <TaskScreen
       title="Speech to Text"
-      subtitle="Whisper Tiny (EN) · CPU"
+      subtitle="Whisper Tiny (EN)"
       status={{
         ...stt,
         error: error || (stt.error ? stt.error.message : null),
