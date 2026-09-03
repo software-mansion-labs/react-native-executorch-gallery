@@ -10,13 +10,8 @@ import { useDisposableImage } from '@/hooks/useDisposableImage';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
 import { bufferToSkImage } from '@/lib/image';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  coreml: models.styleTransfer.MOSAIC.COREML_FP16,
-  xnnpack: models.styleTransfer.MOSAIC.XNNPACK_INT8,
-});
+const MODEL = models.styleTransfer.MOSAIC.DEFAULT;
 
 function StyleTransferTask() {
   const [loaded, setLoaded] = useState(false);

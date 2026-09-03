@@ -7,13 +7,8 @@ import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  coreml: models.objectDetection.SSDLITE320_MOBILENET_V3_LARGE.COREML_FP16,
-  xnnpack: models.objectDetection.SSDLITE320_MOBILENET_V3_LARGE.XNNPACK_FP32,
-});
+const MODEL = models.objectDetection.SSDLITE320_MOBILENET_V3_LARGE.DEFAULT;
 
 function ObjectDetectionTask() {
   const [loaded, setLoaded] = useState(false);

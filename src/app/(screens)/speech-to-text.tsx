@@ -9,13 +9,8 @@ import { TaskScreen } from '@/components/TaskScreen';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  coreml: models.speechToText.WHISPER.EN.TINY.COREML_FP16,
-  xnnpack: models.speechToText.WHISPER.EN.TINY.XNNPACK_FP32,
-});
+const MODEL = models.speechToText.WHISPER.EN.TINY.DEFAULT;
 
 function SpeechToTextTask() {
   const [loaded, setLoaded] = useState(false);

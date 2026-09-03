@@ -9,13 +9,8 @@ import { useDisposableImage } from '@/hooks/useDisposableImage';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
 import { bufferToSkImage } from '@/lib/image';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  coreml: models.semanticSegmentation.DEEPLAB_V3_RESNET50.COREML_FP16,
-  xnnpack: models.semanticSegmentation.DEEPLAB_V3_RESNET50.XNNPACK_INT8,
-});
+const MODEL = models.semanticSegmentation.DEEPLAB_V3_RESNET50.DEFAULT;
 
 function SemanticSegmentationTask() {
   const [loaded, setLoaded] = useState(false);

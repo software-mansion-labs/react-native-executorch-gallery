@@ -12,12 +12,8 @@ import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  xnnpack: models.keypointDetection.YOLO26_POSE.SIZE_384.XNNPACK_FP32,
-});
+const MODEL = models.keypointDetection.YOLO26_POSE.SIZE_384.DEFAULT;
 
 function KeypointDetectionTask() {
   const [loaded, setLoaded] = useState(false);

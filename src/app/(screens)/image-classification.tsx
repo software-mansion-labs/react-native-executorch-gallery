@@ -12,13 +12,8 @@ import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-import { selectBackendModel } from '@/lib/models';
 
-// TODO: remove when https://github.com/software-mansion/react-native-executorch/pull/1392 lands
-const MODEL = selectBackendModel({
-  coreml: models.classification.EFFICIENTNET_V2_S.COREML_FP16,
-  xnnpack: models.classification.EFFICIENTNET_V2_S.XNNPACK_INT8,
-});
+const MODEL = models.classification.EFFICIENTNET_V2_S.DEFAULT;
 
 function ImageClassificationTask() {
   const [loaded, setLoaded] = useState(false);
