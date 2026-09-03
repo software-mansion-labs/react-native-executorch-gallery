@@ -17,9 +17,7 @@ function VoiceActivityDetectionTask() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const vad = useVoiceActivityDetector(MODEL, {
-    preventLoad: !loaded,
-  });
+  const vad = useVoiceActivityDetector(MODEL, { preventLoad: !loaded });
   const recorder = useAudioRecorder();
 
   const toggleStreaming = async () => {
