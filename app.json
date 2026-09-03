@@ -8,7 +8,10 @@
     "scheme": "reactnativeexecutorchgallery",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.swm.react-native-executorch-gallery"
+      "bundleIdentifier": "com.swm.react-native-executorch-gallery",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to access your camera for real-time vision tasks."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +20,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.swm.reactnativeexecutorchgallery"
+      "package": "com.swm.reactnativeexecutorchgallery",
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "output": "static",

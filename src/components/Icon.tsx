@@ -33,7 +33,9 @@ export type IconName =
   | 'eye'
   | 'pulse'
   | 'shield'
-  | 'search';
+  | 'search'
+  | 'videocam'
+  | 'record';
 
 const ICON_MAP: Record<IconName, keyof typeof Ionicons.glyphMap> = {
   scan: 'scan-outline',
@@ -44,6 +46,8 @@ const ICON_MAP: Record<IconName, keyof typeof Ionicons.glyphMap> = {
   audio: 'volume-high-outline',
   photo: 'image-outline',
   camera: 'camera-outline',
+  videocam: 'videocam-outline',
+  record: 'radio-button-on',
   bolt: 'flash-outline',
   chevronRight: 'chevron-forward',
   sparkle: 'sparkles',

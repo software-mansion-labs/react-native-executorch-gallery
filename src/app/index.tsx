@@ -91,6 +91,20 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    title: 'Real Time',
+    tasks: [
+      {
+        href: '/realtime-object-detection',
+        title: 'Live Object Detection',
+        subtitle: 'Continuous camera detection using VisionCamera',
+        model: 'SSDLite MobileNetV3',
+        iconName: 'videocam',
+        tint: 'green',
+        ready: true,
+      },
+    ],
+  },
+  {
     title: 'Generative AI',
     tasks: [
       {
