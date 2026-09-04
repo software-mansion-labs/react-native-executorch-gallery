@@ -26,6 +26,7 @@ function ImageEmbeddingsTask() {
   const [loaded, setLoaded] = useState(false);
   const [image, setImage] = useState<PickedImage | null>(null);
   const [items, setItems] = useState<CandidateQueryItem[]>(INITIAL_QUERIES);
+  const [showImage, setShowImage] = useState(false);
   const [latency, setLatency] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +57,6 @@ function ImageEmbeddingsTask() {
         scored.push({ ...item, score: dotProduct(imageEmbedding, textEmbedding) });
       }
 
-      // Re-organize candidate queries by descending similarity
-      scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
       setLatency(Date.now() - t0);
       setItems(scored);
     } catch (err: any) {
@@ -71,6 +69,7 @@ function ImageEmbeddingsTask() {
   const handlePick = (newImage: PickedImage | null) => {
     setImage(newImage);
     setItems(INITIAL_QUERIES);
+    setShowImage(false);
     setLatency(null);
     setError(null);
   };
@@ -88,7 +87,7 @@ function ImageEmbeddingsTask() {
       canRun={!!image && isReady}
       busy={busy}
       onRun={() => run()}
-      runLabel="Rank queries"
+      runLabel="Match Image to Queries"
       onDeleteModel={async () => {
         await Promise.all([
           deleteCachedFiles(imageModel.resource),
@@ -97,13 +96,21 @@ function ImageEmbeddingsTask() {
         setLoaded(false);
         setImage(null);
         setItems(INITIAL_QUERIES);
+        setShowImage(false);
       }}
       meta={latency != null ? `Inference ${latency} ms` : undefined}
     >
       <PhotoPicker
         busy={busy}
         onPick={handlePick}
-        renderOverlay={() => <MultimodalRankOverlay items={items} />}
+        renderOverlay={() => (
+          <MultimodalRankOverlay
+            items={items}
+            showImage={showImage}
+            onPressInImage={() => setShowImage(true)}
+            onPressOutImage={() => setShowImage(false)}
+          />
+        )}
       />
     </TaskScreen>
   );

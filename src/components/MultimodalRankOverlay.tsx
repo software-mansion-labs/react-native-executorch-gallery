@@ -1,12 +1,14 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 
+import { Icon } from '@/components/Icon';
 import { borderWidth, radius, spacing, overlay } from '@/theme';
 
 export interface CandidateQueryItem {
@@ -18,20 +20,22 @@ export interface CandidateQueryItem {
 const ROW_HEIGHT = 32;
 const ROW_GAP = 4;
 const ROW_PITCH = ROW_HEIGHT + ROW_GAP; // 36px per row
-const VISIBLE_ROWS = 2;
-const VIEWPORT_HEIGHT = VISIBLE_ROWS * ROW_PITCH - ROW_GAP; // exactly 2 rows visible
 
 function CandidateQueryRow({
   item,
+  initialIndex,
   targetIndex,
   maxScore,
+  isRanked,
 }: {
   item: CandidateQueryItem;
+  initialIndex: number;
   targetIndex: number;
   maxScore: number;
+  isRanked: boolean;
 }) {
   const widthAnim = useSharedValue(0);
-  const topAnim = useSharedValue(targetIndex * ROW_PITCH);
+  const topAnim = useSharedValue(initialIndex * ROW_PITCH);
 
   const pct =
     item.score != null && maxScore > 0
@@ -39,16 +43,26 @@ function CandidateQueryRow({
       : 0;
 
   useEffect(() => {
-    widthAnim.value = withTiming(pct, { duration: 450 });
-  }, [pct, widthAnim]);
+    if (!isRanked) {
+      topAnim.value = initialIndex * ROW_PITCH;
+      widthAnim.value = 0;
+      return;
+    }
 
-  useEffect(() => {
-    topAnim.value = withSpring(targetIndex * ROW_PITCH, {
-      damping: 20,
-      stiffness: 160,
-      mass: 0.8,
-    });
-  }, [targetIndex, topAnim]);
+    // Start at initial shuffled position, then smoothly animate to sorted rank position
+    topAnim.value = initialIndex * ROW_PITCH;
+    topAnim.value = withDelay(
+      500,
+      withSpring(targetIndex * ROW_PITCH, {
+        damping: 18,
+        stiffness: 120,
+        mass: 0.9,
+      })
+    );
+
+    // Reveal similarity score bar as rows settle
+    widthAnim.value = withDelay(850, withTiming(pct, { duration: 450 }));
+  }, [isRanked, initialIndex, targetIndex, pct, topAnim, widthAnim]);
 
   const rowAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: topAnim.value }],
@@ -58,35 +72,43 @@ function CandidateQueryRow({
     width: `${widthAnim.value}%`,
   }));
 
-  const isTop = targetIndex === 0 && item.score != null;
+  const scoreAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: widthAnim.value > 0 ? 1 : 0,
+  }));
+
+  const isTop = targetIndex === 0 && isRanked;
 
   return (
     <Animated.View style={[styles.row, rowAnimatedStyle]}>
       {/* Background score track */}
-      <Animated.View
-        style={[
-          styles.barFill,
-          {
-            backgroundColor: isTop ? overlay.tintSoft : 'rgba(255, 255, 255, 0.06)',
-          },
-          barAnimatedStyle,
-        ]}
-      />
+      {isRanked ? (
+        <Animated.View
+          style={[
+            styles.barFill,
+            {
+              backgroundColor: isTop ? overlay.tintSoft : 'rgba(255, 255, 255, 0.06)',
+            },
+            barAnimatedStyle,
+          ]}
+        />
+      ) : null}
 
       <View style={styles.rowContent}>
-        <Text style={[styles.rankText, isTop && styles.rankTextTop]}>0{targetIndex + 1}</Text>
+        <View style={styles.queryIconContainer}>
+          <Icon name="search" size={12} color={overlay.textMuted} />
+        </View>
 
         <Text style={[styles.labelText, isTop && styles.labelTextTop]} numberOfLines={1}>
           {item.text}
         </Text>
 
-        {item.score != null ? (
-          <Text style={[styles.scoreText, isTop && styles.scoreTextTop]}>
+        {isRanked && item.score != null ? (
+          <Animated.Text
+            style={[styles.scoreText, isTop && styles.scoreTextTop, scoreAnimatedStyle]}
+          >
             {item.score.toFixed(3)}
-          </Text>
-        ) : (
-          <Text style={styles.pendingText}>—</Text>
-        )}
+          </Animated.Text>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -95,24 +117,35 @@ function CandidateQueryRow({
 export interface MultimodalRankOverlayProps {
   /** Candidate queries with optional similarity scores. */
   items: CandidateQueryItem[];
+  /** Whether the user is actively pressing the compare button to view the photo. */
+  showImage?: boolean;
+  /** Callback triggered when user presses down on the hold button. */
+  onPressInImage?: () => void;
+  /** Callback triggered when user releases the hold button. */
+  onPressOutImage?: () => void;
 }
 
 /**
- * Floating glassmorphic overlay for Multimodal Search (CLIP zero-shot ranking).
+ * Overlay for Multimodal Search (CLIP zero-shot ranking).
  *
- * Shows the top two candidate query rows with smooth re-ordering animation and vertical scrolling
- * for additional candidates.
+ * Renders all 5 candidate descriptions in descending match rank after inference,
+ * with a "Hold to view photo" pill button so the user can easily see the underlying image.
  *
- * @param props Candidate query items.
- * @returns Self-contained, bounded floating rank card.
+ * @param props Candidate query items and hold-to-view-photo handlers.
+ * @returns Self-contained, floating rank card.
  */
-export function MultimodalRankOverlay({ items }: MultimodalRankOverlayProps) {
-  const maxScore = Math.max(...items.map((i) => i.score ?? 0), 0.01);
+export function MultimodalRankOverlay({
+  items,
+  showImage = false,
+  onPressInImage,
+  onPressOutImage,
+}: MultimodalRankOverlayProps) {
+  const isRanked = items.some((i) => i.score != null);
+  if (!isRanked) return null;
 
-  // Total content height for the absolute positioning inside ScrollView
+  const maxScore = Math.max(...items.map((i) => i.score ?? 0), 0.01);
   const totalContentHeight = items.length * ROW_PITCH - ROW_GAP;
 
-  // Sorted items determine each item's target index in the visual hierarchy
   const sortedItems = [...items].sort((a, b) => {
     if (a.score != null && b.score != null) return b.score - a.score;
     if (a.score != null) return -1;
@@ -121,33 +154,34 @@ export function MultimodalRankOverlay({ items }: MultimodalRankOverlayProps) {
   });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
+    <View style={styles.container} pointerEvents="box-none">
+      <View style={[styles.card, showImage && { opacity: 0 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Semantic Match Ranking</Text>
         </View>
 
-        <ScrollView
-          style={{ height: VIEWPORT_HEIGHT }}
-          contentContainerStyle={{ height: totalContentHeight }}
-          showsVerticalScrollIndicator
-          nestedScrollEnabled
-        >
-          <View style={[styles.list, { height: totalContentHeight }]}>
-            {items.map((item) => {
-              const targetIndex = sortedItems.findIndex((s) => s.id === item.id);
-              return (
-                <CandidateQueryRow
-                  key={item.id}
-                  item={item}
-                  targetIndex={targetIndex}
-                  maxScore={maxScore}
-                />
-              );
-            })}
-          </View>
-        </ScrollView>
+        <View style={[styles.list, { height: totalContentHeight }]}>
+          {items.map((item, initialIndex) => {
+            const targetIndex = sortedItems.findIndex((s) => s.id === item.id);
+            return (
+              <CandidateQueryRow
+                key={item.id}
+                item={item}
+                initialIndex={initialIndex}
+                targetIndex={targetIndex}
+                maxScore={maxScore}
+                isRanked={isRanked}
+              />
+            );
+          })}
+        </View>
       </View>
+
+      {onPressInImage && onPressOutImage && (
+        <Pressable onPressIn={onPressInImage} onPressOut={onPressOutImage} style={styles.holdPill}>
+          <Text style={styles.holdText}>{showImage ? 'Viewing photo' : 'Hold to view photo'}</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -155,9 +189,12 @@ export function MultimodalRankOverlay({ items }: MultimodalRankOverlayProps) {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: spacing.md,
+    justifyContent: 'space-between',
   },
   card: {
     backgroundColor: overlay.bg,
@@ -169,6 +206,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingBottom: 2,
   },
   headerTitle: {
@@ -205,6 +245,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     gap: spacing.sm,
   },
+  queryIconContainer: {
+    width: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rankText: {
     color: '#64748B',
     fontSize: 11,
@@ -236,8 +281,19 @@ const styles = StyleSheet.create({
     color: overlay.tint,
     fontWeight: '600',
   },
-  pendingText: {
-    color: '#64748B',
-    fontSize: 12,
+  holdPill: {
+    alignSelf: 'center',
+    backgroundColor: overlay.bg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth,
+    borderColor: overlay.border,
+  },
+  holdText: {
+    color: overlay.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.1,
   },
 });
