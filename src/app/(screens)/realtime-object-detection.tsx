@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   models,
   useObjectDetector,
-  type CocoClass,
+  type CocoClassYolo,
   type ObjectDetection,
 } from 'react-native-executorch';
 import type { ImageBuffer } from 'react-native-executorch/cv';
@@ -17,14 +17,14 @@ import { TaskScreen } from '@/components/TaskScreen';
 
 import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
 
-const MODEL = models.objectDetection.SSDLITE320_MOBILENET_V3_LARGE.DEFAULT;
-const INPUT_SIZE: ImageSize = { width: 320, height: 320 };
+const MODEL = models.objectDetection.YOLO26.NANO.SIZE_384.DEFAULT;
+const INPUT_SIZE: ImageSize = { width: 384, height: 384 };
 
 function RealtimeObjectDetectionTask() {
   const [loaded, setLoaded] = useState(false);
   const [isActive, setIsActive] = useState(false);
 
-  const [detections, setDetections] = useState<ObjectDetection<'xyxy', CocoClass>[]>([]);
+  const [detections, setDetections] = useState<ObjectDetection<'xyxy', CocoClassYolo>[]>([]);
   const [frameSize, setFrameSize] = useState<ImageSize | undefined>();
   const [latency, setLatency] = useState<number | null>(null);
 
@@ -43,7 +43,7 @@ function RealtimeObjectDetectionTask() {
   });
 
   const onDetections = (
-    results: ObjectDetection<'xyxy', CocoClass>[],
+    results: ObjectDetection<'xyxy', CocoClassYolo>[],
     durationMs: number,
     frameSize?: ImageSize
   ) => {
@@ -56,7 +56,6 @@ function RealtimeObjectDetectionTask() {
   const frameOutput = useFrameOutput({
     pixelFormat: 'yuv',
     dropFramesWhileBusy: true,
-    enablePhysicalBufferRotation: true,
     onFrame(frame) {
       'worklet';
       if (!isActive || !resizer || !detectObjectsWorklet) {
@@ -68,7 +67,11 @@ function RealtimeObjectDetectionTask() {
       try {
         const t0 = Date.now();
 
-        const frameSize = { width: frame.width, height: frame.height };
+        const isSideways = frame.orientation === 'left' || frame.orientation === 'right';
+        const frameSize = isSideways
+          ? { width: frame.height, height: frame.width }
+          : { width: frame.width, height: frame.height };
+
         resized = resizer.resize(frame);
 
         const bytes = new Uint8Array(resized.getPixelBuffer());
@@ -103,7 +106,7 @@ function RealtimeObjectDetectionTask() {
   return (
     <TaskScreen
       title="Live Detection"
-      subtitle="SSDLite MobileNetV3"
+      subtitle="YOLO26 Nano"
       status={detector}
       onLoadModel={!loaded ? () => setLoaded(true) : undefined}
       canRun={false}

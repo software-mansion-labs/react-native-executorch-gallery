@@ -60,7 +60,7 @@ export function DetectionOverlay({ detections, transform }: DetectionOverlayProp
                 },
               ]}
             >
-              <Text style={styles.tagText}>
+              <Text style={styles.tagText} numberOfLines={1}>
                 {d.label} {Math.round(d.confidence * 100)}%
               </Text>
             </View>
@@ -79,6 +79,9 @@ const styles = StyleSheet.create({
   },
   tag: {
     position: 'absolute',
+    alignSelf: 'flex-start',
+    minWidth: 90,
+    flexShrink: 0,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -92,5 +95,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.1,
+    includeFontPadding: false,
   },
 });

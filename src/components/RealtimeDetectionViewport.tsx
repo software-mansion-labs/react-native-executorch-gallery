@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import type { ObjectDetection } from 'react-native-executorch';
 import { Camera, type CameraDevice, type CameraFrameOutput } from 'react-native-vision-camera';
 
 import { DetectionOverlay } from '@/components/DetectionOverlay';
+import type { ViewportTransform } from '@/components/PhotoPicker';
 import { borderWidth, radius, useTheme } from '@/theme';
 
 export type ImageSize = {
@@ -27,6 +28,67 @@ export interface RealtimeDetectionViewportProps {
 }
 
 /**
+ * Normalizes bounding box coordinates when running on Android sideways sensors,
+ * where the Vulkan resizer shader's orientation mapping rotates the tensor by 180°.
+ */
+function normalizeDetectionBoxes(
+  detections: ObjectDetection<'xyxy', string>[],
+  inputSize: ImageSize,
+  frameSize?: ImageSize
+): ObjectDetection<'xyxy', string>[] {
+  const isSideways =
+    frameSize && (frameSize.height > frameSize.width || frameSize.width > frameSize.height);
+
+  if (!isSideways) {
+    return detections;
+  }
+
+  const { width: iw, height: ih } = inputSize;
+  return detections.map((d) => ({
+    ...d,
+    box: {
+      ...d.box,
+      xmin: iw - d.box.xmax,
+      xmax: iw - d.box.xmin,
+      ymin: ih - d.box.ymax,
+      ymax: ih - d.box.ymin,
+    },
+  }));
+}
+
+/**
+ * Computes the 2D geometric viewport transformation mapping model input space
+ * to the visible viewfinder canvas under `resizeMode="cover"`.
+ */
+function computeViewportTransform(
+  viewport: ImageSize,
+  inputSize: ImageSize,
+  frameSize?: ImageSize
+): ViewportTransform {
+  const { width: vw, height: vh } = viewport;
+  if (vw <= 0 || vh <= 0) {
+    return { scale: 1, offsetX: 0, offsetY: 0 };
+  }
+
+  if (frameSize && frameSize.width > 0 && frameSize.height > 0) {
+    const resizerScale = Math.max(
+      inputSize.width / frameSize.width,
+      inputSize.height / frameSize.height
+    );
+    const viewScale = Math.max(vw / frameSize.width, vh / frameSize.height);
+    const scale = viewScale / resizerScale;
+    const offsetX = (vw - inputSize.width * scale) / 2;
+    const offsetY = (vh - inputSize.height * scale) / 2;
+    return { scale, offsetX, offsetY };
+  }
+
+  const scale = Math.max(vw / inputSize.width, vh / inputSize.height);
+  const offsetX = (vw - inputSize.width * scale) / 2;
+  const offsetY = (vh - inputSize.height * scale) / 2;
+  return { scale, offsetX, offsetY };
+}
+
+/**
  * Viewport rendering the continuous live Camera preview and scaling bounding box overlays
  * to accurately align with the camera viewfinder under `resizeMode="cover"`.
  */
@@ -44,45 +106,8 @@ export function RealtimeDetectionViewport({
     height: 0,
   });
 
-  const { width: vw, height: vh } = viewLayout;
-
-  // If we know the source camera frame aspect ratio (e.g. 1080x1920 in portrait),
-  // and the resizer used scaleMode: 'cover' to crop it to inputSize (e.g. 960x960),
-  // we compute the exact mapping between inputSize and the viewLayout:
-  let scale = 1;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  if (vw > 0 && vh > 0) {
-    if (frameSize && frameSize.width > 0 && frameSize.height > 0) {
-      // 1. In resizer (scaleMode: 'cover'):
-      // frame (fw x fh) is scaled by resizerScale = Math.max(iw / fw, ih / fh)
-      // and center-cropped to (iw x ih).
-      // A point (fx, fy) on the frame maps to input (ix, iy) via:
-      // ix = (fx - fw/2) * resizerScale + iw/2
-      // iy = (fy - fh/2) * resizerScale + ih/2
-      // 2. In Camera (resizeMode: 'cover'):
-      // frame (fw x fh) is scaled by viewScale = Math.max(vw / fw, vh / fh)
-      // and center-cropped to (vw x vh).
-      // vx = (fx - fw/2) * viewScale + vw/2
-      // vy = (fy - fh/2) * viewScale + vh/2
-      // Combining both:
-      // (vx - vw/2) / viewScale = (ix - iw/2) / resizerScale
-      // vx = (ix - iw/2) * (viewScale / resizerScale) + vw/2
-      const fw = frameSize.width;
-      const fh = frameSize.height;
-      const resizerScale = Math.max(inputSize.width / fw, inputSize.height / fh);
-      const viewScale = Math.max(vw / fw, vh / fh);
-      scale = viewScale / resizerScale;
-      offsetX = vw / 2 - (inputSize.width / 2) * scale;
-      offsetY = vh / 2 - (inputSize.height / 2) * scale;
-    } else {
-      // Direct cover mapping from inputSize to viewport
-      scale = Math.max(vw / inputSize.width, vh / inputSize.height);
-      offsetX = (vw - inputSize.width * scale) / 2;
-      offsetY = (vh - inputSize.height * scale) / 2;
-    }
-  }
+  const transform = computeViewportTransform(viewLayout, inputSize, frameSize);
+  const normalizedDetections = normalizeDetectionBoxes(detections, inputSize, frameSize);
 
   return (
     <View
@@ -100,18 +125,12 @@ export function RealtimeDetectionViewport({
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={true}
+          orientationSource="interface"
           outputs={frameOutput ? [frameOutput] : undefined}
           resizeMode="cover"
         />
       ) : null}
-      <DetectionOverlay
-        detections={detections}
-        transform={{
-          scale,
-          offsetX,
-          offsetY,
-        }}
-      />
+      <DetectionOverlay detections={normalizedDetections} transform={transform} />
     </View>
   );
 }

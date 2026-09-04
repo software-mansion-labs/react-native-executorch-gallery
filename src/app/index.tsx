@@ -97,7 +97,7 @@ const SECTIONS: Section[] = [
         href: '/realtime-object-detection',
         title: 'Live Object Detection',
         subtitle: 'Continuous camera detection using VisionCamera',
-        model: 'SSDLite MobileNetV3',
+        model: 'YOLO26 Nano',
         iconName: 'videocam',
         tint: 'green',
         ready: true,
