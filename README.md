@@ -40,8 +40,10 @@ npm run ios       # or npm run android
 
 ## Requirements
 
-- React Native with the **New Architecture**
-- Expo SDK 57+ or React Native 0.74+
+- **Expo SDK 57** and **React Native 0.86** — the versions this app is pinned to,
+  running on the **New Architecture**
+- **iOS 17.0+**
+- **Android 13.0+**
 
 ## Development & Local Linking
 
