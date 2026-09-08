@@ -14,8 +14,49 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      native: ${{ steps.filter.outputs.native }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Paths Filter
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'assets/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'tsconfig.json'
+              - 'app.json'
+              - 'metro.config.js'
+              - 'babel.config.js'
+              - 'eslint.config.js'
+              - '.nvmrc'
+              - '.github/workflows/ci.yml'
+            native:
+              - 'src/**'
+              - 'assets/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'app.json'
+              - 'metro.config.js'
+              - 'babel.config.js'
+              - '.nvmrc'
+              - '.github/workflows/ci.yml'
+
   lint-and-typecheck:
     name: Lint & Typecheck
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,6 +82,8 @@ jobs:
 
   build-ios:
     name: Build iOS App
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: macos-14
     timeout-minutes: 45
     steps:
@@ -91,6 +134,8 @@ jobs:
 
   build-android:
     name: Build Android App
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
