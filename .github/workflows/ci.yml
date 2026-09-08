@@ -28,8 +28,7 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # On manual workflow_dispatch, force both outputs to true
-          predicate-quantifier: 'every'
+          base: ${{ github.event.pull_request.base.ref || 'main' }}
           filters: |
             code:
               - 'src/**'
