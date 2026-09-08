@@ -1,21 +1,20 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - main
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   changes:
     name: Detect changes
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -84,11 +83,14 @@ jobs:
     name: Build iOS App
     needs: changes
     if: needs.changes.outputs.native == 'true'
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Select Xcode 16.2
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -167,3 +169,31 @@ jobs:
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
+
+  ci-status:
+    name: CI Status
+    needs: [changes, lint-and-typecheck, build-ios, build-android]
+    if: always() && (github.event.pull_request == null || github.event.pull_request.draft == false)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check result
+        run: |
+          changes="${{ needs.changes.result }}"
+          lint="${{ needs.lint-and-typecheck.result }}"
+          ios="${{ needs.build-ios.result }}"
+          android="${{ needs.build-android.result }}"
+
+          echo "changes: $changes"
+          echo "lint-and-typecheck: $lint"
+          echo "build-ios: $ios"
+          echo "build-android: $android"
+
+          # Fail if any job failed or was cancelled
+          for result in "$changes" "$lint" "$ios" "$android"; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              echo "A required job failed or was cancelled."
+              exit 1
+            fi
+          done
+
+          echo "All checks passed (or skipped cleanly by paths-filter)."
