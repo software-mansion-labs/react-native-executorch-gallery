@@ -17,11 +17,11 @@ Built with [`react-native-executorch`](https://github.com/software-mansion/react
 
 <div align="center">
 
-|                                  **LLM Chat**                                  |                              **Text to Image**                              |                          **Real-Time Object Detection**                          |                           **Text to Speech**                           |
+|                                  **LLM Chat**                                  |                              **Text to Image**                              |                          **Real-Time Vision**                          |                           **Text to Speech**                           |
 | :----------------------------------------------------------------------------: | :-------------------------------------------------------------------------: | :------------------------------------------------------------------------------: | :----------------------------------------------------------------------------: |
-|       <img src="media/llm-chat-framed.svg" width="195" alt="LLM Chat" />       | <img src="media/text-to-image-framed.svg" width="195" alt="Text to Image" /> | <img src="media/real-time-object-detection-framed.svg" width="195" alt="Object Detection" /> | <img src="media/text-to-speech-framed.svg" width="195" alt="Text to Speech" /> |
+|       <img src="media/llm-chat-framed.svg" width="180" alt="LLM Chat" />       | <img src="media/text-to-image-framed.svg" width="180" alt="Text to Image" /> | <img src="media/real-time-object-detection-framed.svg" width="180" alt="Object Detection" /> | <img src="media/text-to-speech-framed.svg" width="180" alt="Text to Speech" /> |
 |                             **Speech to Text**                             |                          **OCR Text Recognition**                           |                             **Privacy Filter (PII)**                             |                              **Gallery Overview**                              |
-| <img src="media/speech-to-text-framed.svg" width="195" alt="Speech to Text" /> |    <img src="media/ocr-framed.svg" width="195" alt="OCR Recognition" />     |  <img src="media/privacy-filter-framed.svg" width="195" alt="Privacy Filter" />  |  <img src="media/gallery-menu-framed.svg" width="195" alt="Gallery Menu" />   |
+| <img src="media/speech-to-text-framed.svg" width="180" alt="Speech to Text" /> |    <img src="media/ocr-framed.svg" width="180" alt="OCR Recognition" />     |  <img src="media/privacy-filter-framed.svg" width="180" alt="Privacy Filter" />  |  <img src="media/gallery-menu-framed.svg" width="180" alt="Gallery Menu" />   |
 
 </div>
 
