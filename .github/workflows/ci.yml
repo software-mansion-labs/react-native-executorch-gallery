@@ -14,12 +14,12 @@ concurrency:
 jobs:
   changes:
     name: Detect changes
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request == null || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      code: ${{ steps.filter.outputs.code }}
-      native: ${{ steps.filter.outputs.native }}
+      code: ${{ steps.manual-override.outputs.code || steps.filter.outputs.code }}
+      native: ${{ steps.manual-override.outputs.native || steps.filter.outputs.native }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,6 +28,8 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
+          # On manual workflow_dispatch, force both outputs to true
+          predicate-quantifier: 'every'
           filters: |
             code:
               - 'src/**'
@@ -52,10 +54,18 @@ jobs:
               - '.nvmrc'
               - '.github/workflows/ci.yml'
 
+      # When running manually via workflow_dispatch, force both filters to true
+      - name: Handle workflow_dispatch override
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "code=true" >> "$GITHUB_OUTPUT"
+          echo "native=true" >> "$GITHUB_OUTPUT"
+        id: manual-override
+
   lint-and-typecheck:
     name: Lint & Typecheck
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.code == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,15 +92,33 @@ jobs:
   build-ios:
     name: Build iOS App
     needs: changes
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.native == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Select Xcode 16.2
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - name: Select Xcode 16.x
+        run: |
+          TARGET_XCODE="/Applications/Xcode_16.2.app"
+          if [ -d "$TARGET_XCODE" ]; then
+            echo "Selecting $TARGET_XCODE"
+            sudo xcode-select -s "$TARGET_XCODE"
+          else
+            echo "::warning::$TARGET_XCODE not found. Searching for available Xcode installations:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || echo "No Xcode installations found in /Applications"
+            # Fallback to the latest installed Xcode 16 if available
+            LATEST_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -n 1)
+            if [ -n "$LATEST_16" ]; then
+              echo "Selecting fallback $LATEST_16"
+              sudo xcode-select -s "$LATEST_16"
+            else
+              echo "::error::No Xcode 16 installation found!"
+              exit 1
+            fi
+          fi
+          xcodebuild -version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -137,9 +165,11 @@ jobs:
   build-android:
     name: Build Android App
     needs: changes
-    if: needs.changes.outputs.native == 'true'
+    if: needs.changes.outputs.native == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
+    env:
+      GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.parallel=true -Dorg.gradle.vfs.watch=false'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -168,7 +198,7 @@ jobs:
       - name: Build Android Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
   ci-status:
     name: CI Status
