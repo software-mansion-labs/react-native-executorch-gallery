@@ -60,13 +60,8 @@ export function InstanceSegmentationOverlay({
   imageHeight,
   transform,
 }: InstanceSegmentationOverlayProps) {
-  const [decoded, setDecoded] = React.useState<DecodedMasks | null>(null);
-
-  // Decoding allocates one native copy of every mask and charges its size
-  // against the JS heap, so it happens once per result set in an effect rather
-  // than on every render. The cleanup frees the outgoing set after React has
-  // committed a tree that no longer draws it.
-  React.useEffect(() => {
+  // Decode masks for the current instances.
+  const decoded = React.useMemo<DecodedMasks>(() => {
     const images = instances.map((inst) => {
       try {
         return inst.mask ? bufferToSkImage(inst.mask) : null;
@@ -75,14 +70,28 @@ export function InstanceSegmentationOverlay({
         return null;
       }
     });
-    setDecoded({ source: instances, images });
-
-    return () => images.forEach((image) => image?.dispose());
+    return { source: instances, images };
   }, [instances]);
 
+  // Dispose superseded SkImages after React has committed the updated tree.
+  const activeImagesRef = React.useRef(decoded.images);
+  React.useEffect(() => {
+    const prevImages = activeImagesRef.current;
+    activeImagesRef.current = decoded.images;
+    if (prevImages !== decoded.images) {
+      prevImages.forEach((img) => img?.dispose());
+    }
+  }, [decoded.images]);
+
+  // Clean up remaining images on unmount.
+  React.useEffect(() => {
+    return () => {
+      activeImagesRef.current.forEach((img) => img?.dispose());
+    };
+  }, []);
+
   const { scale, offsetX, offsetY } = transform;
-  // Ignore masks left over from a previous result set while the effect catches up.
-  const maskImages = decoded?.source === instances ? decoded.images : null;
+  const maskImages = decoded.images;
 
   if (instances.length === 0 || imageWidth === 0 || imageHeight === 0) return null;
 

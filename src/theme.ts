@@ -1,4 +1,4 @@
-import { StyleSheet, useColorScheme } from 'react-native';
+import { useColorScheme } from 'react-native';
 
 /**
  * Polished design tokens for ExecuTorch Gallery.

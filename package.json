@@ -57,6 +57,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
   "private": true

@@ -4,6 +4,9 @@ pre-commit:
     types:
       glob: '*.{ts,tsx}'
       run: npx tsc --noEmit
+    lint:
+      glob: '*.{ts,tsx,js,jsx}'
+      run: npx expo lint
     format:
-      glob: '*.{ts,tsx,json,md}'
+      glob: '*.{ts,tsx,json,md,js,jsx}'
       run: npx prettier --write {staged_files} && git add {staged_files}

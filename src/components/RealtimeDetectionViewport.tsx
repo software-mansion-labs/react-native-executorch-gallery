@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { ObjectDetection } from 'react-native-executorch';
 import { Camera, type CameraDevice, type CameraFrameOutput } from 'react-native-vision-camera';
 

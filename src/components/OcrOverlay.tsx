@@ -54,12 +54,14 @@ function isPointInQuad(
  * @returns Clean quadrilateral bounding boxes with interactive text tooltips.
  */
 export function OcrOverlay({ detections, transform }: OcrOverlayProps) {
+  const [prevDetections, setPrevDetections] = useState(detections);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
-  React.useEffect(() => {
+  if (prevDetections !== detections) {
+    setPrevDetections(detections);
     setSelectedIndex(null);
-  }, [detections]);
+  }
 
   const { scale, offsetX, offsetY } = transform;
 
