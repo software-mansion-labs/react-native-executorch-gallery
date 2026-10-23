@@ -30,7 +30,7 @@ function LlmChatTask() {
 
   const session = useLLMChatSession(MODEL, {
     initialMessages: [{ role: 'system', content: SYSTEM_PROMPT }],
-    generationConfig: { temperature: 0.2, maxNewTokens: 512, echo: false },
+    generationConfig: { temperature: 0.2, maxNewTokens: 512 },
     preventLoad: !loaded,
   });
 

@@ -32,6 +32,51 @@ npm install
 npm run ios       # or npm run android
 ```
 
+### Redesign baseline
+
+The previous app source is preserved in [`archive/src`](archive/src). This
+commit records the design and archive before the new app is implemented, so it
+does not contain a runnable application entry point.
+
+The approved interactive design is [`design/review.html`](design/review.html).
+For sharing, send **[`design/review-standalone.html`](design/review-standalone.html)**;
+it embeds its images and fonts and works offline as a single file. Rebuild it
+from the modular review with `node scripts/build-design-review.mjs`.
+
+### Local ExecuTorch development on this branch
+
+This branch installs an npm tarball built from the sibling
+`../react-native-executorch` monorepo, rather than a symlink or a registry release.
+Install that workspace's Yarn dependencies first, then run:
+
+```bash
+npm run deps:local
+npm run ios       # or npm run android
+```
+
+`deps:local` builds the library's JavaScript and declarations, packs its published
+files, and installs the resulting archive with npm, including its native artifact
+postinstall. It updates `package.json` and `package-lock.json`. The archive lives
+in the gitignored `.local-packages/` directory; run `deps:local` before the first
+install on a fresh checkout of this branch. The script uses only Node built-ins
+and npm, so it does not require the gallery's `node_modules` to exist yet.
+
+To use a different monorepo location:
+
+```bash
+npm run deps:local -- /absolute/path/to/react-native-executorch
+```
+
+Run it again after library changes. Each archive includes a content hash in its
+filename so npm cannot silently reuse a cached same-version package. Library
+source changes are snapshots, not live edits; native changes also require an app
+rebuild. The library's prebuilt ExecuTorch binaries follow its `nativeLibsVersion`
+pin; building the sibling C++ ExecuTorch fork is a separate workflow.
+
+The visual review, interactive design proposal, and simulator screenshots are in
+[`design/review.html`](design/review.html). Open it in a browser; its proposed UI
+is a mockup, while the “Current app” section contains actual simulator captures.
+
 ## Requirements
 
 - **Expo SDK 57** and **React Native 0.86**
