@@ -34,8 +34,8 @@ npm run ios       # or npm run android
 
 ### Initial rebuild
 
-The new app currently includes the home screen and a searchable task catalogue.
-Task entries are placeholders; model management and inference screens will follow.
+The app includes the home screen, a searchable task catalogue, and object detection
+with camera/library input and on-device inference. Other task entries are placeholders.
 Shared design tokens live in `src/theme.ts`, all components live directly in
 `src/components`, and hooks live in `src/hooks`.
 

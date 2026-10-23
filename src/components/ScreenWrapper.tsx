@@ -1,16 +1,22 @@
 import { StyleSheet } from 'react-native';
 import type { PropsWithChildren } from 'react';
+import { useIsFocused } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme';
 
-/** Provides the screen background and safe-area insets for page content. */
-export function ScreenWrapper({ children }: PropsWithChildren) {
+type ScreenWrapperProps = PropsWithChildren<{
+  unmountOnBlur?: boolean;
+}>;
+
+/** Provides safe-area layout and optionally unmounts task content on blur to release native models. */
+export function ScreenWrapper({ children, unmountOnBlur = false }: ScreenWrapperProps) {
   const { colors } = useTheme();
+  const isFocused = useIsFocused();
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
-      {children}
+      {!unmountOnBlur || isFocused ? children : null}
     </SafeAreaView>
   );
 }

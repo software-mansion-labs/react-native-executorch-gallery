@@ -1,7 +1,10 @@
+import type { Href } from 'expo-router';
+
 export type Task = {
   id: string;
   title: string;
   keywords: string;
+  href?: Href;
 };
 
 export type TaskSection = {
@@ -10,7 +13,7 @@ export type TaskSection = {
   data: Task[];
 };
 
-/** Catalogue placeholders; task implementations and model selection come later. */
+/** Available demos link to their routes; remaining tasks stay as catalogue placeholders. */
 export const TASK_SECTIONS: TaskSection[] = [
   {
     title: 'Computer vision',
@@ -18,6 +21,7 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'object-detection',
+        href: '/object-detection',
         title: 'Object detection',
         keywords: 'locate classify objects SSDlite MobileNet YOLO',
       },

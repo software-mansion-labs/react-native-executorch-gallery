@@ -10,7 +10,8 @@
     "ios": {
       "bundleIdentifier": "com.swm.react-native-executorch-gallery",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to access your camera for real-time vision tasks."
+        "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to take photos for vision demos.",
+        "NSPhotoLibraryUsageDescription": "Allow RN ExecuTorch Gallery to choose photos for vision demos."
       }
     },
     "android": {

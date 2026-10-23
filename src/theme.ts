@@ -11,6 +11,8 @@ const palette = {
     text: '#24252A',
     muted: '#686A73',
     accent: '#365B9B',
+    onAccent: '#FFFFFF',
+    danger: '#B3261E',
     scrim: 'rgba(0, 0, 0, 0.4)',
   },
   dark: {
@@ -20,6 +22,8 @@ const palette = {
     text: '#F2F2F3',
     muted: '#A3A4AD',
     accent: '#A7BDED',
+    onAccent: '#162A49',
+    danger: '#FFB4AB',
     scrim: 'rgba(0, 0, 0, 0.55)',
   },
 };
@@ -38,6 +42,7 @@ export const tokens = {
     xxxl: 48,
   },
   radius: {
+    annotation: 4,
     card: 22,
     sheet: 28,
     pill: 999,
@@ -113,6 +118,8 @@ export const tokens = {
     logoWidth: 56,
     logoHeight: 71,
     taskRowMinHeight: 56,
+    photoMinHeight: 240,
+    photoControlSize: 64,
   },
   motion: {
     sheetOpenDuration: 260,
@@ -150,6 +157,7 @@ export const tokens = {
   opacity: {
     hidden: 0,
     pressed: 0.65,
+    disabled: 0.4,
   },
 };
 
