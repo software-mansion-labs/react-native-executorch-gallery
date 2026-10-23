@@ -56,6 +56,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'style-transfer',
+        href: '/style-transfer',
         title: 'Style transfer',
         keywords: 'art painting mosaic',
       },

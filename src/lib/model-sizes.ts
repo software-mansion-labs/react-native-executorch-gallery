@@ -1,5 +1,9 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'style_transfer_mosaic_xnnpack_int8.pte': 1_835_532,
+  'style_transfer_mosaic_xnnpack_fp32.pte': 6_816_524,
+  'style_transfer_mosaic_coreml_fp16.pte': 3_791_869,
+  'style_transfer_mosaic_vulkan_fp16.pte': 3_418_114,
   'efficientnet_v2_s_xnnpack_int8.pte': 33_572_128,
   'efficientnet_v2_s_xnnpack_fp32.pte': 85_714_464,
   'efficientnet_v2_s_coreml_fp16.pte': 43_864_953,
