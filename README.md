@@ -36,8 +36,8 @@ npm run ios       # or npm run android
 
 The new app currently includes the home screen and a searchable task catalogue.
 Task entries are placeholders; model management and inference screens will follow.
-Shared design tokens live in `src/theme.ts`, feature components are grouped under
-`src/components/home` and `src/components/task-list`, and hooks live in `src/hooks`.
+Shared design tokens live in `src/theme.ts`, all components live directly in
+`src/components`, and hooks live in `src/hooks`.
 
 The previous app source is preserved in [`archive/src`](archive/src). The screenshots
 above show that archived app.

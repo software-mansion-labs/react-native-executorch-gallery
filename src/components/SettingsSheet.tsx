@@ -1,6 +1,6 @@
 import { BottomSheet } from '@/components/BottomSheet';
-import { AboutSection } from '@/components/settings/AboutSection';
-import { AppearanceOptions } from '@/components/settings/AppearanceOptions';
+import { AboutSection } from '@/components/AboutSection';
+import { AppearanceOptions } from '@/components/AppearanceOptions';
 
 type SettingsSheetProps = {
   visible: boolean;

@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { ExecuTorchLogo } from '@/components/home/ExecuTorchLogo';
-import { SweepingHeadline } from '@/components/home/SweepingHeadline';
+import { ExecuTorchLogo } from '@/components/ExecuTorchLogo';
+import { SweepingHeadline } from '@/components/SweepingHeadline';
 import { useHomeHeroAnimation } from '@/hooks/useHomeHeroAnimation';
 import { tokens } from '@/theme';
 

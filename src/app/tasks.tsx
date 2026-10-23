@@ -5,8 +5,8 @@ import { StyleSheet, SectionList, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { PageHeader } from '@/components/PageHeader';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { SearchField } from '@/components/task-list/SearchField';
-import { TaskListRow } from '@/components/task-list/TaskListRow';
+import { SearchField } from '@/components/SearchField';
+import { TaskListRow } from '@/components/TaskListRow';
 import { filterTasks } from '@/data/tasks';
 import { tokens } from '@/theme';
 
