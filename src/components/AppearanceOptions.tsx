@@ -1,17 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { useAppearance, type AppearancePreference } from '@/hooks/useAppearance';
 import { tokens, useTheme } from '@/theme';
 
-const OPTIONS: { value: AppearancePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+const OPTIONS: {
+  value: AppearancePreference;
+  label: string;
+  icon: ComponentProps<typeof Ionicons>['name'];
+}[] = [
+  { value: 'system', label: 'System', icon: 'contrast-outline' },
+  { value: 'light', label: 'Light', icon: 'sunny-outline' },
+  { value: 'dark', label: 'Dark', icon: 'moon-outline' },
 ];
 
-/** Three mutually exclusive appearance choices, applied app-wide for the current session. */
+/** A compact three-state appearance control with labeled system, sun, and moon icons. */
 export function AppearanceOptions() {
   const { preference, setPreference } = useAppearance();
   const { colors, iconSize } = useTheme();
@@ -21,43 +26,60 @@ export function AppearanceOptions() {
       <AppText variant="settingsSection" tone="muted" style={styles.heading}>
         Appearance
       </AppText>
-      {OPTIONS.map((option) => {
-        const selected = preference === option.value;
+      <View style={[styles.control, { backgroundColor: colors.border }]}>
+        {OPTIONS.map((option) => {
+          const selected = preference === option.value;
 
-        return (
-          <Pressable
-            key={option.value}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: selected }}
-            onPress={() => setPreference(option.value)}
-            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
-          >
-            <AppText variant="settingsBody" style={styles.label}>
-              {option.label}
-            </AppText>
-            {selected && <Ionicons name="checkmark" size={iconSize.small} color={colors.accent} />}
-          </Pressable>
-        );
-      })}
+          return (
+            <Pressable
+              key={option.value}
+              accessibilityRole="radio"
+              accessibilityLabel={`${option.label} theme`}
+              accessibilityState={{ checked: selected }}
+              onPress={() => setPreference(option.value)}
+              style={({ pressed }) => [
+                styles.option,
+                selected && { backgroundColor: colors.background },
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons
+                name={option.icon}
+                size={iconSize.small}
+                color={selected ? colors.text : colors.muted}
+                accessible={false}
+              />
+              <AppText variant="settingsBody" tone={selected ? 'text' : 'muted'}>
+                {option.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
-const { spacing, layout, opacity } = tokens;
+const { spacing, layout, opacity, radius } = tokens;
 
 const styles = StyleSheet.create({
   heading: {
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.md,
+  },
+  control: {
+    flexDirection: 'row',
+    padding: spacing.xs,
+    borderRadius: radius.pill,
   },
   option: {
+    flex: 1,
     minHeight: layout.touchTarget,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  label: {
-    flex: 1,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
   },
   pressed: {
     opacity: opacity.pressed,
