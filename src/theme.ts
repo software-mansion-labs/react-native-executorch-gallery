@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 
+import { useAppearance } from '@/hooks/useAppearance';
+
 const palette = {
   light: {
     background: '#FAFAFA',
@@ -9,6 +11,7 @@ const palette = {
     text: '#24252A',
     muted: '#686A73',
     accent: '#365B9B',
+    scrim: 'rgba(0, 0, 0, 0.4)',
   },
   dark: {
     background: '#101114',
@@ -17,6 +20,7 @@ const palette = {
     text: '#F2F2F3',
     muted: '#A3A4AD',
     accent: '#A7BDED',
+    scrim: 'rgba(0, 0, 0, 0.55)',
   },
 };
 
@@ -35,6 +39,7 @@ export const tokens = {
   },
   radius: {
     card: 22,
+    sheet: 28,
     pill: 999,
   },
   borderWidth: {
@@ -42,6 +47,21 @@ export const tokens = {
   },
   fontFamily: Platform.select({ ios: 'System', default: 'sans-serif' }),
   typography: {
+    settingsBody: {
+      fontSize: 15,
+      lineHeight: 22,
+      fontWeight: '400' as const,
+    },
+    settingsSection: {
+      fontSize: 13,
+      lineHeight: 19,
+      fontWeight: '400' as const,
+    },
+    heading: {
+      fontSize: 20,
+      lineHeight: 26,
+      fontWeight: '500' as const,
+    },
     hero: {
       fontSize: 31,
       lineHeight: 39,
@@ -86,6 +106,8 @@ export const tokens = {
   layout: {
     touchTarget: 48,
     headerHeight: 64,
+    homeHeaderHeight: 56,
+    sheetMaxHeight: '85%' as const,
     contentMaxWidth: 560,
     homeMaxWidth: 420,
     logoWidth: 56,
@@ -93,6 +115,8 @@ export const tokens = {
     taskRowMinHeight: 56,
   },
   motion: {
+    sheetOpenDuration: 260,
+    sheetCloseDuration: 200,
     logoShineDuration: 1600,
     logoShineFirstDelay: 2500,
     logoShineInterval: 6000,
@@ -130,7 +154,9 @@ export type Theme = typeof tokens & {
 
 /** Returns the central design tokens and palette for the current system appearance. */
 export function useTheme(): Theme {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const { preference } = useAppearance();
+  const systemScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
+  const scheme = preference === 'system' ? systemScheme : preference;
 
   return useMemo(() => ({ ...tokens, colors: palette[scheme], scheme }), [scheme]);
 }

@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 
+import { AppearanceProvider } from '@/providers/AppearanceProvider';
 import { useTheme } from '@/theme';
 
-export default function RootLayout() {
+function RootNavigation() {
   const { colors, scheme } = useTheme();
 
   return (
@@ -13,5 +14,13 @@ export default function RootLayout() {
       />
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppearanceProvider>
+      <RootNavigation />
+    </AppearanceProvider>
   );
 }

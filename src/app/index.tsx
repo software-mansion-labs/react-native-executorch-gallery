@@ -1,22 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, Pressable, ScrollView, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { DestinationLink } from '@/components/home/DestinationLink';
 import { HomeHero } from '@/components/home/HomeHero';
+import { HomeHeader } from '@/components/home/HomeHeader';
+import { SettingsSheet } from '@/components/settings/SettingsSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { tokens, useTheme } from '@/theme';
 
 export default function HomeScreen() {
   const { colors, iconSize } = useTheme();
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   return (
     <ScreenWrapper>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <AppText variant="title">Gallery</AppText>
-        </View>
+        <HomeHeader settingsVisible={settingsVisible} onSettings={() => setSettingsVisible(true)} />
         <View style={styles.body}>
           <HomeHero />
           <View style={styles.discovery}>
@@ -49,6 +51,7 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+      <SettingsSheet visible={settingsVisible} onClose={() => setSettingsVisible(false)} />
     </ScreenWrapper>
   );
 }
@@ -62,11 +65,6 @@ const styles = StyleSheet.create({
     maxWidth: layout.homeMaxWidth,
     alignSelf: 'center',
     paddingBottom: spacing.sm,
-  },
-  header: {
-    minHeight: layout.headerHeight,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
   },
   body: {
     flexGrow: 1,
