@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { SearchField } from '@/components/SearchField';
 import { TaskListRow } from '@/components/TaskListRow';
-import { filterTasks } from '@/data/tasks';
+import { filterTasks } from '@/lib/tasks';
 import { tokens } from '@/theme';
 
 export default function TaskListScreen() {

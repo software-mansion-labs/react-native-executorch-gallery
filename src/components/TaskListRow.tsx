@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import type { Task } from '@/data/tasks';
+import type { Task } from '@/lib/tasks';
 import { tokens, useTheme } from '@/theme';
 
 type TaskListRowProps = {

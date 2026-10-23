@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import RNBlobUtil from 'react-native-blob-util';
 
-import { MODEL_DOWNLOAD_BYTES } from '@/data/model-sizes';
+import { MODEL_DOWNLOAD_BYTES } from '@/lib/model-sizes';
 import { cachedModelBytes, formatModelSize, modelCachePath } from '@/lib/model-cache';
 
 export type ModelInfo = {
