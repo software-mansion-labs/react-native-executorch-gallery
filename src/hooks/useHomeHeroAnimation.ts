@@ -4,23 +4,17 @@ import { AccessibilityInfo, Animated, AppState, Easing } from 'react-native';
 
 import { tokens } from '@/theme';
 
-type HomeHeroAnimationOptions = {
-  headlineCount: number;
-  paused?: boolean;
-};
-
 /**
  * Drives the logo shine and headline wipe from one native animation value.
  * The copy changes as the shine crosses the center of the mark. Pauses when home
- * loses focus, settings are open, the app backgrounds, or reduced motion is enabled.
- * Resumes interrupted sweeps without rewinding and stops after each headline has
- * appeared once. Returns the shared progress, logo position, and headline index.
+ * loses focus, the app backgrounds, or reduced motion is enabled.
+ * Resumes interrupted sweeps without rewinding. Returns the shared progress,
+ * logo position, and headline sequence index.
  */
-export function useHomeHeroAnimation({ headlineCount, paused = false }: HomeHeroAnimationOptions) {
+export function useHomeHeroAnimation() {
   const [progress] = useState(() => new Animated.Value(0));
   const [headlineIndex, setHeadlineIndex] = useState(0);
   const lastProgress = useRef(0);
-  const completedSweeps = useRef(0);
 
   // Observe progress without making the next sweep wait for a native getValue callback.
   useEffect(() => {
@@ -44,12 +38,7 @@ export function useHomeHeroAnimation({ headlineCount, paused = false }: HomeHero
       let animation: Animated.CompositeAnimation | undefined;
       let timer: ReturnType<typeof setTimeout> | undefined;
 
-      const canAnimate = () =>
-        !disposed &&
-        !paused &&
-        !reducedMotion &&
-        completedSweeps.current < headlineCount - 1 &&
-        AppState.currentState === 'active';
+      const canAnimate = () => !disposed && !reducedMotion && AppState.currentState === 'active';
 
       const stop = () => {
         clearTimeout(timer);
@@ -69,8 +58,7 @@ export function useHomeHeroAnimation({ headlineCount, paused = false }: HomeHero
           animation.start(({ finished }) => {
             if (!finished || disposed) return;
 
-            completedSweeps.current += 1;
-            setHeadlineIndex(completedSweeps.current);
+            setHeadlineIndex((index) => index + 1);
 
             if (canAnimate()) {
               scheduleShine(
@@ -113,7 +101,7 @@ export function useHomeHeroAnimation({ headlineCount, paused = false }: HomeHero
         motionSubscription.remove();
         appSubscription.remove();
       };
-    }, [headlineCount, paused, progress])
+    }, [progress])
   );
 
   const shinePosition = progress.interpolate({

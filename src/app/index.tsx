@@ -20,7 +20,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <HomeHeader settingsVisible={settingsVisible} onSettings={() => setSettingsVisible(true)} />
         <View style={styles.body}>
-          <HomeHero paused={settingsVisible} />
+          <HomeHero />
           <View style={styles.discovery}>
             <DestinationLink
               title="Talk it through"

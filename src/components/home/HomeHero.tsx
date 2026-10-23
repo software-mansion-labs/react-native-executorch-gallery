@@ -8,18 +8,11 @@ import { tokens } from '@/theme';
 
 const HEADLINES = ['A little wonder.', 'A spark of magic.', 'A small marvel.', 'A bright idea.'];
 
-type HomeHeroProps = {
-  paused?: boolean;
-};
-
 /** Centers the mark and a quietly rotating headline without moving the discovery links. */
-export function HomeHero({ paused = false }: HomeHeroProps) {
-  const { shinePosition, headlineIndex, progress } = useHomeHeroAnimation({
-    headlineCount: HEADLINES.length,
-    paused,
-  });
-  const headline = HEADLINES[headlineIndex];
-  const nextHeadline = HEADLINES[Math.min(headlineIndex + 1, HEADLINES.length - 1)];
+export function HomeHero() {
+  const { shinePosition, headlineIndex, progress } = useHomeHeroAnimation();
+  const headline = HEADLINES[headlineIndex % HEADLINES.length];
+  const nextHeadline = HEADLINES[(headlineIndex + 1) % HEADLINES.length];
 
   return (
     <View style={styles.hero}>
