@@ -1,16 +1,22 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useLayoutEffect, useState } from 'react';
 import { AccessibilityInfo, Animated, AppState, Easing } from 'react-native';
 
 import { tokens } from '@/theme';
 
 /**
- * Occasionally sweeps a horizontal highlight across the logo shape.
- * Returns the animated position of the shine band. Animation pauses when
- * the home screen loses focus, the app backgrounds, or reduced motion is enabled.
+ * Drives the logo shine and headline wipe from one native animation value.
+ * The copy changes as the shine crosses the center of the mark. Pauses when home
+ * loses focus, the app backgrounds, or reduced motion is enabled.
  */
-export function useLogoAnimation() {
-  const [shinePosition] = useState(() => new Animated.Value(tokens.logoShine.travelStart));
+export function useHomeHeroAnimation() {
+  const [progress] = useState(() => new Animated.Value(0));
+  const [headlineIndex, setHeadlineIndex] = useState(0);
+
+  // Reset after the next headline is committed, so the two text layers never flash.
+  useLayoutEffect(() => {
+    progress.setValue(0);
+  }, [headlineIndex, progress]);
 
   useFocusEffect(
     useCallback(() => {
@@ -22,16 +28,16 @@ export function useLogoAnimation() {
       const stop = () => {
         clearTimeout(timer);
         animation?.stop();
-        shinePosition.setValue(tokens.logoShine.travelStart);
+        progress.setValue(0);
       };
 
       const scheduleShine = (delay: number) => {
         timer = setTimeout(() => {
           if (disposed || reducedMotion || AppState.currentState !== 'active') return;
 
-          shinePosition.setValue(tokens.logoShine.travelStart);
-          animation = Animated.timing(shinePosition, {
-            toValue: tokens.logoShine.travelEnd,
+          progress.setValue(0);
+          animation = Animated.timing(progress, {
+            toValue: 1,
             duration: tokens.motion.logoShineDuration,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
@@ -39,6 +45,7 @@ export function useLogoAnimation() {
           animation.start(({ finished }) => {
             if (!finished || disposed) return;
 
+            setHeadlineIndex((index) => index + 1);
             scheduleShine(
               tokens.motion.logoShineInterval + Math.random() * tokens.motion.logoShineJitter
             );
@@ -77,8 +84,12 @@ export function useLogoAnimation() {
         motionSubscription.remove();
         appSubscription.remove();
       };
-    }, [shinePosition])
+    }, [progress])
   );
 
-  return { shinePosition };
+  const shinePosition = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [tokens.logoShine.travelStart, tokens.logoShine.travelEnd],
+  });
+  return { shinePosition, headlineIndex, progress };
 }

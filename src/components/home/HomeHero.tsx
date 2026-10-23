@@ -2,18 +2,34 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { ExecuTorchLogo } from '@/components/home/ExecuTorchLogo';
+import { SweepingHeadline } from '@/components/home/SweepingHeadline';
+import { useHomeHeroAnimation } from '@/hooks/useHomeHeroAnimation';
 import { tokens } from '@/theme';
 
-/** Centers the brand mark and home headline above the discovery links. */
+const HEADLINES = ['A little wonder.', 'A spark of magic.', 'A small marvel.', 'A bright idea.'];
+
+/** Centers the mark and a quietly rotating headline without moving the discovery links. */
 export function HomeHero() {
+  const { shinePosition, headlineIndex, progress } = useHomeHeroAnimation();
+  const headline = HEADLINES[headlineIndex % HEADLINES.length];
+  const nextHeadline = HEADLINES[(headlineIndex + 1) % HEADLINES.length];
+
   return (
     <View style={styles.hero}>
       <View style={styles.logoSpace}>
-        <ExecuTorchLogo />
+        <ExecuTorchLogo shinePosition={shinePosition} />
       </View>
-      <AppText variant="hero" accessibilityRole="header" style={styles.headline}>
-        {'A little wonder.\nAll on your phone.'}
-      </AppText>
+      <View
+        style={styles.headline}
+        accessible
+        accessibilityRole="header"
+        accessibilityLabel={`${headline} All on your phone.`}
+      >
+        <SweepingHeadline current={headline} next={nextHeadline} progress={progress} />
+        <AppText variant="hero" style={styles.text}>
+          All on your phone.
+        </AppText>
+      </View>
     </View>
   );
 }
@@ -32,6 +48,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   headline: {
+    width: '100%',
+  },
+  text: {
     textAlign: 'center',
   },
 });

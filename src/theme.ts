@@ -131,6 +131,13 @@ export const tokens = {
       overshootClamping: true,
     },
   },
+  heroWipe: {
+    featherWidth: 32,
+    incomingColors: ['#000000', '#000000', 'transparent', 'transparent'] as const,
+    outgoingColors: ['transparent', 'transparent', '#000000', '#000000'] as const,
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 0 },
+  },
   logoShine: {
     colors: [
       'rgba(255, 255, 255, 0)',
@@ -143,6 +150,7 @@ export const tokens = {
     travelEnd: 56,
   },
   opacity: {
+    hidden: 0,
     pressed: 0.65,
   },
 };

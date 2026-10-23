@@ -3,15 +3,17 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, StyleSheet, View } from 'react-native';
 
-import { useLogoAnimation } from '@/hooks/useLogoAnimation';
 import { tokens, useTheme } from '@/theme';
 
 const LOGO = require('@/assets/images/logo-hero.svg');
 
+type ExecuTorchLogoProps = {
+  shinePosition: Animated.AnimatedInterpolation<number>;
+};
+
 /** The official mark with an occasional, shape-clipped horizontal shine. */
-export function ExecuTorchLogo() {
+export function ExecuTorchLogo({ shinePosition }: ExecuTorchLogoProps) {
   const { logoShine } = useTheme();
-  const { shinePosition } = useLogoAnimation();
 
   return (
     <View style={styles.logo} accessible accessibilityLabel="ExecuTorch">
