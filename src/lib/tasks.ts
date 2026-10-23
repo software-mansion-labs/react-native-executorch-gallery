@@ -51,6 +51,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'ocr',
+        href: '/ocr',
         title: 'Text recognition',
         keywords: 'OCR read text PaddleOCR',
       },

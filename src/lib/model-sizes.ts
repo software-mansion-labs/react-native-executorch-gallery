@@ -1,5 +1,9 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'pp_ocrv6_xnnpack_int8.pte': 23_890_904,
+  'pp_ocrv6_xnnpack_fp32.pte': 31_066_200,
+  'pp_ocrv6_coreml_int8.pte': 8_269_910,
+  'pp_ocrv6_vulkan_fp16.pte': 26_176_856,
   'style_transfer_mosaic_xnnpack_int8.pte': 1_835_532,
   'style_transfer_mosaic_xnnpack_fp32.pte': 6_816_524,
   'style_transfer_mosaic_coreml_fp16.pte': 3_791_869,

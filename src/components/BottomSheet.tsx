@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode, Ref } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated from 'react-native-reanimated';
@@ -13,10 +13,19 @@ type BottomSheetProps = PropsWithChildren<{
   title: string;
   visible: boolean;
   onClose: () => void;
+  action?: ReactNode;
+  scrollViewRef?: Ref<ScrollView>;
 }>;
 
 /** A compact, scrollable modal sheet. Dismisses through the close action, backdrop, or Android Back. */
-export function BottomSheet({ title, visible, onClose, children }: BottomSheetProps) {
+export function BottomSheet({
+  title,
+  visible,
+  onClose,
+  action,
+  scrollViewRef,
+  children,
+}: BottomSheetProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { sheetStyle, backdropStyle, onLayout, onShow, dismiss } = useBottomSheetAnimation(onClose);
@@ -49,6 +58,7 @@ export function BottomSheet({ title, visible, onClose, children }: BottomSheetPr
             <AppText variant="heading" accessibilityRole="header" style={styles.title}>
               {title}
             </AppText>
+            {action}
             <IconButton
               icon="close"
               size="small"
@@ -57,7 +67,11 @@ export function BottomSheet({ title, visible, onClose, children }: BottomSheetPr
               onPress={dismiss}
             />
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <ScrollView
+            ref={scrollViewRef}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+          >
             {children}
           </ScrollView>
         </Animated.View>
