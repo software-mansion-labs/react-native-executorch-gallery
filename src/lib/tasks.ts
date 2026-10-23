@@ -16,32 +16,36 @@ export type TaskSection = {
 /** Available demos link to their routes; remaining tasks stay as catalogue placeholders. */
 export const TASK_SECTIONS: TaskSection[] = [
   {
+    title: 'Generative AI',
+    keywords: 'generation language',
+    data: [
+      {
+        id: 'llm-chat',
+        title: 'Local chat',
+        keywords: 'LLM conversation assistant LFM',
+      },
+      {
+        id: 'text-to-image',
+        title: 'Text to image',
+        keywords: 'generate pictures SDXS DreamShaper',
+      },
+    ],
+  },
+  {
     title: 'Computer vision',
     keywords: 'vision photo image',
     data: [
       {
-        id: 'object-detection',
-        href: '/object-detection',
-        title: 'Object detection',
-        keywords: 'locate classify objects SSDlite MobileNet YOLO',
-      },
-      {
-        id: 'image-classification',
-        href: '/image-classification',
-        title: 'Image classification',
-        keywords: 'identify categories EfficientNet',
+        id: 'style-transfer',
+        href: '/style-transfer',
+        title: 'Style transfer',
+        keywords: 'art painting mosaic',
       },
       {
         id: 'instance-segmentation',
         href: '/instance-segmentation',
         title: 'Instance segmentation',
         keywords: 'detect mask instances YOLO',
-      },
-      {
-        id: 'semantic-segmentation',
-        href: '/semantic-segmentation',
-        title: 'Semantic segmentation',
-        keywords: 'pixel masks DeepLab',
       },
       {
         id: 'keypoint-detection',
@@ -56,10 +60,22 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'OCR read text PaddleOCR',
       },
       {
-        id: 'style-transfer',
-        href: '/style-transfer',
-        title: 'Style transfer',
-        keywords: 'art painting mosaic',
+        id: 'semantic-segmentation',
+        href: '/semantic-segmentation',
+        title: 'Semantic segmentation',
+        keywords: 'pixel masks DeepLab',
+      },
+      {
+        id: 'object-detection',
+        href: '/object-detection',
+        title: 'Object detection',
+        keywords: 'locate classify objects SSDlite MobileNet YOLO',
+      },
+      {
+        id: 'image-classification',
+        href: '/image-classification',
+        title: 'Image classification',
+        keywords: 'identify categories EfficientNet',
       },
     ],
   },
@@ -71,22 +87,6 @@ export const TASK_SECTIONS: TaskSection[] = [
         id: 'realtime-object-detection',
         title: 'Live object detection',
         keywords: 'continuous streaming YOLO',
-      },
-    ],
-  },
-  {
-    title: 'Generative AI',
-    keywords: 'generation language',
-    data: [
-      {
-        id: 'llm-chat',
-        title: 'Local chat',
-        keywords: 'LLM conversation assistant LFM',
-      },
-      {
-        id: 'text-to-image',
-        title: 'Text to image',
-        keywords: 'generate pictures SDXS DreamShaper',
       },
     ],
   },
