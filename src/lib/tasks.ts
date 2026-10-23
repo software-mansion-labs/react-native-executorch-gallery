@@ -44,6 +44,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'keypoint-detection',
+        href: '/keypoint-detection',
         title: 'Pose estimation',
         keywords: 'keypoints body skeleton YOLO',
       },
