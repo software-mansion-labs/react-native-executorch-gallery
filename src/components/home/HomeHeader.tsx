@@ -2,7 +2,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
-import { playActivationHaptic } from '@/lib/haptics';
 import { tokens } from '@/theme';
 
 type HomeHeaderProps = {
@@ -12,11 +11,6 @@ type HomeHeaderProps = {
 
 /** A compact identity label and the design's simple horizontal three-dot settings action. */
 export function HomeHeader({ settingsVisible, onSettings }: HomeHeaderProps) {
-  const openSettings = () => {
-    void playActivationHaptic();
-    onSettings();
-  };
-
   return (
     <View style={styles.header}>
       <AppText variant="title" style={styles.title}>
@@ -27,7 +21,7 @@ export function HomeHeader({ settingsVisible, onSettings }: HomeHeaderProps) {
         accessibilityLabel="Open settings"
         accessibilityHint="Appearance and app information"
         accessibilityState={{ expanded: settingsVisible }}
-        onPress={openSettings}
+        onPress={onSettings}
       />
     </View>
   );
