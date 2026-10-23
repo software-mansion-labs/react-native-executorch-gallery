@@ -37,6 +37,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'semantic-segmentation',
+        href: '/semantic-segmentation',
         title: 'Semantic segmentation',
         keywords: 'pixel masks DeepLab',
       },

@@ -57,7 +57,7 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
         accessibilityRole="button"
         accessibilityLabel={
           model.downloadSizeLabel
-            ? `Download model, ${model.downloadSizeLabel.replace('~', 'approximately ')}`
+            ? `Download model, approximately ${model.downloadSizeLabel}`
             : model.loadLabel
         }
         accessibilityState={{ disabled: !!blocked }}

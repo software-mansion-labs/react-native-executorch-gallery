@@ -30,6 +30,9 @@ export interface ViewportTransform {
 }
 
 export interface PhotoPickerProps {
+  /** Task-specific headline and explanation shown before a photo is selected. */
+  placeholderTitle?: string;
+  placeholderDescription?: string;
   /** Callback triggered when a photo is selected, captured, or cleared. */
   onPick: (image: PickedImage | null) => void;
   /** Optional render function for task-specific overlays (boxes, masks, landmarks). */
@@ -64,6 +67,8 @@ export interface PhotoPickerProps {
  * @returns Responsive image viewport and selection action buttons.
  */
 export function PhotoPicker({
+  placeholderTitle = 'Find objects in a photo.',
+  placeholderDescription = 'See what’s in your photo, with labels and boxes around each object.',
   onPick,
   renderOverlay,
   overlayImage,
@@ -166,14 +171,14 @@ export function PhotoPicker({
           <View style={styles.placeholderContainer}>
             <View style={styles.placeholderCopy}>
               <AppText variant="hero" numberOfLines={1} adjustsFontSizeToFit>
-                Find objects in a photo.
+                {placeholderTitle}
               </AppText>
               <AppText
                 variant="discoverySubtitle"
                 tone="muted"
                 style={styles.placeholderDescription}
               >
-                See what’s in your photo, with labels and boxes around each object.
+                {placeholderDescription}
               </AppText>
               <View style={styles.placeholderSetup}>{setupAction}</View>
             </View>

@@ -44,8 +44,8 @@ export default function HomeScreen() {
               <Pressable accessibilityRole="link" style={styles.browse}>
                 {({ pressed }) => (
                   <View style={[styles.browseContent, pressed && styles.pressed]}>
-                    <AppText variant="body">Browse all demos</AppText>
-                    <Ionicons name="arrow-forward" size={iconSize.small} color={colors.text} />
+                    <AppText variant="taskLabel">Browse all demos</AppText>
+                    <Ionicons name="chevron-forward" size={iconSize.small} color={colors.text} />
                   </View>
                 )}
               </Pressable>
