@@ -1,5 +1,8 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'efficientnet_v2_s_xnnpack_int8.pte': 33_572_128,
+  'efficientnet_v2_s_xnnpack_fp32.pte': 85_714_464,
+  'efficientnet_v2_s_coreml_fp16.pte': 43_864_953,
   'yolo26n_pose_384_xnnpack_int8.pte': 7_005_316,
   'yolo26n_pose_384_xnnpack_fp32.pte': 11_917_828,
   'yolo26n_pose_384_coreml_fp16.pte': 6_769_863,

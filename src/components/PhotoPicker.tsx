@@ -53,6 +53,8 @@ export interface PhotoPickerProps {
   running?: boolean;
   result?: string;
   latency?: number | null;
+  /** Optional result presentation below the photo, including its reserved empty space. */
+  resultsContent?: ReactNode;
   /** Setup action shown before a photo is selected. */
   setupAction?: ReactNode;
 }
@@ -81,6 +83,7 @@ export function PhotoPicker({
   running = false,
   result,
   latency,
+  resultsContent,
   setupAction,
 }: PhotoPickerProps) {
   const { colors } = useTheme();
@@ -154,19 +157,21 @@ export function PhotoPicker({
           ) : null}
         </View>
 
-        <Animated.View
-          key={result ?? 'empty'}
-          style={styles.result}
-          accessibilityLiveRegion="polite"
-          entering={result != null ? resultEntrance : undefined}
-        >
-          <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
-            {result ?? ' '}
-          </AppText>
-          <AppText variant="caption" tone="muted" numberOfLines={1}>
-            {latency != null ? `${latency} ms` : ' '}
-          </AppText>
-        </Animated.View>
+        {resultsContent ?? (
+          <Animated.View
+            key={result ?? 'empty'}
+            style={styles.result}
+            accessibilityLiveRegion="polite"
+            entering={result != null ? resultEntrance : undefined}
+          >
+            <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
+              {result ?? ' '}
+            </AppText>
+            <AppText variant="caption" tone="muted" numberOfLines={1}>
+              {latency != null ? `${latency} ms` : ' '}
+            </AppText>
+          </Animated.View>
+        )}
         {!image && (
           <View style={styles.placeholderContainer}>
             <View style={styles.placeholderCopy}>

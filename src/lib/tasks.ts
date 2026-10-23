@@ -27,6 +27,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'image-classification',
+        href: '/image-classification',
         title: 'Image classification',
         keywords: 'identify categories EfficientNet',
       },

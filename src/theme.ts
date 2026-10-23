@@ -155,6 +155,7 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
+    classificationResultsHeight: 104,
     modelSetupWidth: 216,
     modelSetupHeight: 96,
     modelActionHeight: 52,
