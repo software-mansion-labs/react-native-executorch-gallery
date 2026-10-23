@@ -2,16 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { StyleSheet, Pressable, type PressableProps } from 'react-native';
 
-import { tokens, useTheme } from '@/theme';
+import { tokens, useTheme, type Theme } from '@/theme';
 
 type IconButtonProps = PressableProps & {
   icon: ComponentProps<typeof Ionicons>['name'];
   accessibilityLabel: string;
+  size?: keyof Theme['iconSize'];
+  tone?: 'text' | 'muted';
 };
 
 /** A labeled icon action with a consistent touch target and pressed feedback.
- * Accepts a named Ionicon and native Pressable props. */
-export function IconButton({ icon, ...props }: IconButtonProps) {
+ * Accepts a named Ionicon, token-based size and tone, and native Pressable props. */
+export function IconButton({ icon, size = 'medium', tone = 'text', ...props }: IconButtonProps) {
   const { colors, iconSize } = useTheme();
 
   return (
@@ -20,7 +22,7 @@ export function IconButton({ icon, ...props }: IconButtonProps) {
       accessibilityRole="button"
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <Ionicons name={icon} size={iconSize.medium} color={colors.text} />
+      <Ionicons name={icon} size={iconSize[size]} color={colors[tone]} />
     </Pressable>
   );
 }

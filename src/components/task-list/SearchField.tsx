@@ -36,6 +36,8 @@ export function SearchField({ value, onChangeText }: SearchFieldProps) {
         {hasValue && (
           <IconButton
             icon="close"
+            size="small"
+            tone="muted"
             accessibilityLabel="Clear search"
             onPress={() => onChangeText('')}
           />
