@@ -32,6 +32,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'instance-segmentation',
+        href: '/instance-segmentation',
         title: 'Instance segmentation',
         keywords: 'detect mask instances YOLO',
       },

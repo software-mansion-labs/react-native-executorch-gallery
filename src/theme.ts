@@ -31,6 +31,19 @@ const palette = {
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
+  annotation: {
+    text: '#FFFFFF',
+    colors: [
+      { stroke: '#2A47FF', fill: 'rgba(42, 71, 255, 0.55)' },
+      { stroke: '#D946EF', fill: 'rgba(217, 70, 239, 0.55)' },
+      { stroke: '#10B981', fill: 'rgba(16, 185, 129, 0.55)' },
+      { stroke: '#F59E0B', fill: 'rgba(245, 158, 11, 0.55)' },
+      { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.55)' },
+      { stroke: '#EA580C', fill: 'rgba(234, 88, 12, 0.55)' },
+      { stroke: '#0284C7', fill: 'rgba(2, 132, 199, 0.55)' },
+      { stroke: '#E11D48', fill: 'rgba(225, 29, 72, 0.55)' },
+    ],
+  },
   spacing: {
     none: 0,
     xxs: 2,
@@ -69,8 +82,8 @@ export const tokens = {
       fontWeight: '500' as const,
     },
     hero: {
-      fontSize: 35,
-      lineHeight: 44,
+      fontSize: 30,
+      lineHeight: 38,
       fontWeight: '400' as const,
       letterSpacing: -0.9,
     },
