@@ -3,10 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Canvas, Image as SkiaImage, useImage, type SkImage } from '@shopify/react-native-skia';
 import type { ImageBuffer } from 'react-native-executorch/cv';
+import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { tokens, useTheme } from '@/theme';
 import { AppText } from '@/components/AppText';
-import { ActionButton } from '@/components/ActionButton';
 import { pickImage, skImageToBuffer } from '@/lib/image';
 
 export interface PickedImage {
@@ -42,14 +42,16 @@ export interface PhotoPickerProps {
   targetWidth?: number | null;
   /** Whether the model is currently processing inference over the photo. */
   busy?: boolean;
+  /** Whether a photo may be chosen or captured; gate on model readiness. */
+  canPick?: boolean;
   /** Run action displayed after the gallery and camera controls. */
   onRun?: () => void;
   canRun?: boolean;
   running?: boolean;
   result?: string;
   latency?: number | null;
-  /** Opens the model menu from the empty photo state. */
-  onChooseModel?: () => void;
+  /** Setup action shown before a photo is selected. */
+  setupAction?: ReactNode;
 }
 
 /**
@@ -68,12 +70,13 @@ export function PhotoPicker({
   overlayOpacity = 0.65,
   targetWidth = 800,
   busy = false,
+  canPick = true,
   onRun,
   canRun = false,
   running = false,
   result,
   latency,
-  onChooseModel,
+  setupAction,
 }: PhotoPickerProps) {
   const { colors } = useTheme();
   const [uri, setUri] = useState<string | null>(null);
@@ -126,7 +129,7 @@ export function PhotoPicker({
           ]}
         >
           {image && viewW > 0 && viewH > 0 ? (
-            <>
+            <Animated.View key={uri} style={StyleSheet.absoluteFill} entering={photoEntrance}>
               <Canvas style={StyleSheet.absoluteFill}>
                 <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
                 {overlayImage && (
@@ -142,29 +145,38 @@ export function PhotoPicker({
                 )}
               </Canvas>
               {renderOverlay?.(transform)}
-            </>
+            </Animated.View>
           ) : null}
         </View>
 
-        <View style={styles.result} accessibilityLiveRegion="polite">
+        <Animated.View
+          key={result ?? 'empty'}
+          style={styles.result}
+          accessibilityLiveRegion="polite"
+          entering={result != null ? resultEntrance : undefined}
+        >
           <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
             {result ?? ' '}
           </AppText>
           <AppText variant="caption" tone="muted" numberOfLines={1}>
             {latency != null ? `${latency} ms` : ' '}
           </AppText>
-        </View>
+        </Animated.View>
         {!image && (
           <View style={styles.placeholderContainer}>
-            <AppText variant="taskHero" numberOfLines={1} adjustsFontSizeToFit>
-              Find objects in a photo.
-            </AppText>
-            <AppText variant="secondary" tone="muted" style={styles.placeholderDescription}>
-              See what’s in your photo, with labels and boxes around each object.
-            </AppText>
-            {onChooseModel && (
-              <ActionButton label="Choose model" onPress={onChooseModel} disabled={busy} />
-            )}
+            <View style={styles.placeholderCopy}>
+              <AppText variant="hero" numberOfLines={1} adjustsFontSizeToFit>
+                Find objects in a photo.
+              </AppText>
+              <AppText
+                variant="discoverySubtitle"
+                tone="muted"
+                style={styles.placeholderDescription}
+              >
+                See what’s in your photo, with labels and boxes around each object.
+              </AppText>
+              <View style={styles.placeholderSetup}>{setupAction}</View>
+            </View>
           </View>
         )}
       </View>
@@ -172,18 +184,18 @@ export function PhotoPicker({
         <PickButton
           iconName="images-outline"
           label="Choose photo"
-          disabled={busy}
+          disabled={busy || !canPick}
           onPress={() => choose('library')}
         />
         <PickButton
           iconName="camera-outline"
           label="Take photo"
-          disabled={busy}
+          disabled={busy || !canPick}
           onPress={() => choose('camera')}
         />
         {onRun && (
           <PickButton
-            iconName="play"
+            iconName="scan-outline"
             label={running ? 'Running inference' : 'Run inference'}
             onPress={onRun}
             disabled={!canRun || busy}
@@ -240,6 +252,12 @@ function PickButton({
 }
 
 const { spacing, radius, layout, opacity } = tokens;
+const photoEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
+const resultEntrance = FadeIn.duration(tokens.motion.detectionFadeDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   container: { flex: 1, gap: spacing.lg, minHeight: 0 },
   stage: { flex: 1, gap: spacing.lg, minHeight: 0 },
@@ -259,6 +277,14 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   placeholderDescription: { textAlign: 'center', paddingHorizontal: spacing.xl },
+  placeholderCopy: { width: '100%', alignItems: 'center', gap: spacing.xl },
+  placeholderSetup: {
+    position: 'absolute',
+    top: '100%',
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: spacing.xl,
+  },
   result: {
     flexDirection: 'row',
     alignItems: 'center',

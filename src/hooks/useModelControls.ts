@@ -1,29 +1,59 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import RNBlobUtil from 'react-native-blob-util';
 
+import { MODEL_DOWNLOAD_BYTES } from '@/data/model-sizes';
+import { cachedModelBytes, formatModelSize, modelCachePath } from '@/lib/model-cache';
+
+export type ModelInfo = {
+  name: string;
+};
+
 /**
- * Keeps model loading explicit and confirms deletion of its cached weights.
- * Returns the load gate, deletion state, error, model-menu state, and action handlers.
- * Pass the resolved local model path to remove; remote URLs are never deleted.
+ * Prepares one task model only after an explicit load request.
+ * Given its source and metadata, returns the load gate, setup label, on-disk
+ * cache size, deletion action, and a revision for resetting task data after deletion.
+ * Cache status comes from the final weights file, without downloading or a registry.
  */
-export function useModelControls() {
-  const [menuVisible, setMenuVisible] = useState(false);
+export function useModelControls(source: string, info: ModelInfo) {
+  const path = modelCachePath(source);
   const [loaded, setLoaded] = useState(false);
+  const [storedBytes, setStoredBytes] = useState<number | null>();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [revision, setRevision] = useState(0);
   const removing = useRef(false);
+  const cacheRequest = useRef(0);
+
+  const refreshCache = useCallback(async () => {
+    const request = ++cacheRequest.current;
+    const bytes = await cachedModelBytes(path);
+    if (request === cacheRequest.current) setStoredBytes(bytes);
+  }, [path]);
+
+  useEffect(() => {
+    void refreshCache();
+    return () => {
+      cacheRequest.current += 1;
+    };
+  }, [refreshCache]);
 
   const load = () => {
+    if (removing.current || storedBytes === undefined) return;
     setError(null);
     setLoaded(true);
   };
 
-  const remove = (path: string | undefined) => {
-    if (!path || removing.current) return;
+  const loadFailed = useCallback((cause: unknown) => {
+    setError(cause instanceof Error ? cause.message : String(cause));
+    setLoaded(false);
+  }, []);
+
+  const remove = (disabled = false) => {
+    if (disabled || removing.current || !storedBytes) return;
     Alert.alert(
-      'Delete model?',
-      'Remove the downloaded weights from this device? You can download them again.',
+      'Delete downloaded model?',
+      `Remove ${formatModelSize(storedBytes)} from this device? You can download the model again.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -34,14 +64,14 @@ export function useModelControls() {
             removing.current = true;
             setDeleting(true);
             setError(null);
+            setLoaded(false);
+            setRevision((value) => value + 1);
             try {
-              const localPath = path.replace(/^file:\/\//, '');
-              if (!localPath.startsWith('/')) throw new Error('The model is not stored locally.');
-              if (await RNBlobUtil.fs.exists(localPath)) await RNBlobUtil.fs.unlink(localPath);
-              setLoaded(false);
+              await RNBlobUtil.fs.unlink(path);
             } catch (cause) {
               setError(cause instanceof Error ? cause.message : String(cause));
             } finally {
+              await refreshCache();
               removing.current = false;
               setDeleting(false);
             }
@@ -51,13 +81,28 @@ export function useModelControls() {
     );
   };
 
-  const unload = () => {
-    setError(null);
-    setLoaded(false);
+  const downloadBytes = MODEL_DOWNLOAD_BYTES[source.split('?')[0].split('/').pop() ?? ''];
+  const loadLabel =
+    storedBytes === undefined ? 'Checking model…' : storedBytes ? 'Load model' : 'Download model';
+  const downloadSizeLabel =
+    storedBytes === null && downloadBytes
+      ? `~${Math.ceil(downloadBytes / 1_000_000)} MB`
+      : undefined;
+
+  return {
+    info,
+    loaded,
+    storedBytes,
+    deleting,
+    error,
+    revision,
+    loadLabel,
+    downloadSizeLabel,
+    load,
+    loadFailed,
+    remove,
+    refreshCache,
   };
-
-  const openMenu = () => setMenuVisible(true);
-  const closeMenu = () => setMenuVisible(false);
-
-  return { loaded, deleting, error, load, unload, remove, menuVisible, openMenu, closeMenu };
 }
+
+export type ModelControls = ReturnType<typeof useModelControls>;

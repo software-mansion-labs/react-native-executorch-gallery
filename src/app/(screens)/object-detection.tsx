@@ -2,24 +2,31 @@ import { useState } from 'react';
 import { models, useObjectDetector, type ObjectDetection } from 'react-native-executorch';
 
 import { DetectionOverlay } from '@/components/DetectionOverlay';
+import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.objectDetection.SSDLITE320_MOBILENET_V3_LARGE.DEFAULT;
 
 function ObjectDetectionTask() {
-  const controls = useModelControls();
-  const detector = useObjectDetector(MODEL, { preventLoad: !controls.loaded });
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [results, setResults] = useState<ObjectDetection<'xyxy', string>[] | null>(null);
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'SSDLite MobileNetV3' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [results, setResults] = useTaskState<ObjectDetection<'xyxy', string>[] | null>(
+    null,
+    model.revision
+  );
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const detector = useObjectDetector(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (!image || !detector.isReady || !detector.detectObjects || busy || controls.deleting) return;
+    if (!image || !model.loaded || !detector.isReady || !detector.detectObjects) return;
+    if (busy || model.deleting) return;
     setBusy(true);
     setResults(null);
     setLatency(null);
@@ -37,26 +44,14 @@ function ObjectDetectionTask() {
   };
 
   return (
-    <TaskScreen
-      title="Object detection"
-      subtitle="SSDLite MobileNetV3"
-      status={detector}
-      loaded={controls.loaded}
-      deleting={controls.deleting}
-      error={error || controls.error}
-      busy={busy}
-      onLoadModel={controls.load}
-      onUnloadModel={controls.unload}
-      onDeleteModel={() => controls.remove(detector.resource?.modelPath)}
-      modelMenuVisible={controls.menuVisible}
-      onOpenModelMenu={controls.openMenu}
-      onCloseModelMenu={controls.closeMenu}
-    >
+    <TaskScreen title="Object detection" model={model} status={detector} error={error} busy={busy}>
       <PhotoPicker
-        busy={busy || controls.deleting}
-        onChooseModel={controls.openMenu}
+        key={model.revision}
+        busy={busy || model.deleting}
+        canPick={model.loaded && detector.isReady}
+        setupAction={<ModelSetup model={model} status={detector} disabled={busy} />}
         onRun={run}
-        canRun={!!image && detector.isReady && controls.loaded}
+        canRun={!!image && detector.isReady && model.loaded}
         running={busy}
         result={
           results

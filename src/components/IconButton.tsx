@@ -8,7 +8,7 @@ type IconButtonProps = PressableProps & {
   icon: ComponentProps<typeof Ionicons>['name'];
   accessibilityLabel: string;
   size?: keyof Theme['iconSize'];
-  tone?: 'text' | 'muted';
+  tone?: 'text' | 'muted' | 'danger';
 };
 
 /** A labeled icon action with a consistent touch target and pressed feedback.
@@ -20,7 +20,11 @@ export function IconButton({ icon, size = 'medium', tone = 'text', ...props }: I
     <Pressable
       {...props}
       accessibilityRole="button"
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.pressed,
+        props.disabled && styles.disabled,
+      ]}
     >
       <Ionicons name={icon} size={iconSize[size]} color={colors[tone]} />
     </Pressable>
@@ -39,4 +43,5 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: opacity.pressed,
   },
+  disabled: { opacity: opacity.disabled },
 });

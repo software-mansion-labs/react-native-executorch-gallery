@@ -1,79 +1,54 @@
 import { router } from 'expo-router';
-import type { PropsWithChildren } from 'react';
+import { useEffect, useState, type PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { ActionButton } from '@/components/ActionButton';
 import { AppText } from '@/components/AppText';
-import { BottomSheet } from '@/components/BottomSheet';
 import { IconButton } from '@/components/IconButton';
+import { ModelSheet, type ModelStatus } from '@/components/ModelSheet';
 import { PageHeader } from '@/components/PageHeader';
+import type { ModelControls } from '@/hooks/useModelControls';
 import { tokens, useTheme } from '@/theme';
 
 type TaskScreenProps = PropsWithChildren<{
   title: string;
-  subtitle: string;
-  status: { isReady: boolean; downloadProgress: number; resource?: unknown; error?: unknown };
-  loaded: boolean;
-  deleting?: boolean;
+  status: ModelStatus;
+  model: ModelControls;
   error?: string | null;
   busy: boolean;
-  onLoadModel: () => void;
-  onUnloadModel: () => void;
-  onDeleteModel: () => void;
-  modelMenuVisible: boolean;
-  onOpenModelMenu: () => void;
-  onCloseModelMenu: () => void;
 }>;
 
-/** Shared task layout with a centered header and model controls in an overflow sheet. */
-export function TaskScreen({
-  title,
-  subtitle,
-  status,
-  loaded,
-  deleting,
-  error,
-  busy,
-  onLoadModel,
-  onUnloadModel,
-  onDeleteModel,
-  modelMenuVisible,
-  onOpenModelMenu,
-  onCloseModelMenu,
-  children,
-}: TaskScreenProps) {
+/** Stable task layout: capability-focused header and an information/storage sheet. */
+export function TaskScreen({ title, status, model, error, busy, children }: TaskScreenProps) {
   const { colors } = useTheme();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const { loaded, loadFailed, refreshCache } = model;
+  useEffect(() => {
+    if (status.resource || status.isReady) void refreshCache();
+  }, [status.resource, status.isReady, refreshCache]);
+  useEffect(() => {
+    if (loaded && status.error) loadFailed(status.error);
+  }, [loaded, status.error, loadFailed]);
+
   const modelError =
-    status.error instanceof Error
-      ? status.error.message
-      : status.error
-        ? String(status.error)
-        : null;
-  const message = error || modelError;
-  const loading = loaded && !status.isReady && !modelError;
-  const modelState = !loaded
-    ? 'Not loaded'
-    : modelError
-      ? 'Could not load model'
-      : status.isReady
-        ? 'Ready on this device'
-        : status.resource
-          ? 'Preparing model…'
-          : `Downloading · ${Math.round(status.downloadProgress)}%`;
+    loaded && status.error
+      ? status.error instanceof Error
+        ? status.error.message
+        : String(status.error)
+      : null;
+  const message = error || model.error || modelError;
 
   return (
     <View style={styles.root}>
       <PageHeader
         title={title}
-        subtitle={subtitle}
+        subtitle={model.info.name}
         backLabel="Back to all demos"
         onBack={() => router.dismissTo('/tasks')}
         action={
           <IconButton
             icon="ellipsis-horizontal"
-            accessibilityLabel="Manage model"
-            onPress={onOpenModelMenu}
-            disabled={busy || deleting}
+            accessibilityLabel="Model status and storage"
+            onPress={() => setMenuVisible(true)}
           />
         }
       />
@@ -85,34 +60,13 @@ export function TaskScreen({
           </AppText>
         )}
       </ScrollView>
-      <BottomSheet title="Model" visible={modelMenuVisible} onClose={onCloseModelMenu}>
-        <View style={styles.modelSheet}>
-          <AppText variant="title">{subtitle}</AppText>
-          <AppText variant="secondary" tone="muted" accessibilityLiveRegion="polite">
-            {modelState}
-          </AppText>
-          {message && (
-            <AppText variant="secondary" style={{ color: colors.danger }}>
-              {message}
-            </AppText>
-          )}
-          <ActionButton
-            label={loaded ? (loading ? 'Cancel loading' : 'Unload model') : 'Load model'}
-            onPress={loaded ? onUnloadModel : onLoadModel}
-            disabled={busy || deleting}
-            secondary
-          />
-          {status.isReady && (
-            <ActionButton
-              label="Delete downloaded model"
-              onPress={onDeleteModel}
-              disabled={busy}
-              busy={deleting}
-              secondary
-            />
-          )}
-        </View>
-      </BottomSheet>
+      <ModelSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        model={model}
+        status={status}
+        busy={busy}
+      />
     </View>
   );
 }
@@ -128,5 +82,4 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   viewport: { flex: 1, minHeight: layout.photoMinHeight },
-  modelSheet: { gap: spacing.lg, paddingBottom: spacing.xl },
 });

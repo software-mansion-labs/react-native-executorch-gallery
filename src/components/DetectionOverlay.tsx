@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import type { ObjectDetection } from 'react-native-executorch';
+import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import type { ViewportTransform } from '@/components/PhotoPicker';
@@ -17,8 +18,9 @@ export function DetectionOverlay({ detections, transform }: DetectionOverlayProp
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" accessible={false}>
       {detections.map((detection, index) => (
-        <View
+        <Animated.View
           key={index}
+          entering={boxEntrance}
           style={[
             styles.box,
             {
@@ -35,13 +37,16 @@ export function DetectionOverlay({ detections, transform }: DetectionOverlayProp
               {detection.label} {Math.round(detection.confidence * 100)}%
             </AppText>
           </View>
-        </View>
+        </Animated.View>
       ))}
     </View>
   );
 }
 
 const { spacing, radius } = tokens;
+const boxEntrance = FadeIn.duration(tokens.motion.detectionFadeDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   box: { position: 'absolute', borderWidth: 2, borderRadius: radius.annotation },
   tag: {

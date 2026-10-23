@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 
 import { useAppearance } from '@/hooks/useAppearance';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const palette = {
   light: {
@@ -93,12 +94,6 @@ export const tokens = {
       lineHeight: 24,
       fontWeight: '400' as const,
     },
-    taskHero: {
-      fontSize: 32,
-      lineHeight: 42,
-      fontWeight: '400' as const,
-      letterSpacing: -0.5,
-    },
     taskLabel: {
       fontSize: 18,
       lineHeight: 26,
@@ -147,8 +142,22 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
+    modelSetupWidth: 216,
+    modelSetupHeight: 96,
+    modelActionHeight: 52,
+    modelProgressSize: 52,
+    modelProgressStroke: 4,
+    modelProgressCornerInset: 10,
   },
   motion: {
+    themeTransitionDuration: 240,
+    photoRevealDuration: 240,
+    modelSetupTransitionDuration: 200,
+    detectionFadeDuration: 280,
+    modelMinimumLoadingDuration: 1200,
+    modelLoadingFadeDuration: 320,
+    modelProgressDuration: 240,
+    modelSpinnerDuration: 2000,
     sheetOpenDuration: 260,
     sheetCloseDuration: 200,
     logoShineDuration: 1600,
@@ -183,6 +192,7 @@ export const tokens = {
   },
   opacity: {
     hidden: 0,
+    subtle: 0.75,
     pressed: 0.65,
     disabled: 0.4,
   },
@@ -198,6 +208,7 @@ export function useTheme(): Theme {
   const { preference } = useAppearance();
   const systemScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const scheme = preference === 'system' ? systemScheme : preference;
+  const colors = useThemeColors(palette[scheme], tokens.motion.themeTransitionDuration);
 
-  return useMemo(() => ({ ...tokens, colors: palette[scheme], scheme }), [scheme]);
+  return useMemo(() => ({ ...tokens, colors, scheme }), [colors, scheme]);
 }
