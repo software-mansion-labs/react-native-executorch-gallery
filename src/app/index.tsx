@@ -21,7 +21,7 @@ export default function HomeScreen() {
           <HomeHero />
           <View style={styles.discovery}>
             <DestinationLink
-              title="Chat with a little wonder"
+              title="Talk it through"
               subtitle="Chat with a local model"
               icon="chatbubble-outline"
               query="chat"

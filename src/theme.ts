@@ -1,12 +1,6 @@
 import { useMemo } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
 
-/** Gradient endpoints taken directly from assets/images/logo-hero.svg. */
-export const brand = {
-  blue: '#2A47FF',
-  paleBlue: '#D0E2FF',
-};
-
 const palette = {
   light: {
     background: '#FAFAFA',
@@ -14,7 +8,7 @@ const palette = {
     border: '#E1E1E6',
     text: '#24252A',
     muted: '#686A73',
-    accent: brand.blue,
+    accent: '#365B9B',
   },
   dark: {
     background: '#101114',
@@ -22,7 +16,7 @@ const palette = {
     border: '#2B2C31',
     text: '#F2F2F3',
     muted: '#A3A4AD',
-    accent: brand.paleBlue,
+    accent: '#A7BDED',
   },
 };
 
@@ -69,8 +63,13 @@ export const tokens = {
       lineHeight: 21,
       fontWeight: '400' as const,
     },
-    input: {
+    secondary: {
       fontSize: 14,
+      lineHeight: 20,
+      fontWeight: '400' as const,
+    },
+    input: {
+      fontSize: 16,
       fontWeight: '400' as const,
     },
     caption: {
@@ -89,15 +88,24 @@ export const tokens = {
     headerHeight: 64,
     contentMaxWidth: 560,
     homeMaxWidth: 420,
-    logoWidth: 46,
-    logoHeight: 59,
+    logoWidth: 56,
+    logoHeight: 71,
     taskRowMinHeight: 56,
   },
   motion: {
     logoShineDuration: 1600,
-    logoShineFirstDelay: 4500,
-    logoShineInterval: 12000,
-    logoShineJitter: 5000,
+    logoShineFirstDelay: 2500,
+    logoShineInterval: 6000,
+    logoShineJitter: 2000,
+    cardRestScale: 1,
+    cardPressedScale: 0.98,
+    cardPressDuration: 100,
+    cardReleaseSpring: {
+      damping: 28,
+      stiffness: 380,
+      mass: 0.8,
+      overshootClamping: true,
+    },
   },
   logoShine: {
     colors: [
@@ -107,8 +115,8 @@ export const tokens = {
     ] as const,
     start: { x: 0, y: 0 },
     end: { x: 1, y: 0.3 },
-    travelStart: -46,
-    travelEnd: 46,
+    travelStart: -56,
+    travelEnd: 56,
   },
   opacity: {
     pressed: 0.65,

@@ -13,6 +13,7 @@ type SearchFieldProps = {
  * Receives the current value and notifies its parent on edits. */
 export function SearchField({ value, onChangeText }: SearchFieldProps) {
   const { colors, iconSize } = useTheme();
+  const hasValue = value.length > 0;
 
   return (
     <View style={[styles.field, { backgroundColor: colors.surface }]}>
@@ -32,7 +33,7 @@ export function SearchField({ value, onChangeText }: SearchFieldProps) {
         returnKeyType="search"
       />
       <View style={styles.clearAction}>
-        {value.length > 0 && (
+        {hasValue && (
           <IconButton
             icon="close"
             accessibilityLabel="Clear search"

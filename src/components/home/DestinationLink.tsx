@@ -2,9 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { StyleSheet, Pressable, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
 import { tokens, useTheme } from '@/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type DestinationLinkProps = {
   title: string;
@@ -17,30 +21,33 @@ type DestinationLinkProps = {
  * The title, subtitle, and named icon describe the destination. */
 export function DestinationLink({ title, subtitle, icon, query }: DestinationLinkProps) {
   const { colors, iconSize } = useTheme();
+  const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
+
+  const openTaskList = () => {
+    router.push({ pathname: '/tasks', params: { query } });
+  };
 
   return (
-    <Pressable
-      onPress={() => router.push({ pathname: '/tasks', params: { query } })}
+    <AnimatedPressable
+      onPress={openTaskList}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       accessibilityRole="link"
       accessibilityLabel={`${title}. ${subtitle}`}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: colors.surface },
-        pressed && styles.pressed,
-      ]}
+      style={[styles.card, { backgroundColor: colors.surface }, animatedStyle]}
     >
       <Ionicons name={icon} size={iconSize.large} color={colors.muted} />
       <View style={styles.copy}>
         <AppText variant="title">{title}</AppText>
-        <AppText variant="caption" tone="muted">
+        <AppText variant="secondary" tone="muted">
           {subtitle}
         </AppText>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
-const { spacing, radius, opacity } = tokens;
+const { spacing, radius } = tokens;
 
 const styles = StyleSheet.create({
   card: {
@@ -54,8 +61,5 @@ const styles = StyleSheet.create({
   copy: {
     flex: 1,
     gap: spacing.xxs,
-  },
-  pressed: {
-    opacity: opacity.pressed,
   },
 });

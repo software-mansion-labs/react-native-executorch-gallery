@@ -33,20 +33,10 @@ export default function TaskListScreen() {
           keyExtractor={(task) => task.id}
           renderItem={({ item }) => <TaskListRow task={item} />}
           renderSectionHeader={({ section }) => (
-            <AppText variant="caption" tone="muted" style={styles.sectionHeading}>
+            <AppText variant="secondary" tone="muted" style={styles.sectionHeading}>
               {section.title}
             </AppText>
           )}
-          ListHeaderComponent={
-            <AppText
-              variant="caption"
-              tone="muted"
-              style={styles.notice}
-              accessibilityLiveRegion="polite"
-            >
-              Task screens coming soon
-            </AppText>
-          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <AppText style={styles.center}>No demos found</AppText>
@@ -78,9 +68,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xl,
-  },
-  notice: {
-    marginBottom: spacing.md,
   },
   sectionHeading: {
     paddingTop: spacing.lg,
