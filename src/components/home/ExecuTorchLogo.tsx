@@ -42,6 +42,7 @@ const styles = StyleSheet.create({
   logo: {
     width: layout.logoWidth,
     height: layout.logoHeight,
+    overflow: 'hidden',
   },
   fill: {
     ...StyleSheet.absoluteFill,

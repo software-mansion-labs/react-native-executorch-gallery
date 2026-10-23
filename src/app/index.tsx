@@ -20,7 +20,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <HomeHeader settingsVisible={settingsVisible} onSettings={() => setSettingsVisible(true)} />
         <View style={styles.body}>
-          <HomeHero />
+          <HomeHero paused={settingsVisible} />
           <View style={styles.discovery}>
             <DestinationLink
               title="Talk it through"
@@ -45,7 +45,7 @@ export default function HomeScreen() {
               accessibilityRole="link"
               style={({ pressed }) => [styles.browse, pressed && styles.pressed]}
             >
-              <AppText variant="label">Browse all demos</AppText>
+              <AppText variant="body">Browse all demos</AppText>
               <Ionicons name="arrow-forward" size={iconSize.small} color={colors.text} />
             </Pressable>
           </View>

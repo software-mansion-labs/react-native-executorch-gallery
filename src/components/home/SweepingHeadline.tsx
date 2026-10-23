@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { tokens } from '@/theme';
+import { tokens, useTheme } from '@/theme';
 
 type SweepingHeadlineProps = {
   current: string;
@@ -12,8 +12,13 @@ type SweepingHeadlineProps = {
   progress: Animated.Value;
 };
 
-/** Replaces a headline from left to right with a soft edge driven by the logo's animation clock. */
+/**
+ * Replaces a headline from left to right using the logo's animation clock.
+ * Keeps the text masks static and moves their gradient content, allowing Android
+ * to retain hardware rendering during navigation transitions.
+ */
 export function SweepingHeadline({ current, next, progress }: SweepingHeadlineProps) {
+  const { colors } = useTheme();
   const [width, setWidth] = useState(0);
   const maskWidth = width * 2 + heroWipe.featherWidth;
   const locations = [0, width / maskWidth, (width + heroWipe.featherWidth) / maskWidth, 1] as const;
@@ -23,8 +28,24 @@ export function SweepingHeadline({ current, next, progress }: SweepingHeadlinePr
   });
 
   const headlines = [
-    { text: current, colors: heroWipe.outgoingColors },
-    { text: next, colors: heroWipe.incomingColors },
+    {
+      text: current,
+      colors: [
+        heroWipe.transparentColor,
+        heroWipe.transparentColor,
+        colors.text,
+        colors.text,
+      ] as const,
+    },
+    {
+      text: next,
+      colors: [
+        colors.text,
+        colors.text,
+        heroWipe.transparentColor,
+        heroWipe.transparentColor,
+      ] as const,
+    },
   ];
 
   return (
@@ -41,24 +62,23 @@ export function SweepingHeadline({ current, next, progress }: SweepingHeadlinePr
           <MaskedView
             key={index}
             style={styles.line}
-            androidRenderingMode="software"
             maskElement={
-              <Animated.View
-                style={[styles.mask, { width: maskWidth, transform: [{ translateX }] }]}
-              >
-                <LinearGradient
-                  colors={headline.colors}
-                  locations={locations}
-                  start={heroWipe.start}
-                  end={heroWipe.end}
-                  style={styles.fill}
-                />
-              </Animated.View>
+              <View style={styles.line}>
+                <AppText variant="hero" style={styles.text}>
+                  {headline.text}
+                </AppText>
+              </View>
             }
           >
-            <AppText variant="hero" style={styles.text}>
-              {headline.text}
-            </AppText>
+            <Animated.View style={[styles.mask, { width: maskWidth, transform: [{ translateX }] }]}>
+              <LinearGradient
+                colors={headline.colors}
+                locations={locations}
+                start={heroWipe.start}
+                end={heroWipe.end}
+                style={styles.fill}
+              />
+            </Animated.View>
           </MaskedView>
         ))}
     </View>
@@ -77,6 +97,7 @@ const styles = StyleSheet.create({
   line: {
     ...StyleSheet.absoluteFill,
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   mask: {
     height: '100%',
