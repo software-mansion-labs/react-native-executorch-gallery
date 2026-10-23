@@ -18,7 +18,7 @@ export function TaskListRow({ task }: TaskListRowProps) {
       <Link href={task.href} asChild>
         <Pressable style={styles.row} accessibilityRole="link">
           <View style={styles.linkContent}>
-            <AppText>{task.title}</AppText>
+            <AppText variant="taskLabel">{task.title}</AppText>
             <Ionicons name="chevron-forward" size={iconSize.small} color={colors.muted} />
           </View>
         </Pressable>
@@ -32,7 +32,7 @@ export function TaskListRow({ task }: TaskListRowProps) {
       accessibilityLabel={`${task.title}. Coming soon.`}
       accessibilityState={{ disabled: true }}
     >
-      <AppText>{task.title}</AppText>
+      <AppText variant="taskLabel">{task.title}</AppText>
     </View>
   );
 }

@@ -25,7 +25,7 @@ export function PageHeader({
     <View style={styles.header}>
       <IconButton icon="chevron-back" accessibilityLabel={backLabel} onPress={onBack} />
       <View style={styles.title}>
-        <AppText variant="title" accessibilityRole="header" style={styles.text}>
+        <AppText variant="pageTitle" accessibilityRole="header" style={styles.text}>
           {title}
         </AppText>
         {subtitle && (

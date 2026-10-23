@@ -25,7 +25,7 @@ export default function TaskListScreen() {
           keyExtractor={(task) => task.id}
           renderItem={({ item }) => <TaskListRow task={item} />}
           renderSectionHeader={({ section }) => (
-            <AppText variant="secondary" tone="muted" style={styles.sectionHeading}>
+            <AppText variant="label" tone="muted" style={styles.sectionHeading}>
               {section.title}
             </AppText>
           )}

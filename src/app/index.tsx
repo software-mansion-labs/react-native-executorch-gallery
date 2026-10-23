@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   discovery: {
     paddingHorizontal: spacing.xl,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   browse: {
     minHeight: layout.touchTarget,

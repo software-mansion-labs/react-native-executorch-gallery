@@ -33,8 +33,8 @@ export function DestinationLink({ title, subtitle, icon, query }: DestinationLin
         >
           <Ionicons name={icon} size={iconSize.large} color={colors.muted} />
           <View style={styles.copy}>
-            <AppText variant="title">{title}</AppText>
-            <AppText variant="secondary" tone="muted">
+            <AppText variant="discoveryTitle">{title}</AppText>
+            <AppText variant="discoverySubtitle" tone="muted">
               {subtitle}
             </AppText>
           </View>
@@ -44,10 +44,11 @@ export function DestinationLink({ title, subtitle, icon, query }: DestinationLin
   );
 }
 
-const { spacing, radius } = tokens;
+const { spacing, radius, layout } = tokens;
 
 const styles = StyleSheet.create({
   card: {
+    minHeight: layout.homeCardMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
@@ -57,6 +58,6 @@ const styles = StyleSheet.create({
   },
   copy: {
     flex: 1,
-    gap: spacing.xxs,
+    gap: spacing.xs,
   },
 });

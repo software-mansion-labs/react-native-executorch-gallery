@@ -141,7 +141,7 @@ export function PhotoPicker({
           </>
         ) : (
           <View style={styles.placeholderContainer}>
-            <AppText variant="heading" numberOfLines={1} adjustsFontSizeToFit>
+            <AppText variant="taskHero" numberOfLines={1} adjustsFontSizeToFit>
               Find objects in a photo.
             </AppText>
           </View>
