@@ -7,46 +7,28 @@ import { AppText } from '@/components/AppText';
 import { tokens, useTheme } from '@/theme';
 
 type SweepingHeadlineProps = {
-  current: string;
-  next: string;
-  progress: Animated.Value;
+  headlines: readonly [string, string];
+  progress: readonly [Animated.Value, Animated.Value];
 };
 
 /**
- * Replaces a headline from left to right using the logo's animation clock.
+ * Alternates two stable text layers, revealing and hiding each from left to right.
+ * Updates only the hidden layer's text, avoiding a text swap at the wipe boundary.
  * Keeps the text masks static and moves their gradient content, allowing Android
  * to retain hardware rendering during navigation transitions.
  */
-export function SweepingHeadline({ current, next, progress }: SweepingHeadlineProps) {
+export function SweepingHeadline({ headlines, progress }: SweepingHeadlineProps) {
   const { colors } = useTheme();
   const [width, setWidth] = useState(0);
-  const maskWidth = width * 2 + heroWipe.featherWidth;
-  const locations = [0, width / maskWidth, (width + heroWipe.featherWidth) / maskWidth, 1] as const;
-  const translateX = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-width - heroWipe.featherWidth, 0],
-  });
-
-  const headlines = [
-    {
-      text: current,
-      colors: [
-        heroWipe.transparentColor,
-        heroWipe.transparentColor,
-        colors.text,
-        colors.text,
-      ] as const,
-    },
-    {
-      text: next,
-      colors: [
-        colors.text,
-        colors.text,
-        heroWipe.transparentColor,
-        heroWipe.transparentColor,
-      ] as const,
-    },
-  ];
+  const travel = width + heroWipe.featherWidth;
+  const maskWidth = travel * 2;
+  const locations = [width / maskWidth, 0.5, (travel + width) / maskWidth, 1] as const;
+  const gradientColors = [
+    heroWipe.transparentColor,
+    colors.text,
+    colors.text,
+    heroWipe.transparentColor,
+  ] as const;
 
   return (
     <View
@@ -55,7 +37,7 @@ export function SweepingHeadline({ current, next, progress }: SweepingHeadlinePr
       importantForAccessibility="no-hide-descendants"
     >
       <AppText variant="hero" style={[styles.text, width > 0 && styles.placeholder]}>
-        {current}
+        {headlines[0]}
       </AppText>
       {width > 0 &&
         headlines.map((headline, index) => (
@@ -65,14 +47,29 @@ export function SweepingHeadline({ current, next, progress }: SweepingHeadlinePr
             maskElement={
               <View style={styles.line}>
                 <AppText variant="hero" style={styles.text}>
-                  {headline.text}
+                  {headline}
                 </AppText>
               </View>
             }
           >
-            <Animated.View style={[styles.mask, { width: maskWidth, transform: [{ translateX }] }]}>
+            <Animated.View
+              style={[
+                styles.mask,
+                {
+                  width: maskWidth,
+                  transform: [
+                    {
+                      translateX: progress[index].interpolate({
+                        inputRange: [0, 1, 2],
+                        outputRange: [-maskWidth, -travel, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
               <LinearGradient
-                colors={headline.colors}
+                colors={gradientColors}
                 locations={locations}
                 start={heroWipe.start}
                 end={heroWipe.end}

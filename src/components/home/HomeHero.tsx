@@ -10,7 +10,7 @@ const HEADLINES = ['A little wonder.', 'A spark of magic.', 'A small marvel.', '
 
 /** Centers the mark and a quietly rotating headline without moving the discovery links. */
 export function HomeHero() {
-  const { shinePosition, headlineIndex, progress } = useHomeHeroAnimation();
+  const { shinePosition, headlineIndex, headlineProgress } = useHomeHeroAnimation();
   const headline = HEADLINES[headlineIndex % HEADLINES.length];
   const nextHeadline = HEADLINES[(headlineIndex + 1) % HEADLINES.length];
 
@@ -25,7 +25,10 @@ export function HomeHero() {
         accessibilityRole="header"
         accessibilityLabel={`${headline} All on your phone.`}
       >
-        <SweepingHeadline current={headline} next={nextHeadline} progress={progress} />
+        <SweepingHeadline
+          headlines={headlineIndex % 2 === 0 ? [headline, nextHeadline] : [nextHeadline, headline]}
+          progress={headlineProgress}
+        />
         <AppText variant="hero" style={styles.text}>
           All on your phone.
         </AppText>

@@ -2,8 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import type { AppearancePreference } from '@/context/AppearanceContext';
-import { useAppearance } from '@/hooks/useAppearance';
+import { useAppearance, type AppearancePreference } from '@/hooks/useAppearance';
 import { tokens, useTheme } from '@/theme';
 
 const OPTIONS: { value: AppearancePreference; label: string }[] = [
