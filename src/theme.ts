@@ -94,8 +94,8 @@ export const tokens = {
       fontWeight: '400' as const,
     },
     taskHero: {
-      fontSize: 28,
-      lineHeight: 36,
+      fontSize: 32,
+      lineHeight: 42,
       fontWeight: '400' as const,
       letterSpacing: -0.5,
     },

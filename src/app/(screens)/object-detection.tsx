@@ -48,9 +48,13 @@ function ObjectDetectionTask() {
       onLoadModel={controls.load}
       onUnloadModel={controls.unload}
       onDeleteModel={() => controls.remove(detector.resource?.modelPath)}
+      modelMenuVisible={controls.menuVisible}
+      onOpenModelMenu={controls.openMenu}
+      onCloseModelMenu={controls.closeMenu}
     >
       <PhotoPicker
         busy={busy || controls.deleting}
+        onChooseModel={controls.openMenu}
         onRun={run}
         canRun={!!image && detector.isReady && controls.loaded}
         running={busy}

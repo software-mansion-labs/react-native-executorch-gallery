@@ -4,10 +4,11 @@ import RNBlobUtil from 'react-native-blob-util';
 
 /**
  * Keeps model loading explicit and confirms deletion of its cached weights.
- * Returns the load gate, deletion state, error, and load/delete handlers.
+ * Returns the load gate, deletion state, error, model-menu state, and action handlers.
  * Pass the resolved local model path to remove; remote URLs are never deleted.
  */
 export function useModelControls() {
+  const [menuVisible, setMenuVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,5 +56,8 @@ export function useModelControls() {
     setLoaded(false);
   };
 
-  return { loaded, deleting, error, load, unload, remove };
+  const openMenu = () => setMenuVisible(true);
+  const closeMenu = () => setMenuVisible(false);
+
+  return { loaded, deleting, error, load, unload, remove, menuVisible, openMenu, closeMenu };
 }

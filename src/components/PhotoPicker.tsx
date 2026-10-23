@@ -6,6 +6,7 @@ import type { ImageBuffer } from 'react-native-executorch/cv';
 
 import { tokens, useTheme } from '@/theme';
 import { AppText } from '@/components/AppText';
+import { ActionButton } from '@/components/ActionButton';
 import { pickImage, skImageToBuffer } from '@/lib/image';
 
 export interface PickedImage {
@@ -47,6 +48,8 @@ export interface PhotoPickerProps {
   running?: boolean;
   result?: string;
   latency?: number | null;
+  /** Opens the model menu from the empty photo state. */
+  onChooseModel?: () => void;
 }
 
 /**
@@ -70,6 +73,7 @@ export function PhotoPicker({
   running = false,
   result,
   latency,
+  onChooseModel,
 }: PhotoPickerProps) {
   const { colors } = useTheme();
   const [uri, setUri] = useState<string | null>(null);
@@ -106,55 +110,63 @@ export function PhotoPicker({
 
   return (
     <View style={styles.container}>
-      <View
-        onLayout={(e) => {
-          const { width: w, height: h } = e.nativeEvent.layout;
-          if (w > 0 && h > 0) {
-            setViewportSize({ width: Math.round(w), height: Math.round(h) });
-          }
-        }}
-        style={[
-          styles.viewport,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        {image && viewW > 0 && viewH > 0 ? (
-          <>
-            <Canvas style={StyleSheet.absoluteFill}>
-              <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
-              {overlayImage && (
-                <SkiaImage
-                  image={overlayImage}
-                  fit="contain"
-                  x={0}
-                  y={0}
-                  width={viewW}
-                  height={viewH}
-                  opacity={overlayOpacity}
-                />
-              )}
-            </Canvas>
-            {renderOverlay?.(transform)}
-          </>
-        ) : (
+      <View style={styles.stage}>
+        <View
+          onLayout={(e) => {
+            const { width: w, height: h } = e.nativeEvent.layout;
+            if (w > 0 && h > 0) {
+              setViewportSize({ width: Math.round(w), height: Math.round(h) });
+            }
+          }}
+          style={[
+            styles.viewport,
+            {
+              backgroundColor: image ? colors.surface : colors.background,
+            },
+          ]}
+        >
+          {image && viewW > 0 && viewH > 0 ? (
+            <>
+              <Canvas style={StyleSheet.absoluteFill}>
+                <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
+                {overlayImage && (
+                  <SkiaImage
+                    image={overlayImage}
+                    fit="contain"
+                    x={0}
+                    y={0}
+                    width={viewW}
+                    height={viewH}
+                    opacity={overlayOpacity}
+                  />
+                )}
+              </Canvas>
+              {renderOverlay?.(transform)}
+            </>
+          ) : null}
+        </View>
+
+        <View style={styles.result} accessibilityLiveRegion="polite">
+          <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
+            {result ?? ' '}
+          </AppText>
+          <AppText variant="caption" tone="muted" numberOfLines={1}>
+            {latency != null ? `${latency} ms` : ' '}
+          </AppText>
+        </View>
+        {!image && (
           <View style={styles.placeholderContainer}>
             <AppText variant="taskHero" numberOfLines={1} adjustsFontSizeToFit>
               Find objects in a photo.
             </AppText>
+            <AppText variant="secondary" tone="muted" style={styles.placeholderDescription}>
+              See what’s in your photo, with labels and boxes around each object.
+            </AppText>
+            {onChooseModel && (
+              <ActionButton label="Choose model" onPress={onChooseModel} disabled={busy} />
+            )}
           </View>
         )}
-      </View>
-
-      <View style={styles.result} accessibilityLiveRegion="polite">
-        <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
-          {result ?? ' '}
-        </AppText>
-        <AppText variant="caption" tone="muted" numberOfLines={1}>
-          {latency != null ? `${latency} ms` : ' '}
-        </AppText>
       </View>
       <View style={styles.buttons}>
         <PickButton
@@ -230,6 +242,7 @@ function PickButton({
 const { spacing, radius, layout, opacity } = tokens;
 const styles = StyleSheet.create({
   container: { flex: 1, gap: spacing.lg, minHeight: 0 },
+  stage: { flex: 1, gap: spacing.lg, minHeight: 0 },
   viewport: {
     flex: 1,
     borderRadius: radius.card,
@@ -239,11 +252,13 @@ const styles = StyleSheet.create({
     minHeight: layout.photoMinHeight,
   },
   placeholderContainer: {
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    gap: spacing.xl,
   },
+  placeholderDescription: { textAlign: 'center', paddingHorizontal: spacing.xl },
   result: {
     flexDirection: 'row',
     alignItems: 'center',

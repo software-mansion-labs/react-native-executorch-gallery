@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState, type PropsWithChildren } from 'react';
+import type { PropsWithChildren } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { ActionButton } from '@/components/ActionButton';
@@ -20,6 +20,9 @@ type TaskScreenProps = PropsWithChildren<{
   onLoadModel: () => void;
   onUnloadModel: () => void;
   onDeleteModel: () => void;
+  modelMenuVisible: boolean;
+  onOpenModelMenu: () => void;
+  onCloseModelMenu: () => void;
 }>;
 
 /** Shared task layout with a centered header and model controls in an overflow sheet. */
@@ -34,10 +37,12 @@ export function TaskScreen({
   onLoadModel,
   onUnloadModel,
   onDeleteModel,
+  modelMenuVisible,
+  onOpenModelMenu,
+  onCloseModelMenu,
   children,
 }: TaskScreenProps) {
   const { colors } = useTheme();
-  const [modelsVisible, setModelsVisible] = useState(false);
   const modelError =
     status.error instanceof Error
       ? status.error.message
@@ -67,7 +72,7 @@ export function TaskScreen({
           <IconButton
             icon="ellipsis-horizontal"
             accessibilityLabel="Manage model"
-            onPress={() => setModelsVisible(true)}
+            onPress={onOpenModelMenu}
             disabled={busy || deleting}
           />
         }
@@ -80,7 +85,7 @@ export function TaskScreen({
           </AppText>
         )}
       </ScrollView>
-      <BottomSheet title="Model" visible={modelsVisible} onClose={() => setModelsVisible(false)}>
+      <BottomSheet title="Model" visible={modelMenuVisible} onClose={onCloseModelMenu}>
         <View style={styles.modelSheet}>
           <AppText variant="title">{subtitle}</AppText>
           <AppText variant="secondary" tone="muted" accessibilityLiveRegion="polite">
