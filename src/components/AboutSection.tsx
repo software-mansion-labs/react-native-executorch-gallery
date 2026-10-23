@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { ABOUT_LINKS, APP_VERSION, EXECUTORCH_VERSION } from '@/data/appInfo';
+import { ABOUT_LINKS, APP_VERSION, EXECUTORCH_VERSION } from '@/data/app-info';
 import { useExternalLink } from '@/hooks/useExternalLink';
 import { tokens, useTheme } from '@/theme';
 
