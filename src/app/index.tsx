@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Pressable, ScrollView, View } from 'react-native';
 
@@ -40,14 +40,16 @@ export default function HomeScreen() {
               icon="mic-outline"
               query="speech"
             />
-            <Pressable
-              onPress={() => router.push('/tasks')}
-              accessibilityRole="link"
-              style={({ pressed }) => [styles.browse, pressed && styles.pressed]}
-            >
-              <AppText variant="body">Browse all demos</AppText>
-              <Ionicons name="arrow-forward" size={iconSize.small} color={colors.text} />
-            </Pressable>
+            <Link href="/tasks" asChild>
+              <Pressable accessibilityRole="link" style={styles.browse}>
+                {({ pressed }) => (
+                  <View style={[styles.browseContent, pressed && styles.pressed]}>
+                    <AppText variant="body">Browse all demos</AppText>
+                    <Ionicons name="arrow-forward" size={iconSize.small} color={colors.text} />
+                  </View>
+                )}
+              </Pressable>
+            </Link>
           </View>
         </View>
       </ScrollView>
@@ -77,11 +79,14 @@ const styles = StyleSheet.create({
   },
   browse: {
     minHeight: layout.touchTarget,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
     paddingVertical: spacing.lg,
+  },
+  browseContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   pressed: {
     opacity: opacity.pressed,

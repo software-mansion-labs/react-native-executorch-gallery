@@ -15,18 +15,10 @@ export default function TaskListScreen() {
   const [query, setQuery] = useState(params.query ?? '');
   const sections = filterTasks(query);
 
-  const goBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/');
-    }
-  };
-
   return (
     <ScreenWrapper>
       <View style={styles.content}>
-        <PageHeader title="All demos" onBack={goBack} />
+        <PageHeader title="All demos" onBack={() => router.dismissTo('/')} />
         <SearchField value={query} onChangeText={setQuery} />
         <SectionList
           sections={sections}

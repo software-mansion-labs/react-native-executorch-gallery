@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Link } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { StyleSheet, Pressable, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -7,8 +7,6 @@ import Animated from 'react-native-reanimated';
 import { AppText } from '@/components/AppText';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
 import { tokens, useTheme } from '@/theme';
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type DestinationLinkProps = {
   title: string;
@@ -23,27 +21,26 @@ export function DestinationLink({ title, subtitle, icon, query }: DestinationLin
   const { colors, iconSize } = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
 
-  const openTaskList = () => {
-    router.push({ pathname: '/tasks', params: { query } });
-  };
-
   return (
-    <AnimatedPressable
-      onPress={openTaskList}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      accessibilityRole="link"
-      accessibilityLabel={`${title}. ${subtitle}`}
-      style={[styles.card, { backgroundColor: colors.surface }, animatedStyle]}
-    >
-      <Ionicons name={icon} size={iconSize.large} color={colors.muted} />
-      <View style={styles.copy}>
-        <AppText variant="title">{title}</AppText>
-        <AppText variant="secondary" tone="muted">
-          {subtitle}
-        </AppText>
-      </View>
-    </AnimatedPressable>
+    <Animated.View style={animatedStyle}>
+      <Link href={{ pathname: '/tasks', params: { query } }} asChild>
+        <Pressable
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          accessibilityRole="link"
+          accessibilityLabel={`${title}. ${subtitle}`}
+          style={{ ...styles.card, backgroundColor: colors.surface }}
+        >
+          <Ionicons name={icon} size={iconSize.large} color={colors.muted} />
+          <View style={styles.copy}>
+            <AppText variant="title">{title}</AppText>
+            <AppText variant="secondary" tone="muted">
+              {subtitle}
+            </AppText>
+          </View>
+        </Pressable>
+      </Link>
+    </Animated.View>
   );
 }
 
