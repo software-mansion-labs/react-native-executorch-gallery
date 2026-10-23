@@ -4,7 +4,7 @@ import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const directory = resolve(root, 'design');
+const directory = resolve(root, 'archive/design');
 const source = resolve(directory, 'review.html');
 const destination = resolve(directory, 'review-standalone.html');
 const mime = {

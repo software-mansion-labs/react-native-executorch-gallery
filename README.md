@@ -28,18 +28,22 @@ Built with [`react-native-executorch`](https://github.com/software-mansion/react
 ## Getting Started
 
 ```bash
-npm install
+npm run deps:local
 npm run ios       # or npm run android
 ```
 
-### Redesign baseline
+### Initial rebuild
 
-The previous app source is preserved in [`archive/src`](archive/src). This
-commit records the design and archive before the new app is implemented, so it
-does not contain a runnable application entry point.
+The new app currently includes the home screen and a searchable task catalogue.
+Task entries are placeholders; model management and inference screens will follow.
+Shared design tokens live in `src/theme.ts`, feature components are grouped under
+`src/components/home` and `src/components/task-list`, and hooks live in `src/hooks`.
 
-The approved interactive design is [`design/review.html`](design/review.html).
-For sharing, send **[`design/review-standalone.html`](design/review-standalone.html)**;
+The previous app source is preserved in [`archive/src`](archive/src). The screenshots
+above show that archived app.
+
+The approved interactive design is [`archive/design/review.html`](archive/design/review.html).
+For sharing, send **[`archive/design/review-standalone.html`](archive/design/review-standalone.html)**;
 it embeds its images and fonts and works offline as a single file. Rebuild it
 from the modular review with `node scripts/build-design-review.mjs`.
 
@@ -74,7 +78,7 @@ rebuild. The library's prebuilt ExecuTorch binaries follow its `nativeLibsVersio
 pin; building the sibling C++ ExecuTorch fork is a separate workflow.
 
 The visual review, interactive design proposal, and simulator screenshots are in
-[`design/review.html`](design/review.html). Open it in a browser; its proposed UI
+[`archive/design/review.html`](archive/design/review.html). Open it in a browser; its proposed UI
 is a mockup, while the “Current app” section contains actual simulator captures.
 
 ## Requirements
@@ -84,8 +88,7 @@ is a mockup, while the “Current app” section contains actual simulator captu
 - **Android 13.0+**
 
 > [!IMPORTANT]
-> The app requires a development build (Expo Go is not supported). Models are
-> downloaded on first use and then run fully offline.
+> The app requires a development build (Expo Go is not supported). The initial rebuild currently provides navigation and catalogue placeholders.
 
 ## Documentation
 
