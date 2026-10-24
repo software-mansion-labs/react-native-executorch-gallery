@@ -1,14 +1,14 @@
-import { type ComponentProps, type ReactNode, useEffect, useState } from 'react';
+import { type ComponentProps, type ReactNode, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
-import { Canvas, Image as SkiaImage, useImage, type SkImage } from '@shopify/react-native-skia';
+import { Canvas, Image as SkiaImage, type SkImage } from '@shopify/react-native-skia';
 import type { ImageBuffer } from 'react-native-executorch/cv';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { tokens, useTheme } from '@/theme';
 import { AppText } from '@/components/AppText';
 import { TaskHero } from '@/components/TaskHero';
-import { pickImage, skImageToBuffer } from '@/lib/image';
+import { usePhotoInput } from '@/hooks/usePhotoInput';
 
 export interface PickedImage {
   /** Local file URI of the captured or selected image. */
@@ -88,23 +88,8 @@ export function PhotoPicker({
   setupAction,
 }: PhotoPickerProps) {
   const { colors } = useTheme();
-  const [uri, setUri] = useState<string | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const image = useImage(uri, () => onPick(null));
-
-  const choose = async (source: 'library' | 'camera') => {
-    const widthToUse = targetWidth === null ? undefined : targetWidth;
-    const picked = await pickImage(source, widthToUse);
-    if (!picked) return;
-    onPick(null);
-    setUri(picked);
-  };
-
-  useEffect(() => {
-    if (!image || !uri) return;
-    onPick({ uri, buffer: skImageToBuffer(image), width: image.width(), height: image.height() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, uri]);
+  const { image, uri, choose, picking } = usePhotoInput(onPick, targetWidth);
 
   const { width: viewW, height: viewH } = viewportSize;
   const iw = image?.width() ?? 0;
@@ -187,13 +172,13 @@ export function PhotoPicker({
         <PickButton
           iconName="images-outline"
           label="Choose photo"
-          disabled={busy || !canPick}
+          disabled={busy || picking || !canPick}
           onPress={() => choose('library')}
         />
         <PickButton
           iconName="camera-outline"
           label="Take photo"
-          disabled={busy || !canPick}
+          disabled={busy || picking || !canPick}
           onPress={() => choose('camera')}
         />
         {onRun && (

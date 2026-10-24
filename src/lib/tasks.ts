@@ -26,6 +26,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'LLM conversation assistant LFM',
       },
       {
+        id: 'image-description',
+        href: '/image-description',
+        title: 'Image descriptions',
+        keywords: 'VLM vision language photo caption visual chat LFM',
+      },
+      {
         id: 'text-to-image',
         title: 'Text to image',
         keywords: 'generate pictures SDXS DreamShaper',

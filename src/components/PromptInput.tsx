@@ -15,6 +15,7 @@ type PromptInputProps = {
   suggestions?: readonly { label: string; prompt: string }[];
   reserveSuggestionSpace?: boolean;
   leadingAccessory?: ReactNode;
+  attachment?: ReactNode;
   placeholder?: string;
   disabled?: boolean;
   canSubmit: boolean;
@@ -30,6 +31,7 @@ export function PromptInput({
   suggestions,
   reserveSuggestionSpace = false,
   leadingAccessory,
+  attachment,
   placeholder = 'Ask anything…',
   disabled = false,
   canSubmit,
@@ -82,43 +84,46 @@ export function PromptInput({
         </View>
       )}
       <View style={[styles.composer, { backgroundColor: colors.surface }]}>
-        <View style={styles.inputSlot}>
-          <TextInput
-            ref={input}
-            value={value}
-            onChangeText={onChangeText}
-            placeholder={placeholder}
-            placeholderTextColor={colors.muted}
-            cursorColor={colors.accent}
-            selectionColor={colors.accent}
-            accessibilityLabel="Message"
-            accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
-            multiline
-            editable={!disabled && !isGenerating}
-            style={[styles.input, { color: colors.text }]}
-          />
+        {attachment && <View style={styles.attachment}>{attachment}</View>}
+        <View style={styles.composerRow}>
+          <View style={styles.inputSlot}>
+            <TextInput
+              ref={input}
+              value={value}
+              onChangeText={onChangeText}
+              placeholder={placeholder}
+              placeholderTextColor={colors.muted}
+              cursorColor={colors.accent}
+              selectionColor={colors.accent}
+              accessibilityLabel="Message"
+              accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
+              multiline
+              editable={!disabled && !isGenerating}
+              style={[styles.input, { color: colors.text }]}
+            />
+          </View>
+          <AnimatedPressable
+            accessibilityRole="button"
+            accessibilityLabel={isGenerating ? 'Stop generating' : 'Send message'}
+            accessibilityState={{ disabled: !active }}
+            disabled={!active}
+            onPress={isGenerating ? onStop : onSubmit}
+            onPressIn={press.onPressIn}
+            onPressOut={press.onPressOut}
+            style={[
+              styles.send,
+              { backgroundColor: colors.accent },
+              !active && styles.disabled,
+              press.animatedStyle,
+            ]}
+          >
+            <Ionicons
+              name={isGenerating ? 'stop' : 'arrow-up'}
+              size={iconSize.medium}
+              color={colors.onAccent}
+            />
+          </AnimatedPressable>
         </View>
-        <AnimatedPressable
-          accessibilityRole="button"
-          accessibilityLabel={isGenerating ? 'Stop generating' : 'Send message'}
-          accessibilityState={{ disabled: !active }}
-          disabled={!active}
-          onPress={isGenerating ? onStop : onSubmit}
-          onPressIn={press.onPressIn}
-          onPressOut={press.onPressOut}
-          style={[
-            styles.send,
-            { backgroundColor: colors.accent },
-            !active && styles.disabled,
-            press.animatedStyle,
-          ]}
-        >
-          <Ionicons
-            name={isGenerating ? 'stop' : 'arrow-up'}
-            size={iconSize.medium}
-            color={colors.onAccent}
-          />
-        </AnimatedPressable>
       </View>
     </View>
   );
@@ -148,12 +153,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
     borderRadius: radius.sheet,
     padding: spacing.sm,
     gap: spacing.sm,
   },
+  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  attachment: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   input: {
     fontFamily,
     fontSize: typography.body.fontSize,

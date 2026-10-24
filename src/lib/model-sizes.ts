@@ -1,5 +1,7 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'lfm_2_5_vl_450m_xnnpack_8da4w.pte': 648_867_584,
+  'lfm_2_5_vl_450m_mlx_int4.pte': 582_183_552,
   'lfm_2_5_2_6b_xnnpack_8da4w.pte': 1_789_728_256,
   'lfm_2_5_2_6b_mlx_int4.pte': 1_665_769_984,
   'pp_ocrv6_xnnpack_int8.pte': 23_890_904,

@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import type { useLLMChatSession } from 'react-native-executorch';
 
 import { AppText } from '@/components/AppText';
+import { ChatPhoto } from '@/components/ChatPhoto';
 import { ChatContext } from '@/components/ChatContext';
 import { ChatDisclosure } from '@/components/ChatDisclosure';
 import { ChatThinking } from '@/components/ChatThinking';
@@ -19,7 +20,7 @@ import type { ModelControls } from '@/hooks/useModelControls';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
 import { tokens, useTheme } from '@/theme';
 
-const suggestions = [
+const defaultSuggestions = [
   { label: 'Calculate', prompt: 'What’s 18% of 245?' },
   { label: 'Convert', prompt: 'Convert 72°F to Celsius.' },
   { label: 'Time', prompt: 'What time is it in Tokyo?' },
@@ -36,6 +37,12 @@ export function ChatView({
   session,
   model,
   onNewChat,
+  heroTitle = 'Let’s talk it through.',
+  heroDescription = 'A conversation, right on your device.',
+  suggestions = defaultSuggestions,
+  canSend = true,
+  composerAccessory,
+  contextAccessory,
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
@@ -46,6 +53,12 @@ export function ChatView({
   session: ReturnType<typeof useLLMChatSession>;
   model: ModelControls;
   onNewChat: () => void;
+  heroTitle?: string;
+  heroDescription?: string;
+  suggestions?: readonly { label: string; prompt: string }[];
+  canSend?: boolean;
+  composerAccessory?: ReactNode;
+  contextAccessory?: ReactNode;
 }) {
   const { colors } = useTheme();
   const { keyboardStyle, heroStyle } = useChatKeyboard();
@@ -85,47 +98,60 @@ export function ChatView({
         >
           {turns.map(presentChatTurn).map((turn, turnIndex) => (
             <View key={turnIndex} style={styles.turn}>
-              <View style={[styles.question, { backgroundColor: colors.surface }]}>
+              <View
+                style={[
+                  styles.question,
+                  turn.imageUri && styles.imageQuestion,
+                  { backgroundColor: colors.surface },
+                ]}
+              >
+                {turn.imageUri && <ChatPhoto uri={turn.imageUri} />}
                 <AppText selectable>{turn.question}</AppText>
               </View>
-              <Animated.View
-                entering={answerEntrance}
-                style={[styles.answer, { backgroundColor: colors.surface }]}
-              >
-                {(turn.thinking || turn.pending) && (
-                  <ChatThinking
-                    text={turn.thinking}
-                    active={turn.pending && turn.reasoning}
-                    onToggle={onDisclosureToggle}
-                  />
-                )}
-                {turn.tools.map((tool, index) => {
-                  return (
-                    <ChatDisclosure
-                      key={index}
-                      icon="tool"
-                      label={`${tool.name} · ${tool.detail.includes('"error"') ? 'Couldn’t complete' : 'Completed'}`}
+              {(turn.responses.some(Boolean) || turn.tools.length > 0 || !!turn.error) && (
+                <Animated.View
+                  entering={answerEntrance}
+                  style={[styles.answer, { backgroundColor: colors.surface }]}
+                >
+                  {(turn.thinking || (turn.pending && !turn.plainResponse)) && (
+                    <ChatThinking
+                      text={turn.thinking}
+                      active={turn.pending && turn.reasoning}
                       onToggle={onDisclosureToggle}
-                    >
-                      <ChatToolDetails tool={tool} />
-                    </ChatDisclosure>
-                  );
-                })}
-                {!!turn.answer && (
-                  <Animated.View entering={answerEntrance}>
-                    <ChatText>{turn.answer}</ChatText>
-                  </Animated.View>
-                )}
-                {turn.error && (
-                  <Animated.View entering={answerEntrance}>
-                    <ChatResponseError
-                      message={turn.error}
-                      disabled={busy}
-                      onEditPrompt={() => onDraftChange(turn.question)}
                     />
-                  </Animated.View>
-                )}
-              </Animated.View>
+                  )}
+                  {turn.tools.map((tool, index) => {
+                    return (
+                      <ChatDisclosure
+                        key={index}
+                        icon="tool"
+                        label={
+                          tool.detail.includes('"error"')
+                            ? `${tool.name} · Couldn’t complete`
+                            : tool.name
+                        }
+                        onToggle={onDisclosureToggle}
+                      >
+                        <ChatToolDetails tool={tool} />
+                      </ChatDisclosure>
+                    );
+                  })}
+                  {!!turn.answer && (
+                    <Animated.View entering={answerEntrance}>
+                      <ChatText>{turn.answer}</ChatText>
+                    </Animated.View>
+                  )}
+                  {turn.error && (
+                    <Animated.View entering={answerEntrance}>
+                      <ChatResponseError
+                        message={turn.error}
+                        disabled={busy}
+                        onEditPrompt={() => onDraftChange(turn.question)}
+                      />
+                    </Animated.View>
+                  )}
+                </Animated.View>
+              )}
               {turn.pending && <ThinkingIndicator />}
             </View>
           ))}
@@ -134,7 +160,7 @@ export function ChatView({
           value={draft}
           onChangeText={onDraftChange}
           disabled={!ready}
-          canSubmit={ready && !!draft.trim() && !busy}
+          canSubmit={ready && canSend && !!draft.trim() && !busy}
           isGenerating={busy}
           onStop={onStop}
           onSubmit={() => {
@@ -144,15 +170,20 @@ export function ChatView({
           }}
           suggestions={ready && !turns.length ? suggestions : undefined}
           reserveSuggestionSpace={!turns.length}
+          attachment={ready ? composerAccessory : undefined}
           leadingAccessory={
             ready ? (
-              <Animated.View entering={answerEntrance}>
+              <Animated.View
+                entering={answerEntrance}
+                style={[styles.contextActions, !!contextAccessory && styles.photoActions]}
+              >
                 <ChatContext
                   session={session}
                   busy={busy}
                   hasMessages={!!turns.length}
                   onNewChat={onNewChat}
                 />
+                {contextAccessory}
               </Animated.View>
             ) : undefined
           }
@@ -163,8 +194,8 @@ export function ChatView({
             pointerEvents={ready ? 'none' : 'box-none'}
           >
             <TaskHero
-              title="Let’s talk it through."
-              description="A conversation, right on your device."
+              title={heroTitle}
+              description={heroDescription}
               setup={<ModelSetup model={model} status={session} />}
             />
           </Animated.View>
@@ -207,4 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
+  imageQuestion: { width: '90%', gap: spacing.md },
+  contextActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  photoActions: { flex: 1, justifyContent: 'space-between' },
 });

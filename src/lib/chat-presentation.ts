@@ -4,6 +4,8 @@ export type ChatTurn = {
   question: string;
   responses: string[];
   pending: boolean;
+  imageUri?: string;
+  plainResponse?: boolean;
   error?: string;
   tools: { name: string; detail: string; arguments: Record<string, unknown> }[];
 };
@@ -15,7 +17,11 @@ export function updateLastTurn(turns: ChatTurn[], update: (turn: ChatTurn) => Ch
 
 /** Joins reasoning across tool rounds and displays only the latest answer. */
 export function presentChatTurn(turn: ChatTurn) {
-  const rounds = turn.responses.map(splitLfmResponse);
+  const rounds = turn.responses.map((response) =>
+    turn.plainResponse
+      ? { thinking: '', answer: response.replace(/<\|[\s\S]*$/g, '').trim(), reasoning: false }
+      : splitLfmResponse(response)
+  );
   return {
     ...turn,
     thinking: rounds
@@ -23,6 +29,6 @@ export function presentChatTurn(turn: ChatTurn) {
       .filter(Boolean)
       .join('\n\n'),
     answer: rounds.at(-1)?.answer ?? '',
-    reasoning: rounds.at(-1)?.reasoning ?? true,
+    reasoning: rounds.at(-1)?.reasoning ?? !turn.plainResponse,
   };
 }

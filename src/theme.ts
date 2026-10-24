@@ -167,6 +167,7 @@ export const tokens = {
     modelProgressCornerInset: 6,
     modelProgressSides: 6,
     chatInputMaxHeight: 144,
+    chatPhotoHeight: 180,
     chatScrollThreshold: 96,
     contextGaugeStroke: 1.5,
     contextMeterHeight: 4,
