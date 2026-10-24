@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
-import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
+import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { usePromptInputSize } from '@/hooks/usePromptInputSize';
 import { tokens, useTheme } from '@/theme';
 
@@ -42,9 +42,9 @@ export function PromptInput({
 }: PromptInputProps) {
   const { colors, iconSize } = useTheme();
   const input = useRef<TextInput>(null);
-  const press = useCardPressAnimation();
   const sizing = usePromptInputSize(value);
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
+  const press = useCircularButtonPressAnimation(!active);
   return (
     <View style={styles.root}>
       {(reserveSuggestionSpace || !!suggestions?.length || !!leadingAccessory) && (
@@ -131,12 +131,7 @@ export function PromptInput({
             onPress={isGenerating ? onStop : onSubmit}
             onPressIn={press.onPressIn}
             onPressOut={press.onPressOut}
-            style={[
-              styles.send,
-              { backgroundColor: colors.accent },
-              !active && styles.disabled,
-              press.animatedStyle,
-            ]}
+            style={[styles.send, { backgroundColor: colors.accent }, press.animatedStyle]}
           >
             <Ionicons
               name={isGenerating ? 'stop' : 'arrow-up'}
@@ -205,5 +200,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pressed: { opacity: opacity.pressed },
-  disabled: { opacity: opacity.disabled },
 });

@@ -49,8 +49,13 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
           exiting={preparationExit}
         >
           <CircularProgress progress={progress} indeterminate={preparing} />
-          <AppText variant="discoverySubtitle" tone="muted" accessibilityLiveRegion="polite">
-            {preparing ? 'Preparing model…' : `Downloading · ${Math.round(progress)}%`}
+          <AppText
+            variant="discoverySubtitle"
+            tone="muted"
+            accessibilityLiveRegion="polite"
+            style={styles.progressLabel}
+          >
+            {preparing ? 'Preparing model…' : `${Math.round(progress)}%`}
           </AppText>
         </Animated.View>
       </View>
@@ -121,5 +126,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   progressArea: { alignItems: 'center', gap: spacing.sm },
+  progressLabel: { fontVariant: ['tabular-nums'] },
   disabled: { opacity: opacity.disabled },
 });

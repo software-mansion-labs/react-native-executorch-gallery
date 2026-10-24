@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
+import { CircularProgress } from '@/components/CircularProgress';
+import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { tokens, useTheme } from '@/theme';
 
-/** Circular photo action using the same compression and spring release as home discovery cards. */
+/** Circular photo action with a firm, softly dimmed press response. */
 export function PhotoActionButton({
   iconName,
   label,
@@ -25,7 +26,7 @@ export function PhotoActionButton({
   size?: 'small' | 'large';
 }) {
   const { colors, iconSize } = useTheme();
-  const press = useCardPressAnimation();
+  const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -39,12 +40,17 @@ export function PhotoActionButton({
         styles.button,
         size === 'small' ? styles.small : styles.large,
         { backgroundColor: primary ? colors.accent : colors.surface },
-        disabled && !loading && styles.disabled,
         press.animatedStyle,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={primary ? colors.onAccent : colors.text} />
+        <CircularProgress
+          progress={100}
+          indeterminate
+          size={size === 'small' ? iconSize.medium : iconSize.large}
+          color={primary ? colors.onAccent : colors.text}
+          accessible={false}
+        />
       ) : (
         <Ionicons
           name={iconName}
@@ -56,10 +62,9 @@ export function PhotoActionButton({
   );
 }
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-const { layout, radius, opacity } = tokens;
+const { layout, radius } = tokens;
 const styles = StyleSheet.create({
   button: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
   small: { width: layout.touchTarget, height: layout.touchTarget },
   large: { width: layout.photoControlSize, height: layout.photoControlSize },
-  disabled: { opacity: opacity.disabled },
 });

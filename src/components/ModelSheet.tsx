@@ -35,7 +35,7 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
       : loading
         ? status.resource
           ? 'Preparing model…'
-          : `Downloading · ${Math.round(status.downloadProgress)}%`
+          : `Downloading… ${Math.round(status.downloadProgress)}%`
         : model.storedBytes === undefined
           ? 'Checking model…'
           : model.storedBytes
