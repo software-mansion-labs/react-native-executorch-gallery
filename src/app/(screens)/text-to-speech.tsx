@@ -32,6 +32,15 @@ function TextToSpeechTask() {
     }
   };
 
+  const replay = async () => {
+    setError(null);
+    try {
+      await playback.replay();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+
   return (
     <TaskScreen
       title="Text to speech"
@@ -45,6 +54,7 @@ function TextToSpeechTask() {
         input={input}
         onInputChange={setInput}
         onRun={run}
+        onReplay={replay}
         playback={playback}
         model={model}
         status={tts}

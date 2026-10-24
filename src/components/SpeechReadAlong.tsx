@@ -27,7 +27,16 @@ const Word = memo(function Word({ text, active }: { text: string; active: boolea
   const style = useAnimatedStyle(() => ({
     color: interpolateColor(emphasis.get(), [0, 1], [colors.text, colors.accent]),
   }));
-  return <Animated.Text style={style}>{text}</Animated.Text>;
+  return (
+    <Animated.Text
+      style={[
+        style,
+        { textDecorationLine: active ? 'underline' : 'none', textDecorationColor: colors.accent },
+      ]}
+    >
+      {text}
+    </Animated.Text>
+  );
 });
 
 /** Keeps the input's exact spacing and punctuation while emphasizing only the word currently playing. */
