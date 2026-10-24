@@ -6,7 +6,6 @@ import RNBlobUtil from 'react-native-blob-util';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
-import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { useChatDisclosure } from '@/hooks/useChatDisclosure';
 import { tokens, useTheme } from '@/theme';
 import icons from '@/assets/icons/chat-icons.json';
@@ -40,7 +39,6 @@ export function ChatDisclosure({
         accessibilityState={{ expanded, busy: active }}
         style={styles.toggle}
       >
-        {active && <ThinkingIndicator />}
         {icon && (
           <Image
             source={{

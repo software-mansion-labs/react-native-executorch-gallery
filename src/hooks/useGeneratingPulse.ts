@@ -3,7 +3,6 @@ import {
   cancelAnimation,
   Easing,
   ReduceMotion,
-  useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
   withRepeat,
@@ -12,31 +11,26 @@ import {
 
 import { tokens } from '@/theme';
 
-/** Gently breathes an active generation icon, resets on completion, and respects Reduce Motion. */
-export function useGeneratingPulse(active: boolean) {
+/** Returns a repeating UI-thread phase for staggered activity dots and the Reduce Motion preference. */
+export function useGeneratingPulse() {
   const phase = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   useEffect(() => {
-    phase.set(0);
-    if (active && !reducedMotion) {
-      phase.set(
-        withRepeat(
-          withTiming(1, {
-            duration: tokens.motion.generatingPulseDuration,
-            easing: Easing.inOut(Easing.sin),
-            reduceMotion: ReduceMotion.System,
-          }),
-          -1,
-          true,
-          undefined,
-          ReduceMotion.System
-        )
-      );
-    }
+    if (reducedMotion) return;
+    phase.set(
+      withRepeat(
+        withTiming(1, {
+          duration: tokens.motion.generatingPulseDuration,
+          easing: Easing.linear,
+          reduceMotion: ReduceMotion.System,
+        }),
+        -1,
+        false,
+        undefined,
+        ReduceMotion.System
+      )
+    );
     return () => cancelAnimation(phase);
-  }, [active, reducedMotion, phase]);
-  return useAnimatedStyle(() => ({
-    opacity: 1 - phase.get() * (1 - tokens.motion.generatingPulseOpacity),
-    transform: [{ scale: 1 - phase.get() * (1 - tokens.motion.generatingPulseScale) }],
-  }));
+  }, [reducedMotion, phase]);
+  return { phase, reducedMotion };
 }

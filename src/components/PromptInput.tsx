@@ -5,7 +5,6 @@ import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
-import { useGeneratingPulse } from '@/hooks/useGeneratingPulse';
 import { tokens, useTheme } from '@/theme';
 
 type PromptInputProps = {
@@ -39,7 +38,6 @@ export function PromptInput({
   const { colors, iconSize } = useTheme();
   const input = useRef<TextInput>(null);
   const press = useCardPressAnimation();
-  const generatingPulse = useGeneratingPulse(isGenerating);
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
   return (
     <View style={styles.root}>
@@ -115,13 +113,11 @@ export function PromptInput({
             press.animatedStyle,
           ]}
         >
-          <Animated.View style={isGenerating ? generatingPulse : undefined}>
-            <Ionicons
-              name={isGenerating ? 'stop' : 'arrow-up'}
-              size={iconSize.medium}
-              color={colors.onAccent}
-            />
-          </Animated.View>
+          <Ionicons
+            name={isGenerating ? 'stop' : 'arrow-up'}
+            size={iconSize.medium}
+            color={colors.onAccent}
+          />
         </AnimatedPressable>
       </View>
     </View>

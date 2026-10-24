@@ -13,6 +13,7 @@ import { ChatResponseError } from '@/components/ChatResponseError';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
+import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { presentChatTurn, type ChatTurn } from '@/lib/chat-presentation';
 import type { ModelControls } from '@/hooks/useModelControls';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
@@ -125,6 +126,7 @@ export function ChatView({
                   </Animated.View>
                 )}
               </Animated.View>
+              {turn.pending && <ThinkingIndicator />}
             </View>
           ))}
         </ScrollView>
@@ -161,7 +163,7 @@ export function ChatView({
             pointerEvents={ready ? 'none' : 'box-none'}
           >
             <TaskHero
-              title="Let’s think it through."
+              title="Let’s talk it through."
               description="A conversation, right on your device."
               setup={<ModelSetup model={model} status={session} />}
             />
