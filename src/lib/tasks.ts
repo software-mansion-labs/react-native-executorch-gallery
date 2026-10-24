@@ -111,6 +111,7 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'text-to-speech',
+        href: '/text-to-speech',
         title: 'Text to speech',
         keywords: 'synthesis speak Kokoro',
       },

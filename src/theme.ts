@@ -70,6 +70,11 @@ export const tokens = {
   },
   fontFamily: Platform.select({ ios: 'System', default: 'sans-serif' }),
   typography: {
+    readAlong: {
+      fontSize: 24,
+      lineHeight: 36,
+      fontWeight: '400' as const,
+    },
     settingsBody: {
       fontSize: 15,
       lineHeight: 22,

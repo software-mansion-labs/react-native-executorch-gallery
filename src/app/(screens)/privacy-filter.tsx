@@ -23,10 +23,12 @@ function PrivacyFilterTask() {
     if (busy || model.deleting) return;
     setBusy(true);
     setError(null);
+    const text = input;
+    setInput('');
     try {
       const started = performance.now();
-      const entities = await filter.detectPii(input);
-      setResult({ text: input, entities, latency: Math.round(performance.now() - started) });
+      const entities = await filter.detectPii(text);
+      setResult({ text, entities, latency: Math.round(performance.now() - started) });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {

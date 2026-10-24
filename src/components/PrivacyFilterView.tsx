@@ -3,7 +3,6 @@ import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
 import type { nlp } from 'react-native-executorch';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
-import { AppText } from '@/components/AppText';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PrivacyFilterToggle } from '@/components/PrivacyFilterToggle';
@@ -64,32 +63,27 @@ export function PrivacyFilterView({
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
-        <View style={styles.stage}>
-          <View style={styles.activity}>
-            {busy && (
-              <Animated.View entering={entrance} style={styles.loading}>
-                <ThinkingIndicator accessibilityLabel="Filtering text" />
-                <AppText variant="caption" tone="muted">
-                  Filtering…
-                </AppText>
-              </Animated.View>
-            )}
-          </View>
-          <ScrollView
-            style={styles.stage}
-            contentContainerStyle={styles.results}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
-          >
-            {result && (
-              <PrivacyFilterResult
-                key={`${result.text}:${result.latency}`}
-                result={result}
-                revealed={showOriginal}
-              />
-            )}
-          </ScrollView>
+        <ScrollView
+          style={styles.stage}
+          contentContainerStyle={styles.results}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
+          {result && (
+            <PrivacyFilterResult
+              key={`${result.text}:${result.latency}`}
+              result={result}
+              revealed={showOriginal}
+            />
+          )}
+        </ScrollView>
+        <View style={styles.activity}>
+          {busy && (
+            <Animated.View entering={entrance} style={styles.loading}>
+              <ThinkingIndicator accessibilityLabel="Filtering text" />
+            </Animated.View>
+          )}
         </View>
         {ready && (
           <Animated.View entering={entrance}>
@@ -141,5 +135,5 @@ const styles = StyleSheet.create({
   stage: { flex: 1, minHeight: 0 },
   results: { flexGrow: 1, justifyContent: 'center', paddingVertical: spacing.xl, gap: spacing.xl },
   activity: { height: tokens.typography.body.lineHeight, justifyContent: 'center' },
-  loading: { flexDirection: 'row', alignItems: 'center' },
+  loading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
 });

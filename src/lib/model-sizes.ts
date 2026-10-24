@@ -1,5 +1,9 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'duration_predictor_std_coreml_fp32.pte': 68_064_101,
+  'synthesizer_std_coreml_fp32.pte': 296_217_566,
+  'duration_predictor_std_xnnpack_fp32.pte': 59_307_208,
+  'synthesizer_std_xnnpack_fp32.pte': 272_463_344,
   'privacy_filter_openai_mlx_int4.pte': 875_085_888,
   'privacy_filter_openai_xnnpack_8da4w.pte': 1_241_699_460,
   'clip_vit_base_patch32_image_xnnpack_int8.pte': 95_947_264,

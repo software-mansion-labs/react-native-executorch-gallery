@@ -22,6 +22,7 @@ type PromptInputProps = {
   canSubmit: boolean;
   isGenerating?: boolean;
   submitLabel?: string;
+  stopLabel?: string;
 };
 
 /** Shared one-line composer that grows with the draft; examples fill it for editing. */
@@ -39,6 +40,7 @@ export function PromptInput({
   canSubmit,
   isGenerating = false,
   submitLabel = 'Send message',
+  stopLabel = 'Stop generating',
 }: PromptInputProps) {
   const { colors, iconSize } = useTheme();
   const input = useRef<TextInput>(null);
@@ -125,7 +127,7 @@ export function PromptInput({
           </View>
           <AnimatedPressable
             accessibilityRole="button"
-            accessibilityLabel={isGenerating ? 'Stop generating' : submitLabel}
+            accessibilityLabel={isGenerating ? stopLabel : submitLabel}
             accessibilityState={{ disabled: !active }}
             disabled={!active}
             onPress={isGenerating ? onStop : onSubmit}
