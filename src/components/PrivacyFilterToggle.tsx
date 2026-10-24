@@ -36,7 +36,7 @@ export function PrivacyFilterToggle({
       accessibilityLabel="Show original text"
       accessibilityState={{ checked: original }}
       onPress={() => onChange(!original)}
-      style={({ pressed }) => [styles.target, pressed && styles.pressed]}
+      style={styles.target}
     >
       <View style={[styles.control, { borderColor: colors.border }]} pointerEvents="none">
         <Animated.View
@@ -58,7 +58,7 @@ export function PrivacyFilterToggle({
   );
 }
 
-const { spacing, radius, borderWidth, layout, opacity } = tokens;
+const { spacing, radius, borderWidth, layout } = tokens;
 const controlHeight = layout.promptSuggestionHeight;
 const controlWidth = controlHeight * 2 - spacing.sm;
 const selectionSize = controlHeight - (spacing.xs + borderWidth.thin) * 2;
@@ -82,5 +82,4 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   option: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: opacity.pressed },
 });

@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 
 import { CircularProgress } from '@/components/CircularProgress';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
-import { tokens, useTheme } from '@/theme';
+import { tokens, useTheme, type Theme } from '@/theme';
 
 /** Circular photo action with a firm, softly dimmed press response. */
 export function PhotoActionButton({
@@ -16,6 +16,7 @@ export function PhotoActionButton({
   loading,
   primary,
   size = 'large',
+  appearance,
 }: {
   iconName: ComponentProps<typeof Ionicons>['name'];
   label: string;
@@ -24,8 +25,9 @@ export function PhotoActionButton({
   loading?: boolean;
   primary?: boolean;
   size?: 'small' | 'large';
+  appearance?: Theme['scheme'];
 }) {
-  const { colors, iconSize } = useTheme();
+  const { colors, iconSize } = useTheme(appearance);
   const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable

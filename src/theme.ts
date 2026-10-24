@@ -33,6 +33,7 @@ const palette = {
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
+  camera: { chromeBlurIntensity: 60 },
   annotation: {
     text: '#FFFFFF',
     colors: [
@@ -158,6 +159,7 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
+    liveDetectionStatusWidth: 176,
     depthFocusRadius: 14,
     depthFocusStroke: 2,
     depthFocusAmount: 0.45,
@@ -247,12 +249,14 @@ export type Theme = typeof tokens & {
   scheme: 'light' | 'dark';
 };
 
-/** Returns the central design tokens and palette for the current system appearance. */
-export function useTheme(): Theme {
+/** Returns shared design tokens and the active palette, optionally pinning a section's appearance. */
+export function useTheme(appearance?: Theme['scheme']): Theme {
   const { preference } = useAppearance();
   const systemScheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  const scheme = preference === 'system' ? systemScheme : preference;
-  const colors = useThemeColors(palette[scheme], tokens.motion.themeTransitionDuration);
+  const appScheme = preference === 'system' ? systemScheme : preference;
+  const scheme = appearance ?? appScheme;
+  const animatedColors = useThemeColors(palette[appScheme], tokens.motion.themeTransitionDuration);
+  const colors = appearance ? palette[appearance] : animatedColors;
 
   return useMemo(() => ({ ...tokens, colors, scheme }), [colors, scheme]);
 }

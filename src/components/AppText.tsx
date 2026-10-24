@@ -5,12 +5,19 @@ import { tokens, useTheme, type Theme } from '@/theme';
 type AppTextProps = TextProps & {
   variant?: keyof Theme['typography'];
   tone?: 'text' | 'muted' | 'accent';
+  appearance?: Theme['scheme'];
 };
 
 /** Renders text using the shared font, typography variant, and semantic color.
  * Native Text props are forwarded, including accessibility and text scaling. */
-export function AppText({ variant = 'body', tone = 'text', style, ...props }: AppTextProps) {
-  const { colors, typography } = useTheme();
+export function AppText({
+  variant = 'body',
+  tone = 'text',
+  appearance,
+  style,
+  ...props
+}: AppTextProps) {
+  const { colors, typography } = useTheme(appearance);
 
   return (
     <Text {...props} style={[styles.base, typography[variant], { color: colors[tone] }, style]} />

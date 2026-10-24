@@ -7,15 +7,23 @@ import { useTheme } from '@/theme';
 
 type ScreenWrapperProps = PropsWithChildren<{
   unmountOnBlur?: boolean;
+  edgeToEdge?: boolean;
 }>;
 
 /** Provides safe-area layout and optionally unmounts task content on blur to release native models. */
-export function ScreenWrapper({ children, unmountOnBlur = false }: ScreenWrapperProps) {
+export function ScreenWrapper({
+  children,
+  unmountOnBlur = false,
+  edgeToEdge = false,
+}: ScreenWrapperProps) {
   const { colors } = useTheme();
   const isFocused = useIsFocused();
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      edges={edgeToEdge ? [] : undefined}
+      style={[styles.screen, { backgroundColor: colors.background }]}
+    >
       {!unmountOnBlur || isFocused ? children : null}
     </SafeAreaView>
   );

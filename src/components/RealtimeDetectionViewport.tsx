@@ -25,6 +25,8 @@ export interface RealtimeDetectionViewportProps {
   inputSize: ImageSize;
   /** Aspect ratio of the camera sensor frame (e.g. { width: 1080, height: 1920 } or { width: 720, height: 1280 }). */
   frameSize?: ImageSize;
+  /** Removes the frame when the camera fills the screen behind floating controls. */
+  fullScreen?: boolean;
 }
 
 /**
@@ -99,6 +101,7 @@ export function RealtimeDetectionViewport({
   detections,
   inputSize,
   frameSize,
+  fullScreen = false,
 }: RealtimeDetectionViewportProps) {
   const { colors } = useTheme();
   const [viewLayout, setViewLayout] = useState<ImageSize>({
@@ -111,7 +114,11 @@ export function RealtimeDetectionViewport({
 
   return (
     <View
-      style={[styles.viewport, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      style={[
+        styles.viewport,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        fullScreen && styles.fullScreen,
+      ]}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
         setViewLayout({ width, height });
@@ -133,6 +140,7 @@ export function RealtimeDetectionViewport({
 }
 
 const styles = StyleSheet.create({
+  fullScreen: { borderWidth: 0, borderRadius: 0 },
   viewport: {
     flex: 1,
     borderRadius: tokens.radius.card,

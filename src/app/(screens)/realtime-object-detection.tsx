@@ -13,7 +13,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { ModelSetup } from '@/components/ModelSetup';
 import { RealtimeDetectionView } from '@/components/RealtimeDetectionView';
 import { useModelControls } from '@/hooks/useModelControls';
-import type { ImageSize } from '@/components/RealtimeDetectionViewport';
+import { RealtimeDetectionViewport, type ImageSize } from '@/components/RealtimeDetectionViewport';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 
@@ -104,6 +104,7 @@ function RealtimeObjectDetectionTask() {
   };
 
   const ready = model.prepared && model.loaded && isReady;
+  const showCamera = ready && !!device && hasPermission;
   return (
     <TaskScreen
       title="Live object detection"
@@ -111,14 +112,25 @@ function RealtimeObjectDetectionTask() {
       status={detector}
       busy={isActive}
       scrollable={false}
+      edgeToEdge
+      background={
+        showCamera ? (
+          <RealtimeDetectionViewport
+            fullScreen
+            device={device}
+            hasPermission={hasPermission}
+            frameOutput={frameOutput}
+            detections={isActive ? detections : []}
+            inputSize={INPUT_SIZE}
+            frameSize={frameSize}
+          />
+        ) : undefined
+      }
     >
       <RealtimeDetectionView
-        device={device}
-        hasPermission={hasPermission}
-        frameOutput={frameOutput}
-        detections={isActive ? detections : []}
-        inputSize={INPUT_SIZE}
-        frameSize={frameSize}
+        showCamera={showCamera}
+        hasCamera={!!device}
+        detectionCount={isActive ? detections.length : 0}
         latency={latency}
         isActive={isActive}
         ready={ready}
@@ -131,7 +143,7 @@ function RealtimeObjectDetectionTask() {
 
 export default function RealtimeObjectDetectionScreen() {
   return (
-    <ScreenWrapper unmountOnBlur>
+    <ScreenWrapper unmountOnBlur edgeToEdge>
       <RealtimeObjectDetectionTask />
     </ScreenWrapper>
   );

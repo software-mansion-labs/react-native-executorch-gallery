@@ -1,6 +1,9 @@
 import { router } from 'expo-router';
-import { useEffect, useState, type PropsWithChildren } from 'react';
+import { BlurView } from 'expo-blur';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
@@ -16,6 +19,10 @@ type TaskScreenProps = PropsWithChildren<{
   error?: string | null;
   busy: boolean;
   scrollable?: boolean;
+  /** Draws a camera or other full-screen backdrop beneath the header and task controls. */
+  background?: ReactNode;
+  /** Handles safe-area insets when the surrounding ScreenWrapper draws edge to edge. */
+  edgeToEdge?: boolean;
 }>;
 
 /** Stable task layout: capability-focused header and an information/storage sheet. */
@@ -27,8 +34,12 @@ export function TaskScreen({
   busy,
   children,
   scrollable = true,
+  background,
+  edgeToEdge = false,
 }: TaskScreenProps) {
-  const { colors } = useTheme();
+  const appearance = background ? 'dark' : undefined;
+  const { colors, scheme } = useTheme(appearance);
+  const insets = useSafeAreaInsets();
   const [menuVisible, setMenuVisible] = useState(false);
   const { loaded, loadFailed, refreshCache } = model;
   useEffect(() => {
@@ -48,20 +59,43 @@ export function TaskScreen({
   const Content = scrollable ? ScrollView : View;
 
   return (
-    <View style={styles.root}>
-      <PageHeader
-        title={title}
-        subtitle={model.info.name}
-        backLabel="Back to all demos"
-        onBack={() => router.dismissTo('/tasks')}
-        action={
-          <IconButton
-            icon="ellipsis-horizontal"
-            accessibilityLabel="Model status and storage"
-            onPress={() => setMenuVisible(true)}
+    <View
+      style={[
+        styles.root,
+        edgeToEdge && styles.edgeToEdge,
+        edgeToEdge && { paddingBottom: insets.bottom },
+      ]}
+    >
+      {background && <StatusBar style="light" />}
+      {background && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {background}
+        </View>
+      )}
+      <View style={edgeToEdge && { paddingTop: insets.top }}>
+        {background && (
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            tint={scheme}
+            intensity={tokens.camera.chromeBlurIntensity}
           />
-        }
-      />
+        )}
+        <PageHeader
+          title={title}
+          subtitle={model.info.name}
+          appearance={appearance}
+          backLabel="Back to all demos"
+          onBack={() => router.dismissTo('/tasks')}
+          action={
+            <IconButton
+              icon="ellipsis-horizontal"
+              accessibilityLabel="Model status and storage"
+              appearance={appearance}
+              onPress={() => setMenuVisible(true)}
+            />
+          }
+        />
+      </View>
       <Content
         {...(scrollable
           ? { contentContainerStyle: styles.content, showsVerticalScrollIndicator: false }
@@ -88,6 +122,7 @@ export function TaskScreen({
 const { spacing, layout } = tokens;
 const styles = StyleSheet.create({
   root: { flex: 1, width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
+  edgeToEdge: { maxWidth: '100%' },
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.xl,
