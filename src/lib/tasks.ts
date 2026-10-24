@@ -99,6 +99,7 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'realtime-object-detection',
+        href: '/realtime-object-detection',
         title: 'Live object detection',
         keywords: 'continuous streaming YOLO',
       },
