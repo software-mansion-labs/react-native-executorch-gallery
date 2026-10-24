@@ -56,10 +56,10 @@ function SemanticSegmentationTask() {
         placeholderTitle="See objects in color."
         placeholderDescription="Highlight each region of your photo with a colored mask."
         busy={busy || model.deleting}
-        canPick={model.loaded && segmenter.isReady}
+        canPick={model.prepared && model.loaded && segmenter.isReady}
         setupAction={<ModelSetup model={model} status={segmenter} disabled={busy} />}
         onRun={run}
-        canRun={!!image && segmenter.isReady && model.loaded}
+        canRun={model.prepared && !!image && segmenter.isReady && model.loaded}
         running={busy}
         result={segmentationImage ? 'Image segmented' : undefined}
         latency={latency}

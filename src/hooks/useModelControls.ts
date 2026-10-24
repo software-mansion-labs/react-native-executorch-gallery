@@ -18,6 +18,8 @@ export type ModelInfo = {
 export function useModelControls(source: string, info: ModelInfo) {
   const path = modelCachePath(source);
   const [loaded, setLoaded] = useState(false);
+  const [prepared, setPrepared] = useState(false);
+  const markPrepared = useCallback(() => setPrepared(true), []);
   const [storedBytes, setStoredBytes] = useState<number | null>();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +43,13 @@ export function useModelControls(source: string, info: ModelInfo) {
   const load = () => {
     if (removing.current || storedBytes === undefined) return;
     setError(null);
+    setPrepared(false);
     setLoaded(true);
   };
 
   const loadFailed = useCallback((cause: unknown) => {
     setError(cause instanceof Error ? cause.message : String(cause));
+    setPrepared(false);
     setLoaded(false);
   }, []);
 
@@ -64,6 +68,7 @@ export function useModelControls(source: string, info: ModelInfo) {
             removing.current = true;
             setDeleting(true);
             setError(null);
+            setPrepared(false);
             setLoaded(false);
             setRevision((value) => value + 1);
             try {
@@ -94,6 +99,8 @@ export function useModelControls(source: string, info: ModelInfo) {
   return {
     info,
     loaded,
+    prepared,
+    markPrepared,
     storedBytes,
     deleting,
     error,

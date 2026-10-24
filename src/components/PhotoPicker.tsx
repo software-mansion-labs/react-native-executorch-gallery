@@ -1,6 +1,5 @@
-import { type ComponentProps, type ReactNode, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { type ReactNode, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Canvas, Image as SkiaImage, type SkImage } from '@shopify/react-native-skia';
 import type { ImageBuffer } from 'react-native-executorch/cv';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
@@ -8,7 +7,9 @@ import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated'
 import { tokens, useTheme } from '@/theme';
 import { AppText } from '@/components/AppText';
 import { TaskHero } from '@/components/TaskHero';
+import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { usePhotoInput } from '@/hooks/usePhotoInput';
+import { PhotoActionButton } from '@/components/PhotoActionButton';
 
 export interface PickedImage {
   /** Local file URI of the captured or selected image. */
@@ -163,88 +164,49 @@ export function PhotoPicker({
             </AppText>
           </Animated.View>
         )}
-        {!image && (
-          <View style={styles.placeholderContainer}>
-            <TaskHero
-              title={placeholderTitle}
-              description={placeholderDescription}
-              setup={setupAction}
+      </View>
+      <View style={styles.buttonsArea}>
+        {canPick && (
+          <Animated.View style={styles.buttons} entering={photoEntrance}>
+            <PhotoActionButton
+              iconName="images-outline"
+              label="Choose photo"
+              disabled={busy || picking || !canPick}
+              onPress={() => choose('library')}
             />
-          </View>
+            <PhotoActionButton
+              iconName="camera-outline"
+              label="Take photo"
+              disabled={busy || picking || !canPick}
+              onPress={() => choose('camera')}
+            />
+            {onRun && (
+              <PhotoActionButton
+                iconName="scan-outline"
+                label={running ? 'Running inference' : 'Run inference'}
+                onPress={onRun}
+                disabled={!canRun || busy}
+                loading={running}
+                primary
+              />
+            )}
+          </Animated.View>
         )}
       </View>
-      <View style={styles.buttons}>
-        <PickButton
-          iconName="images-outline"
-          label="Choose photo"
-          disabled={busy || picking || !canPick}
-          onPress={() => choose('library')}
-        />
-        <PickButton
-          iconName="camera-outline"
-          label="Take photo"
-          disabled={busy || picking || !canPick}
-          onPress={() => choose('camera')}
-        />
-        {onRun && (
-          <PickButton
-            iconName="scan-outline"
-            label={running ? 'Running inference' : 'Run inference'}
-            onPress={onRun}
-            disabled={!canRun || busy}
-            loading={running}
-            primary
+      {!image && (
+        <TaskHeroStage pointerEvents={canPick ? 'none' : 'box-none'}>
+          <TaskHero
+            title={placeholderTitle}
+            description={placeholderDescription}
+            setup={setupAction}
           />
-        )}
-      </View>
+        </TaskHeroStage>
+      )}
     </View>
   );
 }
 
-function PickButton({
-  iconName,
-  label,
-  disabled,
-  onPress,
-  loading,
-  primary,
-}: {
-  iconName: ComponentProps<typeof Ionicons>['name'];
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-  loading?: boolean;
-  primary?: boolean;
-}) {
-  const { colors, iconSize } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled, busy: !!loading }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.pickButton,
-        { backgroundColor: primary ? colors.accent : colors.surface },
-        pressed && styles.pressed,
-        disabled && !loading && styles.disabled,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={colors.onAccent} />
-      ) : (
-        <Ionicons
-          name={iconName}
-          size={iconSize.large}
-          color={primary ? colors.onAccent : colors.text}
-        />
-      )}
-    </Pressable>
-  );
-}
-
-const { spacing, radius, layout, opacity } = tokens;
+const { spacing, radius, layout } = tokens;
 const photoEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
@@ -262,13 +224,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: layout.photoMinHeight,
   },
-  placeholderContainer: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-    gap: spacing.xl,
-  },
   result: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -276,19 +231,14 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   resultLabel: { flex: 1 },
+  buttonsArea: {
+    minHeight: layout.photoControlSize + spacing.sm * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   buttons: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
   },
-  pickButton: {
-    width: layout.photoControlSize,
-    height: layout.photoControlSize,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.pill,
-  },
-  pressed: { opacity: opacity.pressed },
-  disabled: { opacity: opacity.disabled },
 });

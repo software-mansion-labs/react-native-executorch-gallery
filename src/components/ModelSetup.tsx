@@ -1,12 +1,14 @@
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { AppText } from '@/components/AppText';
 import { CircularProgress } from '@/components/CircularProgress';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
 import type { ModelControls } from '@/hooks/useModelControls';
-import { useMinimumLoading } from '@/hooks/useMinimumLoading';
+import { useModelSetup } from '@/hooks/useModelSetup';
 import { tokens, useTheme } from '@/theme';
 
 type ModelSetupProps = {
@@ -19,12 +21,18 @@ type ModelSetupProps = {
 export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
   const { colors } = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
-  const active = model.loaded && !status.error && !model.deleting;
-  const preparing =
-    status.isReady || !!status.resource || status.downloadProgress >= 100 || !!model.storedBytes;
-  const preparingAnimation = useMinimumLoading(active && preparing, status.isReady);
-  const loading = active && (!preparing || preparingAnimation);
-  const ready = active && status.isReady && !loading;
+  const { preparing, loading, ready, onExit } = useModelSetup(model, status);
+  const preparationExit = useMemo(
+    () =>
+      FadeOut.duration(tokens.motion.modelLoadingFadeDuration)
+        .easing(Easing.out(Easing.cubic))
+        .reduceMotion(ReduceMotion.System)
+        .withCallback((finished) => {
+          'worklet';
+          if (finished) scheduleOnRN(onExit);
+        }),
+    [onExit]
+  );
   const progress = Math.max(
     0,
     Math.min(100, Number.isFinite(status.downloadProgress) ? status.downloadProgress : 0)
@@ -35,7 +43,11 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
   if (loading) {
     return (
       <View style={styles.area}>
-        <Animated.View style={styles.progressArea} entering={loadingEntrance} exiting={loadingExit}>
+        <Animated.View
+          style={styles.progressArea}
+          entering={loadingEntrance}
+          exiting={preparationExit}
+        >
           <CircularProgress progress={progress} indeterminate={preparing} />
           <AppText variant="discoverySubtitle" tone="muted" accessibilityLiveRegion="polite">
             {preparing ? 'Preparing model…' : `Downloading · ${Math.round(progress)}%`}
@@ -48,35 +60,36 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
   const blocked = disabled || model.deleting || model.storedBytes === undefined;
   return (
     <View style={styles.area}>
-      <AnimatedPressable
-        exiting={buttonExit}
-        onPress={model.load}
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        disabled={blocked}
-        accessibilityRole="button"
-        accessibilityLabel={
-          model.downloadSizeLabel
-            ? `Download model, approximately ${model.downloadSizeLabel}`
-            : model.loadLabel
-        }
-        accessibilityState={{ disabled: !!blocked }}
-        style={[
-          styles.action,
-          { backgroundColor: colors.accent },
-          blocked && styles.disabled,
-          animatedStyle,
-        ]}
-      >
-        <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
-          {model.storedBytes === null ? 'Download' : model.loadLabel}
-        </AppText>
-        {model.downloadSizeLabel && (
+      <Animated.View exiting={buttonExit}>
+        <AnimatedPressable
+          onPress={model.load}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          disabled={blocked}
+          accessibilityRole="button"
+          accessibilityLabel={
+            model.downloadSizeLabel
+              ? `Download model, approximately ${model.downloadSizeLabel}`
+              : model.loadLabel
+          }
+          accessibilityState={{ disabled: !!blocked }}
+          style={[
+            styles.action,
+            { backgroundColor: colors.accent },
+            blocked && styles.disabled,
+            animatedStyle,
+          ]}
+        >
           <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
-            {model.downloadSizeLabel}
+            {model.storedBytes === null ? 'Download' : model.loadLabel}
           </AppText>
-        )}
-      </AnimatedPressable>
+          {model.downloadSizeLabel && (
+            <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
+              {model.downloadSizeLabel}
+            </AppText>
+          )}
+        </AnimatedPressable>
+      </Animated.View>
     </View>
   );
 }
@@ -87,9 +100,6 @@ const loadingEntrance = FadeIn.duration(tokens.motion.modelSetupTransitionDurati
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const buttonExit = FadeOut.duration(tokens.motion.modelSetupTransitionDuration)
-  .easing(Easing.out(Easing.cubic))
-  .reduceMotion(ReduceMotion.System);
-const loadingExit = FadeOut.duration(tokens.motion.modelLoadingFadeDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({

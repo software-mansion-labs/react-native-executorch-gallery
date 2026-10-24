@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 import type { useLLMChatSession } from 'react-native-executorch';
 
 import { AppText } from '@/components/AppText';
@@ -14,6 +14,7 @@ import { ChatResponseError } from '@/components/ChatResponseError';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
+import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { presentChatTurn, type ChatTurn } from '@/lib/chat-presentation';
 import type { ModelControls } from '@/hooks/useModelControls';
@@ -69,7 +70,7 @@ export function ChatView({
     readingDetails.current = true;
     following.current = false;
   };
-  const ready = model.loaded && session.isReady;
+  const ready = model.prepared && model.loaded && session.isReady;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
@@ -156,71 +157,62 @@ export function ChatView({
             </View>
           ))}
         </ScrollView>
-        <PromptInput
-          value={draft}
-          onChangeText={onDraftChange}
-          disabled={!ready}
-          canSubmit={ready && canSend && !!draft.trim() && !busy}
-          isGenerating={busy}
-          onStop={onStop}
-          onSubmit={() => {
-            following.current = true;
-            readingDetails.current = false;
-            void onSend();
-          }}
-          suggestions={ready && !turns.length ? suggestions : undefined}
-          reserveSuggestionSpace={!turns.length}
-          attachment={ready ? composerAccessory : undefined}
-          leadingAccessory={
-            ready ? (
-              <Animated.View
-                entering={answerEntrance}
-                style={[styles.contextActions, !!contextAccessory && styles.photoActions]}
-              >
-                <ChatContext
-                  session={session}
-                  busy={busy}
-                  hasMessages={!!turns.length}
-                  onNewChat={onNewChat}
-                />
-                {contextAccessory}
-              </Animated.View>
-            ) : undefined
-          }
-        />
+        {ready && (
+          <Animated.View entering={composerEntrance}>
+            <PromptInput
+              value={draft}
+              onChangeText={onDraftChange}
+              canSubmit={canSend && !!draft.trim() && !busy}
+              isGenerating={busy}
+              onStop={onStop}
+              onSubmit={() => {
+                following.current = true;
+                readingDetails.current = false;
+                void onSend();
+              }}
+              suggestions={!turns.length ? suggestions : undefined}
+              reserveSuggestionSpace={!turns.length}
+              attachment={composerAccessory}
+              leadingAccessory={
+                <View style={[styles.contextActions, !!contextAccessory && styles.photoActions]}>
+                  <ChatContext
+                    session={session}
+                    busy={busy}
+                    hasMessages={!!turns.length}
+                    onNewChat={onNewChat}
+                  />
+                  {contextAccessory}
+                </View>
+              }
+            />
+          </Animated.View>
+        )}
         {!turns.length && (
-          <Animated.View
-            style={[styles.empty, heroStyle]}
-            pointerEvents={ready ? 'none' : 'box-none'}
-          >
+          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
             <TaskHero
               title={heroTitle}
               description={heroDescription}
               setup={<ModelSetup model={model} status={session} />}
             />
-          </Animated.View>
+          </TaskHeroStage>
         )}
       </View>
     </Animated.View>
   );
 }
 
-const { spacing, radius, layout } = tokens;
+const { spacing, radius } = tokens;
 const answerEntrance = FadeIn.duration(tokens.motion.chatDisclosureFadeDuration).reduceMotion(
   ReduceMotion.System
 );
+const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   content: { flex: 1, gap: spacing.md },
   scroll: { flex: 1, minHeight: 0 },
   messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.xl },
-  // Match PhotoPicker's stage: its full body minus the circular controls and their gap.
-  empty: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: layout.photoControlSize + spacing.sm * 2 + spacing.lg,
-  },
   turn: { gap: spacing.md },
   question: {
     alignSelf: 'flex-end',

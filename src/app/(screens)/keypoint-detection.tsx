@@ -55,10 +55,10 @@ function PoseEstimationTask() {
         placeholderTitle="Find the pose."
         placeholderDescription="Trace body joints and connect them into a skeleton."
         busy={busy || model.deleting}
-        canPick={model.loaded && detector.isReady}
+        canPick={model.prepared && model.loaded && detector.isReady}
         setupAction={<ModelSetup model={model} status={detector} disabled={busy} />}
         onRun={run}
-        canRun={!!image && detector.isReady && model.loaded}
+        canRun={model.prepared && !!image && detector.isReady && model.loaded}
         running={busy}
         result={
           results

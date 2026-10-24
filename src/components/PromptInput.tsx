@@ -88,38 +88,40 @@ export function PromptInput({
         </View>
       )}
       <View style={[styles.composer, { backgroundColor: colors.surface }]}>
-        {attachment && <View style={styles.attachment}>{attachment}</View>}
         <View style={styles.composerRow}>
           <View style={styles.inputSlot}>
-            <Text
-              style={[styles.inputText, styles.measure]}
-              onLayout={sizing.onMeasure}
-              accessible={false}
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-              pointerEvents="none"
-            >
-              {value || ' '}
-            </Text>
-            <TextInput
-              ref={input}
-              value={value}
-              onChangeText={onChangeText}
-              placeholder={placeholder}
-              placeholderTextColor={colors.muted}
-              cursorColor={colors.accent}
-              selectionColor={colors.accent}
-              accessibilityLabel="Message"
-              accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
-              multiline
-              scrollEnabled={sizing.scrollEnabled}
-              editable={!disabled && !isGenerating}
-              style={[
-                styles.inputText,
-                styles.input,
-                { color: colors.text, height: sizing.height },
-              ]}
-            />
+            {attachment && <View style={styles.attachment}>{attachment}</View>}
+            <View style={styles.textSlot}>
+              <Text
+                style={[styles.inputText, styles.measure]}
+                onLayout={sizing.onMeasure}
+                accessible={false}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                pointerEvents="none"
+              >
+                {value || ' '}
+              </Text>
+              <TextInput
+                ref={input}
+                value={value}
+                onChangeText={onChangeText}
+                placeholder={placeholder}
+                placeholderTextColor={colors.muted}
+                cursorColor={colors.accent}
+                selectionColor={colors.accent}
+                accessibilityLabel="Message"
+                accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
+                multiline
+                scrollEnabled={sizing.scrollEnabled}
+                editable={!disabled && !isGenerating}
+                style={[
+                  styles.inputText,
+                  styles.input,
+                  { color: colors.text, height: sizing.height },
+                ]}
+              />
+            </View>
           </View>
           <AnimatedPressable
             accessibilityRole="button"
@@ -188,7 +190,8 @@ const styles = StyleSheet.create({
   },
   input: { maxHeight: layout.chatInputMaxHeight, textAlignVertical: 'top' },
   measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 },
-  inputSlot: { flex: 1, minHeight: layout.touchTarget, justifyContent: 'center' },
+  inputSlot: { flex: 1, minHeight: layout.touchTarget, justifyContent: 'center', gap: spacing.sm },
+  textSlot: { minHeight: layout.touchTarget, justifyContent: 'center' },
   send: {
     width: layout.touchTarget,
     height: layout.touchTarget,

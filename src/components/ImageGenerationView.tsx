@@ -1,7 +1,7 @@
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
 import type { SkImage } from '@shopify/react-native-skia';
 import type { useTextToImage } from 'react-native-executorch';
-import Animated from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { CircularProgress } from '@/components/CircularProgress';
@@ -9,6 +9,7 @@ import { GeneratedImageViewport } from '@/components/GeneratedImageViewport';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
+import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
 import type { ModelControls } from '@/hooks/useModelControls';
 import { tokens } from '@/theme';
@@ -43,7 +44,7 @@ export function ImageGenerationView({
   status: ReturnType<typeof useTextToImage>;
 }) {
   const { keyboardStyle, heroStyle } = useChatKeyboard();
-  const ready = model.loaded && status.isReady && !model.deleting;
+  const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
@@ -83,37 +84,41 @@ export function ImageGenerationView({
             </View>
           )}
         </ScrollView>
-        <PromptInput
-          value={prompt}
-          onChangeText={onPromptChange}
-          onSubmit={() => {
-            Keyboard.dismiss();
-            void onGenerate();
-          }}
-          disabled={!ready || busy}
-          canSubmit={ready && !!prompt.trim() && !busy}
-          placeholder="Describe an image…"
-          submitLabel="Generate image"
-          suggestions={ready ? suggestions : undefined}
-          reserveSuggestionSpace
-        />
+        {ready && (
+          <Animated.View entering={composerEntrance}>
+            <PromptInput
+              value={prompt}
+              onChangeText={onPromptChange}
+              onSubmit={() => {
+                Keyboard.dismiss();
+                void onGenerate();
+              }}
+              disabled={busy}
+              canSubmit={!!prompt.trim() && !busy}
+              placeholder="Describe an image…"
+              submitLabel="Generate image"
+              suggestions={suggestions}
+              reserveSuggestionSpace
+            />
+          </Animated.View>
+        )}
         {!image && !busy && (
-          <Animated.View
-            style={[styles.empty, heroStyle]}
-            pointerEvents={ready ? 'none' : 'box-none'}
-          >
+          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
             <TaskHero
               title="Imagine it. Create it."
               description="Turn a few words into a picture, right on your device."
               setup={<ModelSetup model={model} status={status} />}
             />
-          </Animated.View>
+          </TaskHeroStage>
         )}
       </View>
     </Animated.View>
   );
 }
 const { spacing, layout } = tokens;
+const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   content: { flex: 1, gap: spacing.md },
@@ -133,10 +138,4 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   resultLabel: { flex: 1 },
-  empty: {
-    ...StyleSheet.absoluteFill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: layout.photoControlSize + spacing.sm * 2 + spacing.lg,
-  },
 });

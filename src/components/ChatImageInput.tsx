@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { IconButton } from '@/components/IconButton';
+import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { tokens, useTheme } from '@/theme';
 
 /** Photo actions sit beside the context indicator and stay locked during generation or picking. */
@@ -16,28 +16,25 @@ export function ChatImageInput({
   const { colors } = useTheme();
   return (
     <View style={styles.row}>
-      <View style={[styles.action, { backgroundColor: colors.surface }]}>
-        <IconButton
-          icon="images-outline"
-          accessibilityLabel="Choose photo"
-          disabled={disabled || picking}
-          onPress={() => void onChoose('library')}
-        />
-      </View>
-      <View style={[styles.action, { backgroundColor: colors.surface }]}>
-        <IconButton
-          icon="camera-outline"
-          accessibilityLabel="Take photo"
-          disabled={disabled || picking}
-          onPress={() => void onChoose('camera')}
-        />
-      </View>
+      <PhotoActionButton
+        size="small"
+        iconName="images-outline"
+        label="Choose photo"
+        disabled={disabled || picking}
+        onPress={() => void onChoose('library')}
+      />
+      <PhotoActionButton
+        size="small"
+        iconName="camera-outline"
+        label="Take photo"
+        disabled={disabled || picking}
+        onPress={() => void onChoose('camera')}
+      />
       {picking && <ActivityIndicator color={colors.muted} />}
     </View>
   );
 }
-const { spacing, radius } = tokens;
+const { spacing } = tokens;
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  action: { borderRadius: radius.pill },
 });

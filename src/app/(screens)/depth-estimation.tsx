@@ -49,10 +49,10 @@ function DepthEstimationTask() {
         placeholderTitle="Find your focus."
         placeholderDescription="Choose a photo, then tap a subject to bring it into focus."
         busy={busy || model.deleting}
-        canPick={model.loaded && estimator.isReady}
+        canPick={model.prepared && model.loaded && estimator.isReady}
         setupAction={<ModelSetup model={model} status={estimator} disabled={busy} />}
         onRun={run}
-        canRun={!!image && model.loaded && estimator.isReady}
+        canRun={model.prepared && !!image && model.loaded && estimator.isReady}
         running={busy}
         renderPhoto={
           texture

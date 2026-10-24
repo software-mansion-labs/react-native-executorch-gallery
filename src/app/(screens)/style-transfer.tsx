@@ -53,10 +53,10 @@ function StyleTransferTask() {
         placeholderTitle="Give it a new style."
         placeholderDescription="Turn your photo into a mosaic, then hold to compare."
         busy={busy || model.deleting}
-        canPick={model.loaded && styler.isReady}
+        canPick={model.prepared && model.loaded && styler.isReady}
         setupAction={<ModelSetup model={model} status={styler} disabled={busy} />}
         onRun={run}
-        canRun={!!image && styler.isReady && model.loaded}
+        canRun={model.prepared && !!image && styler.isReady && model.loaded}
         running={busy}
         resultsContent={
           <StyleTransferResult

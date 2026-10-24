@@ -51,10 +51,10 @@ function OcrTask() {
         placeholderTitle="Read between the pixels."
         placeholderDescription="Find text in your photo, then select or copy what it says."
         busy={busy || model.deleting}
-        canPick={model.loaded && ocr.isReady}
+        canPick={model.prepared && model.loaded && ocr.isReady}
         setupAction={<ModelSetup model={model} status={ocr} disabled={busy} />}
         onRun={run}
-        canRun={!!image && ocr.isReady && model.loaded}
+        canRun={model.prepared && !!image && ocr.isReady && model.loaded}
         running={busy}
         resultsContent={<OcrResult presentation={presentation} latency={latency} />}
         onPick={(picked) => {

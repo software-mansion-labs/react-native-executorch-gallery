@@ -70,7 +70,7 @@ function ImageSession({ model, onNewChat }: { model: ModelControls; onNewChat: (
           <ChatImageInput
             onChoose={photo.choose}
             picking={photo.picking}
-            disabled={!session.isReady || chat.busy}
+            disabled={!model.prepared || !session.isReady || chat.busy}
           />
         }
         composerAccessory={

@@ -57,10 +57,10 @@ function ImageClassificationTask() {
         placeholderTitle="Put a name to it."
         placeholderDescription="Recognize the main subject in your photo."
         busy={busy || model.deleting}
-        canPick={model.loaded && classifier.isReady}
+        canPick={model.prepared && model.loaded && classifier.isReady}
         setupAction={<ModelSetup model={model} status={classifier} disabled={busy} />}
         onRun={run}
-        canRun={!!image && classifier.isReady && model.loaded}
+        canRun={model.prepared && !!image && classifier.isReady && model.loaded}
         running={busy}
         resultsContent={<ClassificationResult result={result} />}
         onPick={(picked) => {

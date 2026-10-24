@@ -48,10 +48,10 @@ function ObjectDetectionTask() {
       <PhotoPicker
         key={model.revision}
         busy={busy || model.deleting}
-        canPick={model.loaded && detector.isReady}
+        canPick={model.prepared && model.loaded && detector.isReady}
         setupAction={<ModelSetup model={model} status={detector} disabled={busy} />}
         onRun={run}
-        canRun={!!image && detector.isReady && model.loaded}
+        canRun={model.prepared && !!image && detector.isReady && model.loaded}
         running={busy}
         result={
           results

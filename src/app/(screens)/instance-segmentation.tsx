@@ -60,10 +60,10 @@ function InstanceSegmentationTask() {
         placeholderTitle="See each object clearly."
         placeholderDescription="Give every object its own colored mask, outline, and label."
         busy={busy || model.deleting}
-        canPick={model.loaded && segmenter.isReady}
+        canPick={model.prepared && model.loaded && segmenter.isReady}
         setupAction={<ModelSetup model={model} status={segmenter} disabled={busy} />}
         onRun={run}
-        canRun={!!image && segmenter.isReady && model.loaded}
+        canRun={model.prepared && !!image && segmenter.isReady && model.loaded}
         running={busy}
         result={
           results
