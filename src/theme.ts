@@ -175,6 +175,7 @@ export const tokens = {
     contextGaugeStroke: 1.5,
     contextMeterHeight: 4,
     promptSuggestionHeight: 40,
+    statusDotSize: 6,
     thinkingDotSize: 5,
     thinkingDotTravel: 3,
     thinkingIndicatorSize: 18,
