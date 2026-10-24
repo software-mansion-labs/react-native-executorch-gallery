@@ -179,7 +179,10 @@ export function ChatView({
                     session={session}
                     busy={busy}
                     hasMessages={!!turns.length}
-                    onNewChat={onNewChat}
+                    onNewChat={() => {
+                      model.resetPreparation();
+                      onNewChat();
+                    }}
                   />
                   {contextAccessory}
                 </View>

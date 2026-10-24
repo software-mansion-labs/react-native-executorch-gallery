@@ -20,6 +20,7 @@ export function useModelControls(source: string, info: ModelInfo) {
   const [loaded, setLoaded] = useState(false);
   const [prepared, setPrepared] = useState(false);
   const markPrepared = useCallback(() => setPrepared(true), []);
+  const resetPreparation = useCallback(() => setPrepared(false), []);
   const [storedBytes, setStoredBytes] = useState<number | null>();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +102,7 @@ export function useModelControls(source: string, info: ModelInfo) {
     loaded,
     prepared,
     markPrepared,
+    resetPreparation,
     storedBytes,
     deleting,
     error,
