@@ -1,5 +1,8 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'depth_anything_v3_small_xnnpack_int8.pte': 40_603_272,
+  'depth_anything_v3_small_coreml_fp16.pte': 70_865_495,
+  'depth_anything_v3_small_vulkan_fp16.pte': 56_407_810,
   'sdxs_512_dreamshaper_xnnpack_int8.pte': 813_206_924,
   'sdxs_512_dreamshaper_coreml_fp16.pte': 880_687_279,
   'sdxs_512_dreamshaper_vulkan_fp16.pte': 880_465_922,

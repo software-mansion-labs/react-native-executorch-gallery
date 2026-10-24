@@ -38,6 +38,8 @@ export interface PhotoPickerProps {
   onPick: (image: PickedImage | null) => void;
   /** Optional render function for task-specific overlays (boxes, masks, landmarks). */
   renderOverlay?: (transform: ViewportTransform) => ReactNode;
+  /** Optional photo renderer receiving the same decoded Skia image used for raw input pixels. */
+  renderPhoto?: (image: SkImage, transform: ViewportTransform) => ReactNode;
   /** Optional Skia Image overlay to render directly on the photo canvas (e.g. segmentation mask). */
   overlayImage?: SkImage | null;
   /** Opacity for the overlay image (default: 0.65). */
@@ -74,6 +76,7 @@ export function PhotoPicker({
   placeholderDescription = 'See what’s in your photo, with labels and boxes around each object.',
   onPick,
   renderOverlay,
+  renderPhoto,
   overlayImage,
   overlayOpacity = 0.65,
   targetWidth = 800,
@@ -124,20 +127,22 @@ export function PhotoPicker({
         >
           {image && viewW > 0 && viewH > 0 ? (
             <Animated.View key={uri} style={StyleSheet.absoluteFill} entering={photoEntrance}>
-              <Canvas style={StyleSheet.absoluteFill}>
-                <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
-                {overlayImage && (
-                  <SkiaImage
-                    image={overlayImage}
-                    fit="contain"
-                    x={0}
-                    y={0}
-                    width={viewW}
-                    height={viewH}
-                    opacity={overlayOpacity}
-                  />
-                )}
-              </Canvas>
+              {renderPhoto?.(image, transform) ?? (
+                <Canvas style={StyleSheet.absoluteFill}>
+                  <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
+                  {overlayImage && (
+                    <SkiaImage
+                      image={overlayImage}
+                      fit="contain"
+                      x={0}
+                      y={0}
+                      width={viewW}
+                      height={viewH}
+                      opacity={overlayOpacity}
+                    />
+                  )}
+                </Canvas>
+              )}
               {renderOverlay?.(transform)}
             </Animated.View>
           ) : null}

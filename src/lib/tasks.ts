@@ -44,6 +44,12 @@ export const TASK_SECTIONS: TaskSection[] = [
     keywords: 'vision photo image',
     data: [
       {
+        id: 'depth-estimation',
+        href: '/depth-estimation',
+        title: 'Depth estimation',
+        keywords: 'focus blur bokeh portrait distance Depth Anything',
+      },
+      {
         id: 'style-transfer',
         href: '/style-transfer',
         title: 'Style transfer',
