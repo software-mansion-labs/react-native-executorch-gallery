@@ -7,6 +7,7 @@ import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated'
 
 import { tokens, useTheme } from '@/theme';
 import { AppText } from '@/components/AppText';
+import { TaskHero } from '@/components/TaskHero';
 import { pickImage, skImageToBuffer } from '@/lib/image';
 
 export interface PickedImage {
@@ -174,19 +175,11 @@ export function PhotoPicker({
         )}
         {!image && (
           <View style={styles.placeholderContainer}>
-            <View style={styles.placeholderCopy}>
-              <AppText variant="hero" numberOfLines={1} adjustsFontSizeToFit>
-                {placeholderTitle}
-              </AppText>
-              <AppText
-                variant="discoverySubtitle"
-                tone="muted"
-                style={styles.placeholderDescription}
-              >
-                {placeholderDescription}
-              </AppText>
-              <View style={styles.placeholderSetup}>{setupAction}</View>
-            </View>
+            <TaskHero
+              title={placeholderTitle}
+              description={placeholderDescription}
+              setup={setupAction}
+            />
           </View>
         )}
       </View>
@@ -285,15 +278,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing.xl,
     gap: spacing.xl,
-  },
-  placeholderDescription: { textAlign: 'center', paddingHorizontal: spacing.xl },
-  placeholderCopy: { width: '100%', alignItems: 'center', gap: spacing.xl },
-  placeholderSetup: {
-    position: 'absolute',
-    top: '100%',
-    width: '100%',
-    alignItems: 'center',
-    paddingTop: spacing.xl,
   },
   result: {
     flexDirection: 'row',

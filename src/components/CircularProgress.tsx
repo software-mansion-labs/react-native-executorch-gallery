@@ -9,7 +9,7 @@ type CircularProgressProps = {
   indeterminate?: boolean;
 };
 
-/** A rounded triangle showing download progress and rotating fully colored while preparing. */
+/** A rounded hexagon showing download progress and rotating fully colored while preparing. */
 export function CircularProgress({ progress, indeterminate = false }: CircularProgressProps) {
   const { colors } = useTheme();
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));

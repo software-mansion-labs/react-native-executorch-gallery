@@ -21,6 +21,7 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'llm-chat',
+        href: '/llm-chat',
         title: 'Local chat',
         keywords: 'LLM conversation assistant LFM',
       },

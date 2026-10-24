@@ -13,7 +13,7 @@ import {
 import { tokens } from '@/theme';
 
 /**
- * Drives a rotating rounded triangle with measured download progress
+ * Drives a rotating rounded hexagon with measured download progress
  * or a fully colored preparation outline. Motion stays on the UI thread, respects Reduce Motion,
  * and stops when unmounted. Returns the animated path, arc bounds, and rotation.
  */
@@ -52,13 +52,14 @@ export function useCircularProgress(progress: number, indeterminate: boolean) {
   }, [rotation]);
 
   const path = useMemo(() => {
-    const vertices = Array.from({ length: 3 }, (_, index) => ({
-      x: center + Math.cos((index * Math.PI * 2) / 3) * radius,
-      y: center + Math.sin((index * Math.PI * 2) / 3) * radius,
-    }));
+    const count = tokens.layout.modelProgressSides;
+    const vertices = Array.from({ length: count }, (_, index) => {
+      const angle = (index * Math.PI * 2) / count;
+      return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
+    });
     const corners = vertices.map((vertex, index) => {
-      const previous = vertices[(index + 2) % 3];
-      const next = vertices[(index + 1) % 3];
+      const previous = vertices[(index + count - 1) % count];
+      const next = vertices[(index + 1) % count];
       const inset =
         tokens.layout.modelProgressCornerInset / Math.hypot(next.x - vertex.x, next.y - vertex.y);
       return {

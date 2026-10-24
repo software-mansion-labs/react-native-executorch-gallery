@@ -15,10 +15,19 @@ type TaskScreenProps = PropsWithChildren<{
   model: ModelControls;
   error?: string | null;
   busy: boolean;
+  scrollable?: boolean;
 }>;
 
 /** Stable task layout: capability-focused header and an information/storage sheet. */
-export function TaskScreen({ title, status, model, error, busy, children }: TaskScreenProps) {
+export function TaskScreen({
+  title,
+  status,
+  model,
+  error,
+  busy,
+  children,
+  scrollable = true,
+}: TaskScreenProps) {
   const { colors } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const { loaded, loadFailed, refreshCache } = model;
@@ -36,6 +45,7 @@ export function TaskScreen({ title, status, model, error, busy, children }: Task
         : String(status.error)
       : null;
   const message = error || model.error || modelError;
+  const Content = scrollable ? ScrollView : View;
 
   return (
     <View style={styles.root}>
@@ -52,14 +62,18 @@ export function TaskScreen({ title, status, model, error, busy, children }: Task
           />
         }
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.viewport}>{children}</View>
+      <Content
+        {...(scrollable
+          ? { contentContainerStyle: styles.content, showsVerticalScrollIndicator: false }
+          : { style: styles.fixedContent })}
+      >
+        <View style={scrollable ? styles.viewport : styles.fixedViewport}>{children}</View>
         {message && (
           <AppText variant="secondary" accessibilityRole="alert" style={{ color: colors.danger }}>
             {message}
           </AppText>
         )}
-      </ScrollView>
+      </Content>
       <ModelSheet
         visible={menuVisible}
         onClose={() => setMenuVisible(false)}
@@ -82,4 +96,12 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   viewport: { flex: 1, minHeight: layout.photoMinHeight },
+  fixedContent: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
+  },
+  fixedViewport: { flex: 1 },
 });

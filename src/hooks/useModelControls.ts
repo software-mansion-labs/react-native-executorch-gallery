@@ -86,7 +86,9 @@ export function useModelControls(source: string, info: ModelInfo) {
     storedBytes === undefined ? 'Checking model…' : storedBytes ? 'Load model' : 'Download model';
   const downloadSizeLabel =
     storedBytes === null && downloadBytes
-      ? `${Math.ceil(downloadBytes / 1_000_000)} MB`
+      ? downloadBytes >= 1_000_000_000
+        ? formatModelSize(downloadBytes)
+        : `${Math.ceil(downloadBytes / 1_000_000)} MB`
       : undefined;
 
   return {
