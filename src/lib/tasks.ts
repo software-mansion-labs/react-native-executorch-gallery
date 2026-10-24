@@ -132,8 +132,9 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'image-embeddings',
+        href: '/image-embeddings',
         title: 'Multimodal search',
-        keywords: 'rank similarity CLIP',
+        keywords: 'photo collection semantic similarity text CLIP',
       },
     ],
   },

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import RNBlobUtil from 'react-native-blob-util';
 
@@ -10,18 +10,23 @@ export type ModelInfo = {
 };
 
 /**
- * Prepares one task model only after an explicit load request.
+ * Prepares a task model (or a paired set of weights) only after an explicit load request.
  * Given its source and metadata, returns the load gate, setup label, on-disk
  * cache size, deletion action, and a revision for resetting task data after deletion.
  * Cache status comes from the final weights file, without downloading or a registry.
  */
-export function useModelControls(source: string, info: ModelInfo) {
-  const path = modelCachePath(source);
+export function useModelControls(source: string | readonly string[], info: ModelInfo) {
+  const sources = useMemo(() => (typeof source === 'string' ? [source] : source), [source]);
+  const paths = useMemo(() => sources.map(modelCachePath), [sources]);
   const [loaded, setLoaded] = useState(false);
   const [prepared, setPrepared] = useState(false);
   const markPrepared = useCallback(() => setPrepared(true), []);
   const resetPreparation = useCallback(() => setPrepared(false), []);
-  const [storedBytes, setStoredBytes] = useState<number | null>();
+  const [cache, setCache] = useState<(number | null)[]>();
+  const storedBytes = cache
+    ? cache.reduce<number>((sum, bytes) => sum + (bytes ?? 0), 0) || null
+    : undefined;
+  const downloaded = cache?.every((bytes) => bytes !== null) ?? false;
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -30,9 +35,9 @@ export function useModelControls(source: string, info: ModelInfo) {
 
   const refreshCache = useCallback(async () => {
     const request = ++cacheRequest.current;
-    const bytes = await cachedModelBytes(path);
-    if (request === cacheRequest.current) setStoredBytes(bytes);
-  }, [path]);
+    const bytes = await Promise.all(paths.map(cachedModelBytes));
+    if (request === cacheRequest.current) setCache(bytes);
+  }, [paths]);
 
   useEffect(() => {
     void refreshCache();
@@ -73,7 +78,11 @@ export function useModelControls(source: string, info: ModelInfo) {
             setLoaded(false);
             setRevision((value) => value + 1);
             try {
-              await RNBlobUtil.fs.unlink(path);
+              await Promise.all(
+                paths.map((path, index) =>
+                  cache?.[index] ? RNBlobUtil.fs.unlink(path) : undefined
+                )
+              );
             } catch (cause) {
               setError(cause instanceof Error ? cause.message : String(cause));
             } finally {
@@ -87,11 +96,15 @@ export function useModelControls(source: string, info: ModelInfo) {
     );
   };
 
-  const downloadBytes = MODEL_DOWNLOAD_BYTES[source.split('?')[0].split('/').pop() ?? ''];
+  const missingSources = sources.filter((_, index) => !cache?.[index]);
+  const sizes = missingSources.map(
+    (url) => MODEL_DOWNLOAD_BYTES[url.split('?')[0].split('/').pop() ?? '']
+  );
+  const downloadBytes = sizes.every(Boolean) ? sizes.reduce((sum, bytes) => sum + bytes, 0) : 0;
   const loadLabel =
-    storedBytes === undefined ? 'Checking model…' : storedBytes ? 'Load model' : 'Download model';
+    storedBytes === undefined ? 'Checking model…' : downloaded ? 'Load model' : 'Download model';
   const downloadSizeLabel =
-    storedBytes === null && downloadBytes
+    cache && !downloaded && downloadBytes
       ? downloadBytes >= 1_000_000_000
         ? formatModelSize(downloadBytes)
         : `${Math.ceil(downloadBytes / 1_000_000)} MB`

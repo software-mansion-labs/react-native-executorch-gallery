@@ -39,7 +39,9 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
         : model.storedBytes === undefined
           ? 'Checking model…'
           : model.storedBytes
-            ? 'Downloaded'
+            ? model.loadLabel === 'Download model'
+              ? 'Partially downloaded'
+              : 'Downloaded'
             : 'Not downloaded';
 
   return (

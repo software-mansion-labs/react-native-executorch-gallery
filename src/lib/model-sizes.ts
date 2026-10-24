@@ -1,5 +1,11 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'clip_vit_base_patch32_image_xnnpack_int8.pte': 95_947_264,
+  'clip_vit_base_patch32_text_xnnpack_int8.pte': 64_353_408,
+  'clip_vit_base_patch32_image_coreml_fp16.pte': 176_209_305,
+  'clip_vit_base_patch32_text_coreml_int8.pte': 63_921_048,
+  'clip_vit_base_patch32_image_vulkan_fp16.pte': 175_823_106,
+  'clip_vit_base_patch32_text_vulkan_fp16.pte': 126_991_872,
   'depth_anything_v3_small_xnnpack_int8.pte': 40_603_272,
   'depth_anything_v3_small_coreml_fp16.pte': 70_865_495,
   'depth_anything_v3_small_vulkan_fp16.pte': 56_407_810,

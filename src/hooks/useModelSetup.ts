@@ -8,7 +8,10 @@ import { useMinimumLoading } from '@/hooks/useMinimumLoading';
 export function useModelSetup(model: ModelControls, status: ModelStatus) {
   const active = model.loaded && !status.error && !model.deleting;
   const preparing =
-    status.isReady || !!status.resource || status.downloadProgress >= 100 || !!model.storedBytes;
+    status.isReady ||
+    !!status.resource ||
+    status.downloadProgress >= 100 ||
+    (!!model.storedBytes && model.loadLabel === 'Load model');
   const preparingAnimation = useMinimumLoading(active && preparing, status.isReady);
   const loading = active && (!preparing || preparingAnimation);
   const ready = active && status.isReady && !loading;
