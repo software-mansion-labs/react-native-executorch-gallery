@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
@@ -15,6 +15,7 @@ type PromptInputProps = {
   onStop?: () => void;
   suggestions?: readonly { label: string; prompt: string }[];
   reserveSuggestionSpace?: boolean;
+  leadingAccessory?: ReactNode;
   placeholder?: string;
   disabled?: boolean;
   canSubmit: boolean;
@@ -29,6 +30,7 @@ export function PromptInput({
   onStop,
   suggestions,
   reserveSuggestionSpace = false,
+  leadingAccessory,
   placeholder = 'Ask anything…',
   disabled = false,
   canSubmit,
@@ -41,10 +43,11 @@ export function PromptInput({
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
   return (
     <View style={styles.root}>
-      {(reserveSuggestionSpace || !!suggestions?.length) && (
+      {(reserveSuggestionSpace || !!suggestions?.length || !!leadingAccessory) && (
         <View style={styles.suggestionSpace}>
+          {leadingAccessory}
           {!!suggestions?.length && (
-            <Animated.View entering={suggestionEntrance}>
+            <Animated.View entering={suggestionEntrance} style={styles.suggestionList}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -132,7 +135,13 @@ const suggestionEntrance = FadeIn.duration(tokens.motion.photoRevealDuration).re
 );
 const styles = StyleSheet.create({
   root: { gap: spacing.lg, paddingBottom: spacing.md },
-  suggestionSpace: { minHeight: layout.touchTarget, justifyContent: 'center' },
+  suggestionSpace: {
+    minHeight: layout.touchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  suggestionList: { flex: 1, minWidth: 0 },
   suggestions: { flexGrow: 1, justifyContent: 'center', gap: spacing.sm },
   chip: {
     borderRadius: radius.pill,

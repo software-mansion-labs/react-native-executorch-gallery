@@ -168,6 +168,8 @@ export const tokens = {
     modelProgressSides: 6,
     chatInputMaxHeight: 144,
     chatScrollThreshold: 96,
+    contextGaugeStroke: 1.5,
+    contextMeterHeight: 4,
     promptSuggestionHeight: 40,
     thinkingDotSize: 4,
     thinkingDotTravel: 1,

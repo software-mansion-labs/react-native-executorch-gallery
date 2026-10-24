@@ -10,7 +10,6 @@ import { ChatThinking } from '@/components/ChatThinking';
 import { ChatText } from '@/components/ChatText';
 import { ChatToolDetails } from '@/components/ChatToolDetails';
 import { ChatResponseError } from '@/components/ChatResponseError';
-import { IconButton } from '@/components/IconButton';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
@@ -129,20 +128,6 @@ export function ChatView({
             </View>
           ))}
         </ScrollView>
-        <View style={styles.footer}>
-          {ready && (
-            <Animated.View entering={answerEntrance} style={styles.contextRow}>
-              <ChatContext session={session} busy={busy} />
-              <IconButton
-                icon="refresh-outline"
-                accessibilityLabel="Start a new chat"
-                disabled={busy || !turns.length}
-                onPress={onNewChat}
-                tone="muted"
-              />
-            </Animated.View>
-          )}
-        </View>
         <PromptInput
           value={draft}
           onChangeText={onDraftChange}
@@ -157,6 +142,18 @@ export function ChatView({
           }}
           suggestions={ready && !turns.length ? suggestions : undefined}
           reserveSuggestionSpace={!turns.length}
+          leadingAccessory={
+            ready ? (
+              <Animated.View entering={answerEntrance}>
+                <ChatContext
+                  session={session}
+                  busy={busy}
+                  hasMessages={!!turns.length}
+                  onNewChat={onNewChat}
+                />
+              </Animated.View>
+            ) : undefined
+          }
         />
         {!turns.length && (
           <Animated.View
@@ -208,6 +205,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  footer: { minHeight: tokens.layout.touchTarget },
-  contextRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

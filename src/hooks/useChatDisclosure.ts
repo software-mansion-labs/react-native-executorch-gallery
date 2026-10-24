@@ -23,6 +23,13 @@ export function useChatDisclosure(expanded: boolean) {
       reduceMotion: ReduceMotion.System,
     };
     animatedHeight.set(withTiming(expanded ? height : 0, config));
+  }, [expanded, height, animatedHeight]);
+  useEffect(() => {
+    const config = {
+      duration: tokens.motion.chatDisclosureDuration,
+      easing: Easing.inOut(Easing.cubic),
+      reduceMotion: ReduceMotion.System,
+    };
     opacity.set(
       withTiming(expanded ? 1 : 0, {
         ...config,
@@ -30,7 +37,7 @@ export function useChatDisclosure(expanded: boolean) {
       })
     );
     rotation.set(withTiming(expanded ? 180 : 0, config));
-  }, [expanded, height, animatedHeight, opacity, rotation]);
+  }, [expanded, opacity, rotation]);
   return {
     contentStyle: useAnimatedStyle(() => ({
       height: animatedHeight.get(),

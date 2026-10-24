@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -34,7 +34,7 @@ function Dot({
 }
 
 /** Three theme-aware dots rotate as an equilateral triangle and gently breathe in and out. */
-export function ThinkingIndicator() {
+export const ThinkingIndicator = memo(function ThinkingIndicator() {
   const { colors } = useTheme();
   const phase = useSharedValue(0);
   const rotation = useSharedValue(0);
@@ -70,7 +70,7 @@ export function ThinkingIndicator() {
       ))}
     </Animated.View>
   );
-}
+});
 
 const { layout, radius } = tokens;
 const styles = StyleSheet.create({
