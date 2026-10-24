@@ -182,7 +182,7 @@ export function PhotoPicker({
             />
             {onRun && (
               <PhotoActionButton
-                iconName="scan-outline"
+                iconName="arrow-up"
                 label={running ? 'Running inference' : 'Run inference'}
                 onPress={onRun}
                 disabled={!canRun || busy}
