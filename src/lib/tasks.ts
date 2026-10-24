@@ -33,8 +33,9 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'text-to-image',
+        href: '/text-to-image',
         title: 'Text to image',
-        keywords: 'generate pictures SDXS DreamShaper',
+        keywords: 'vision image generation pictures SDXS DreamShaper',
       },
     ],
   },

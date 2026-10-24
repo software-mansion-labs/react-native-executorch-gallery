@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRef, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
+import { usePromptInputSize } from '@/hooks/usePromptInputSize';
 import { tokens, useTheme } from '@/theme';
 
 type PromptInputProps = {
@@ -20,6 +21,7 @@ type PromptInputProps = {
   disabled?: boolean;
   canSubmit: boolean;
   isGenerating?: boolean;
+  submitLabel?: string;
 };
 
 /** Shared one-line composer that grows with the draft; examples fill it for editing. */
@@ -36,10 +38,12 @@ export function PromptInput({
   disabled = false,
   canSubmit,
   isGenerating = false,
+  submitLabel = 'Send message',
 }: PromptInputProps) {
   const { colors, iconSize } = useTheme();
   const input = useRef<TextInput>(null);
   const press = useCardPressAnimation();
+  const sizing = usePromptInputSize(value);
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
   return (
     <View style={styles.root}>
@@ -87,6 +91,16 @@ export function PromptInput({
         {attachment && <View style={styles.attachment}>{attachment}</View>}
         <View style={styles.composerRow}>
           <View style={styles.inputSlot}>
+            <Text
+              style={[styles.inputText, styles.measure]}
+              onLayout={sizing.onMeasure}
+              accessible={false}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              pointerEvents="none"
+            >
+              {value || ' '}
+            </Text>
             <TextInput
               ref={input}
               value={value}
@@ -98,13 +112,18 @@ export function PromptInput({
               accessibilityLabel="Message"
               accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
               multiline
+              scrollEnabled={sizing.scrollEnabled}
               editable={!disabled && !isGenerating}
-              style={[styles.input, { color: colors.text }]}
+              style={[
+                styles.inputText,
+                styles.input,
+                { color: colors.text, height: sizing.height },
+              ]}
             />
           </View>
           <AnimatedPressable
             accessibilityRole="button"
-            accessibilityLabel={isGenerating ? 'Stop generating' : 'Send message'}
+            accessibilityLabel={isGenerating ? 'Stop generating' : submitLabel}
             accessibilityState={{ disabled: !active }}
             disabled={!active}
             onPress={isGenerating ? onStop : onSubmit}
@@ -157,18 +176,18 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: spacing.sm,
   },
-  composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  composerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   attachment: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
-  input: {
+  inputText: {
     fontFamily,
     fontSize: typography.body.fontSize,
     fontWeight: typography.body.fontWeight,
     includeFontPadding: false,
-    maxHeight: layout.chatInputMaxHeight,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    textAlignVertical: 'top',
   },
+  input: { maxHeight: layout.chatInputMaxHeight, textAlignVertical: 'top' },
+  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 },
   inputSlot: { flex: 1, minHeight: layout.touchTarget, justifyContent: 'center' },
   send: {
     width: layout.touchTarget,
