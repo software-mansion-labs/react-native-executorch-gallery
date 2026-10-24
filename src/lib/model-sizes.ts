@@ -1,5 +1,7 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'privacy_filter_openai_mlx_int4.pte': 875_085_888,
+  'privacy_filter_openai_xnnpack_8da4w.pte': 1_241_699_460,
   'clip_vit_base_patch32_image_xnnpack_int8.pte': 95_947_264,
   'clip_vit_base_patch32_text_xnnpack_int8.pte': 64_353_408,
   'clip_vit_base_patch32_image_coreml_fp16.pte': 176_209_305,

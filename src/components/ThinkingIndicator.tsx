@@ -29,7 +29,11 @@ function Dot({
 }
 
 /** Three monochrome dots gently rise and fade beneath the bubble throughout generation. */
-export const ThinkingIndicator = memo(function ThinkingIndicator() {
+export const ThinkingIndicator = memo(function ThinkingIndicator({
+  accessibilityLabel = 'Generating response',
+}: {
+  accessibilityLabel?: string;
+}) {
   const { colors } = useTheme();
   const { phase, reducedMotion } = useGeneratingPulse();
   return (
@@ -37,7 +41,7 @@ export const ThinkingIndicator = memo(function ThinkingIndicator() {
       style={styles.row}
       accessible
       accessibilityRole="progressbar"
-      accessibilityLabel="Generating response"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ busy: true }}
     >
       {[0, 1, 2].map((index) => (

@@ -144,8 +144,9 @@ export const TASK_SECTIONS: TaskSection[] = [
     data: [
       {
         id: 'privacy-filter',
+        href: '/privacy-filter',
         title: 'Privacy filter',
-        keywords: 'redact personal information PII',
+        keywords: 'chat redact personal information PII',
       },
     ],
   },
