@@ -1,6 +1,7 @@
 import { Linking } from 'react-native';
 import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
 
+import { normalizeChatMarkdown } from '@/lib/chat-markdown';
 import { useTheme } from '@/theme';
 
 /** Renders selectable chat markdown and LaTeX equations using native text views. */
@@ -18,7 +19,7 @@ export function ChatText({ children, muted = false }: { children: string; muted?
 
   return (
     <EnrichedMarkdownText
-      markdown={children}
+      markdown={normalizeChatMarkdown(children)}
       flavor="github"
       selectable
       streamingAnimation
