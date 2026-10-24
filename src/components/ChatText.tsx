@@ -1,23 +1,76 @@
-import { StyleSheet, Text } from 'react-native';
+import { Linking } from 'react-native';
+import { EnrichedMarkdownText } from 'react-native-enriched-markdown';
 
-import { AppText } from '@/components/AppText';
-import { tokens } from '@/theme';
+import { useTheme } from '@/theme';
 
-/** Preserves paragraphs and renders the model's inline emphasis in native, selectable text. */
+/** Renders selectable chat markdown and LaTeX equations using native text views. */
 export function ChatText({ children, muted = false }: { children: string; muted?: boolean }) {
+  const { colors, typography, fontFamily, spacing, radius, borderWidth } = useTheme();
+  const color = muted ? colors.muted : colors.text;
+  const body = {
+    ...typography[muted ? 'secondary' : 'body'],
+    fontFamily,
+    color,
+    marginTop: spacing.none,
+    marginBottom: spacing.md,
+  };
+  const heading = { ...body, ...typography.title };
+
   return (
-    <AppText selectable variant={muted ? 'secondary' : 'body'} tone={muted ? 'muted' : 'text'}>
-      {children.split(/(\*\*[^*]+\*\*|__[^_]+__)/g).map((part, index) =>
-        /^(\*\*|__)/.test(part) && part.length > 4 ? (
-          <Text key={index} style={styles.emphasis}>
-            {part.slice(2, -2)}
-          </Text>
-        ) : (
-          part
-        )
-      )}
-    </AppText>
+    <EnrichedMarkdownText
+      markdown={children}
+      flavor="github"
+      selectable
+      streamingAnimation
+      md4cFlags={{ latexMath: true, hardSoftBreaks: true }}
+      onLinkPress={({ url }) => {
+        if (/^https?:\/\//i.test(url)) void Linking.openURL(url).catch(() => {});
+      }}
+      markdownStyle={{
+        paragraph: body,
+        h1: { ...heading, ...typography.heading },
+        h2: heading,
+        h3: heading,
+        h4: heading,
+        h5: heading,
+        h6: heading,
+        list: { ...body, bulletColor: color, markerColor: color, gapWidth: spacing.sm },
+        link: { color: colors.accent, underline: true },
+        strong: { color },
+        em: { color },
+        blockquote: { ...body, borderColor: colors.border, borderWidth: borderWidth.thin },
+        code: { color, backgroundColor: colors.background, fontSize: body.fontSize },
+        codeBlock: {
+          ...body,
+          backgroundColor: colors.background,
+          borderColor: colors.border,
+          borderWidth: borderWidth.thin,
+          borderRadius: radius.annotation,
+          padding: spacing.md,
+        },
+        math: {
+          color,
+          fontSize: body.fontSize,
+          backgroundColor: colors.surface,
+          padding: spacing.sm,
+          marginTop: spacing.none,
+          marginBottom: spacing.md,
+          textAlign: 'center',
+        },
+        inlineMath: { color },
+        table: {
+          ...body,
+          borderColor: colors.border,
+          borderWidth: borderWidth.thin,
+          headerTextColor: color,
+          headerBackgroundColor: colors.background,
+          rowEvenBackgroundColor: colors.surface,
+          rowOddBackgroundColor: colors.surface,
+          cellPaddingHorizontal: spacing.sm,
+          cellPaddingVertical: spacing.sm,
+        },
+        thematicBreak: { color: colors.border, height: borderWidth.thin },
+      }}
+    />
   );
 }
-
-const styles = StyleSheet.create({ emphasis: { fontWeight: tokens.typography.title.fontWeight } });
