@@ -7,78 +7,83 @@ import {
 } from 'react-native-executorch';
 
 import { KeypointOverlay } from '@/components/KeypointOverlay';
+import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.keypointDetection.YOLO26_POSE.SIZE_384.DEFAULT;
 
-function KeypointDetectionTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [results, setResults] = useState<KeypointDetection<'xyxy', CocoLandmark>[]>([]);
-  const [latency, setLatency] = useState<number | null>(null);
+function PoseEstimationTask() {
+  const model = useModelControls(MODEL.modelPath, { name: 'YOLO26 Pose' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [results, setResults] = useTaskState<KeypointDetection<'xyxy', CocoLandmark>[] | null>(
+    null,
+    model.revision
+  );
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const detector = useKeypointDetector(MODEL, { preventLoad: !loaded });
+  const detector = useKeypointDetector(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (!image || !detector.detectKeypoints) return;
+    if (!image || !model.loaded || !detector.isReady || !detector.detectKeypoints) return;
+    if (busy || model.deleting) return;
     setBusy(true);
-    setResults([]);
+    setResults(null);
     setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
+      const started = performance.now();
       const output = await detector.detectKeypoints(image.buffer);
-      setLatency(Date.now() - t0);
+      setLatency(Math.round(performance.now() - started));
       setResults(output);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <TaskScreen
-      title="Pose Estimation"
-      subtitle="YOLO26 Pose"
-      status={{ ...detector, error: error || detector.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && detector.isReady}
-      busy={busy}
-      onRun={run}
-      runLabel="Estimate Pose"
-      onDeleteModel={async () => {
-        await deleteCachedFiles(detector.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
-    >
+    <TaskScreen title="Pose estimation" model={model} status={detector} error={error} busy={busy}>
       <PhotoPicker
-        busy={busy}
-        onPick={(img) => {
-          setImage(img);
-          setResults([]);
+        key={model.revision}
+        placeholderTitle="Find the pose"
+        placeholderDescription="Trace body joints and connect them into a skeleton."
+        busy={busy || model.deleting}
+        canPick={model.prepared && model.loaded && detector.isReady}
+        setupAction={<ModelSetup model={model} status={detector} disabled={busy} />}
+        onRun={run}
+        canRun={model.prepared && !!image && detector.isReady && model.loaded}
+        running={busy}
+        result={
+          results
+            ? `${results.length} ${results.length === 1 ? 'person' : 'people'} found`
+            : undefined
+        }
+        latency={latency}
+        onPick={(picked) => {
+          setImage(picked);
+          setResults(null);
           setLatency(null);
           setError(null);
         }}
-        renderOverlay={(transform) => (
-          <KeypointOverlay detections={results} transform={transform} />
-        )}
+        renderOverlay={(transform) =>
+          results && <KeypointOverlay detections={results} transform={transform} />
+        }
       />
     </TaskScreen>
   );
 }
 
-export default function KeypointDetectionScreen() {
+export default function PoseEstimationScreen() {
   return (
-    <ScreenWrapper>
-      <KeypointDetectionTask />
+    <ScreenWrapper unmountOnBlur>
+      <PoseEstimationTask />
     </ScreenWrapper>
   );
 }

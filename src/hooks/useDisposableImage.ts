@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { SkImage } from '@shopify/react-native-skia';
+
+import { useTaskState } from '@/hooks/useTaskState';
 
 /**
  * Holds a single task-output `SkImage` and releases replaced ones eagerly.
@@ -15,10 +17,11 @@ import type { SkImage } from '@shopify/react-native-skia';
  * canvas go away together, and an eager dispose there would break under
  * `StrictMode`, whose simulated remount would free an image still in use.
  *
+ * @param revision Model revision that clears the image when cached weights are deleted.
  * @returns The current image and a setter for replacing it.
  */
-export function useDisposableImage() {
-  const [image, setImage] = useState<SkImage | null>(null);
+export function useDisposableImage(revision: number) {
+  const [image, setImage] = useTaskState<SkImage | null>(null, revision);
   const renderedRef = useRef<SkImage | null>(null);
 
   useEffect(() => {

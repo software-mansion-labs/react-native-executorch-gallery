@@ -1,125 +1,118 @@
-import { useState } from 'react';
-import { models, useImageEmbedder, useTextEmbedder } from 'react-native-executorch';
+import { useEffect, useRef, useState } from 'react';
+import {
+  createVectorStore,
+  models,
+  useImageEmbedder,
+  useTextEmbedder,
+} from 'react-native-executorch';
 
-import { MultimodalRankOverlay, type CandidateQueryItem } from '@/components/MultimodalRankOverlay';
-import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
+import { MultimodalSearchView } from '@/components/MultimodalSearchView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-
-const INITIAL_QUERIES: CandidateQueryItem[] = [
-  { id: '2', text: 'a delicious plate of food', score: null },
-  { id: '3', text: 'a scenic outdoor landscape', score: null },
-  { id: '1', text: 'a photo of an animal or pet', score: null },
-  { id: '4', text: 'urban architecture and buildings', score: null },
-  { id: '5', text: 'a group of people or portrait', score: null },
-];
+import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
+import {
+  readSearchPhoto,
+  SEARCH_PHOTOS,
+  type SearchPhoto,
+  type SearchResult,
+} from '@/lib/search-photos';
 
 const IMAGE_MODEL = models.imageEmbeddings.CLIP_VIT_BASE_PATCH32.DEFAULT;
 const TEXT_MODEL = models.textEmbeddings.CLIP_VIT_BASE_PATCH32_TEXT.DEFAULT;
+const SOURCES = [IMAGE_MODEL.modelPath, TEXT_MODEL.modelPath];
 
-const dotProduct = (a: Float32Array, b: Float32Array): number =>
-  a.reduce((sum, val, i) => sum + val * (b[i] ?? 0), 0);
-
-function ImageEmbeddingsTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [items, setItems] = useState<CandidateQueryItem[]>(INITIAL_QUERIES);
-  const [showImage, setShowImage] = useState(false);
-  const [latency, setLatency] = useState<number | null>(null);
+function SearchSession({ model }: { model: ModelControls }) {
+  const imageModel = useImageEmbedder(IMAGE_MODEL, { preventLoad: !model.loaded });
+  const textModel = useTextEmbedder(TEXT_MODEL, { preventLoad: !model.loaded });
+  const [store] = useState(() => createVectorStore<SearchPhoto>());
+  const [draft, setDraft] = useState('');
+  const [result, setResult] = useState<SearchResult | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const imageModel = useImageEmbedder(IMAGE_MODEL, { preventLoad: !loaded });
-  const textModel = useTextEmbedder(TEXT_MODEL, { preventLoad: !loaded });
-
-  const isReady = imageModel.isReady && textModel.isReady;
-  const downloadProgress = Math.min(imageModel.downloadProgress, textModel.downloadProgress);
-
-  const activeError =
-    error ||
-    (imageModel.error ? imageModel.error.message : null) ||
-    (textModel.error ? textModel.error.message : null);
+  const active = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      store.clear();
+    };
+  }, [store]);
+  const status = {
+    isReady: imageModel.isReady && textModel.isReady,
+    downloadProgress: Math.min(imageModel.downloadProgress, textModel.downloadProgress),
+    resource: imageModel.resource && textModel.resource,
+    error: imageModel.error || textModel.error,
+  };
 
   const run = async () => {
-    if (busy || !image || !imageModel.embed || !textModel.embed) return;
+    const query = draft.trim();
+    if (!model.prepared || !imageModel.embed || !textModel.embed || !query) return;
+    if (active.current || model.deleting) return;
+    active.current = true;
     setBusy(true);
-    setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
-      const imageEmbedding = await imageModel.embed(image.buffer);
-
-      const scored: CandidateQueryItem[] = [];
-      for (const item of items) {
-        const textEmbedding = await textModel.embed(item.text);
-        scored.push({ ...item, score: dotProduct(imageEmbedding, textEmbedding) });
+      for (const item of SEARCH_PHOTOS) {
+        if (store.has(item.id)) continue;
+        const input = await readSearchPhoto(item);
+        if (!mounted.current) return;
+        const embedding = await imageModel.embed(input);
+        if (!mounted.current) return;
+        store.add(item.id, embedding, item);
       }
-
-      setLatency(Date.now() - t0);
-      setItems(scored);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      const queryEmbedding = await textModel.embed(query);
+      if (!mounted.current) return;
+      const matches = store.query(queryEmbedding, SEARCH_PHOTOS.length);
+      setResult({
+        query,
+        photos: matches.map((match) => match.metadata),
+      });
+    } catch (cause) {
+      if (mounted.current) setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
-      setBusy(false);
+      active.current = false;
+      if (mounted.current) setBusy(false);
     }
   };
-
-  const handlePick = (newImage: PickedImage | null) => {
-    setImage(newImage);
-    setItems(INITIAL_QUERIES);
-    setShowImage(false);
-    setLatency(null);
+  const clear = () => {
+    setResult(null);
+    setDraft('');
     setError(null);
   };
-
   return (
     <TaskScreen
-      title="Multimodal Search"
-      subtitle="CLIP ViT-B/32 · Image & Text"
-      status={{
-        isReady,
-        downloadProgress,
-        error: activeError ? new Error(activeError) : undefined,
-      }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && isReady}
+      title="Multimodal search"
+      model={model}
+      status={status}
       busy={busy}
-      onRun={() => run()}
-      runLabel="Match Image to Queries"
-      onDeleteModel={async () => {
-        await Promise.all([
-          deleteCachedFiles(imageModel.resource),
-          deleteCachedFiles(textModel.resource),
-        ]);
-        setLoaded(false);
-        setImage(null);
-        setItems(INITIAL_QUERIES);
-        setShowImage(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
+      error={error}
+      scrollable={false}
     >
-      <PhotoPicker
+      <MultimodalSearchView
+        model={model}
+        status={status}
+        photos={SEARCH_PHOTOS}
+        draft={draft}
+        onDraftChange={setDraft}
+        result={result}
         busy={busy}
-        onPick={handlePick}
-        renderOverlay={() => (
-          <MultimodalRankOverlay
-            items={items}
-            showImage={showImage}
-            onPressInImage={() => setShowImage(true)}
-            onPressOutImage={() => setShowImage(false)}
-          />
-        )}
+        onClear={clear}
+        onSearch={run}
       />
     </TaskScreen>
   );
 }
 
-export default function ImageEmbeddingsScreen() {
+function MultimodalSearchTask() {
+  const model = useModelControls(SOURCES, { name: 'CLIP ViT-B/32' });
+  return <SearchSession key={model.revision} model={model} />;
+}
+
+export default function MultimodalSearchScreen() {
   return (
-    <ScreenWrapper>
-      <ImageEmbeddingsTask />
+    <ScreenWrapper unmountOnBlur>
+      <MultimodalSearchTask />
     </ScreenWrapper>
   );
 }

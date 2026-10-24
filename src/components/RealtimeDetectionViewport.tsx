@@ -5,7 +5,7 @@ import { Camera, type CameraDevice, type CameraFrameOutput } from 'react-native-
 
 import { DetectionOverlay } from '@/components/DetectionOverlay';
 import type { ViewportTransform } from '@/components/PhotoPicker';
-import { borderWidth, radius, useTheme } from '@/theme';
+import { tokens, useTheme } from '@/theme';
 
 export type ImageSize = {
   width: number;
@@ -111,10 +111,7 @@ export function RealtimeDetectionViewport({
 
   return (
     <View
-      style={[
-        styles.viewport,
-        { backgroundColor: colors.surfaceSubtle, borderColor: colors.border },
-      ]}
+      style={[styles.viewport, { backgroundColor: colors.surface, borderColor: colors.border }]}
       onLayout={(e) => {
         const { width, height } = e.nativeEvent.layout;
         setViewLayout({ width, height });
@@ -138,9 +135,9 @@ export function RealtimeDetectionViewport({
 const styles = StyleSheet.create({
   viewport: {
     flex: 1,
-    borderRadius: radius.lg,
+    borderRadius: tokens.radius.card,
     overflow: 'hidden',
-    borderWidth,
+    borderWidth: tokens.borderWidth.thin,
     position: 'relative',
   },
 });

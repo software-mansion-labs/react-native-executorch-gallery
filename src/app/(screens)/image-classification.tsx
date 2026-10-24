@@ -6,38 +6,39 @@ import {
   type ImageNet1KLabel,
 } from 'react-native-executorch';
 
-import { ClassificationOverlay } from '@/components/ClassificationOverlay';
+import { ClassificationResult } from '@/components/ClassificationResult';
+import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.classification.EFFICIENTNET_V2_S.DEFAULT;
 
 function ImageClassificationTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [results, setResults] = useState<Classification<ImageNet1KLabel>[]>([]);
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'EfficientNetV2-S' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [result, setResult] = useTaskState<Classification<ImageNet1KLabel> | null>(
+    null,
+    model.revision
+  );
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const classifier = useClassifier(MODEL, { preventLoad: !loaded });
+  const classifier = useClassifier(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (!image || !classifier.classify) return;
+    if (!image || !model.loaded || !classifier.isReady || !classifier.classify) return;
+    if (busy || model.deleting) return;
     setBusy(true);
-    setResults([]);
-    setLatency(null);
+    setResult(null);
     setError(null);
     try {
-      const t0 = Date.now();
-      const output = await classifier.classify(image.buffer, { topk: 3 });
-      setLatency(Date.now() - t0);
-      setResults(output);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      const [prediction] = await classifier.classify(image.buffer, { topk: 1 });
+      setResult(prediction ?? null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
@@ -45,29 +46,28 @@ function ImageClassificationTask() {
 
   return (
     <TaskScreen
-      title="Image Classification"
-      subtitle="EfficientNetV2-S"
-      status={{ ...classifier, error: error || classifier.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && classifier.isReady}
+      title="Image classification"
+      model={model}
+      status={classifier}
+      error={error}
       busy={busy}
-      onRun={run}
-      runLabel="Classify Image"
-      onDeleteModel={async () => {
-        await deleteCachedFiles(classifier.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
     >
       <PhotoPicker
-        busy={busy}
-        onPick={(img) => {
-          setImage(img);
-          setResults([]);
-          setLatency(null);
+        key={model.revision}
+        placeholderTitle="Put a name to it"
+        placeholderDescription="Recognize the main subject in your photo."
+        busy={busy || model.deleting}
+        canPick={model.prepared && model.loaded && classifier.isReady}
+        setupAction={<ModelSetup model={model} status={classifier} disabled={busy} />}
+        onRun={run}
+        canRun={model.prepared && !!image && classifier.isReady && model.loaded}
+        running={busy}
+        resultsContent={<ClassificationResult result={result} />}
+        onPick={(picked) => {
+          setImage(picked);
+          setResult(null);
           setError(null);
         }}
-        renderOverlay={() => <ClassificationOverlay results={results} />}
       />
     </TaskScreen>
   );
@@ -75,7 +75,7 @@ function ImageClassificationTask() {
 
 export default function ImageClassificationScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <ImageClassificationTask />
     </ScreenWrapper>
   );

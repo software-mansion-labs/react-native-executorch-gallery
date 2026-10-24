@@ -1,50 +1,42 @@
 import { useState } from 'react';
 import { models, useTextToImage } from 'react-native-executorch';
 
-import { GeneratedImageViewport } from '@/components/GeneratedImageViewport';
-import { PromptInput } from '@/components/PromptInput';
+import { ImageGenerationView } from '@/components/ImageGenerationView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
 import { useDisposableImage } from '@/hooks/useDisposableImage';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 import { bufferToSkImage } from '@/lib/image';
-
-const SUGGESTIONS = [
-  'A serene mountain lake at sunrise, hyperrealistic, 8k',
-  'A cozy library with warm candlelight, digital painting',
-  'A golden retriever puppy in a field of flowers, studio photo',
-];
 
 const MODEL = models.textToImage.SDXS_512_DREAMSHAPER.DEFAULT;
 
 function TextToImageTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [prompt, setPrompt] = useState('');
-  const [image, setImage] = useDisposableImage();
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'SDXS DreamShaper' });
+  const [prompt, setPrompt] = useTaskState('', model.revision);
+  const [image, setImage] = useDisposableImage(model.revision);
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const textToImage = useTextToImage(MODEL, { preventLoad: !loaded });
+  const generator = useTextToImage(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (busy || !prompt.trim() || !textToImage.generate) return;
+    if (!prompt.trim() || !model.loaded || !generator.isReady || !generator.generate) return;
+    if (busy || model.deleting) return;
     setBusy(true);
     setImage(null);
     setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
-      const output = await textToImage.generate(prompt);
-      setLatency(Date.now() - t0);
-
-      const skiaImage = bufferToSkImage(output);
-      if (!skiaImage) throw new Error('Failed to create image from generated output');
-      setImage(skiaImage);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      const started = performance.now();
+      const output = await generator.generate(prompt.trim());
+      const nextImage = bufferToSkImage(output);
+      if (!nextImage) throw new Error('Could not create an image from the generated output.');
+      setImage(nextImage);
+      setLatency(Math.round(performance.now() - started));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
@@ -52,39 +44,29 @@ function TextToImageTask() {
 
   return (
     <TaskScreen
-      title="Text to Image"
-      subtitle="SDXS 512 DreamShaper"
-      status={{ ...textToImage, error: error || textToImage.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
+      title="Text to image"
+      model={model}
+      status={generator}
+      error={error}
       busy={busy}
-      onRun={() => undefined}
-      canRun={false}
-      onDeleteModel={async () => {
-        await deleteCachedFiles(textToImage.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
-      footer={
-        <PromptInput
-          value={prompt}
-          onChangeText={setPrompt}
-          onSubmit={run}
-          disabled={busy}
-          isExecuting={busy}
-          canSubmit={!!prompt.trim() && textToImage.isReady && !busy}
-          suggestions={SUGGESTIONS}
-          placeholder="Describe the image you want to generate…"
-        />
-      }
+      scrollable={false}
     >
-      <GeneratedImageViewport image={image} />
+      <ImageGenerationView
+        image={image}
+        prompt={prompt}
+        onPromptChange={setPrompt}
+        onGenerate={run}
+        busy={busy}
+        latency={latency}
+        model={model}
+        status={generator}
+      />
     </TaskScreen>
   );
 }
-
 export default function TextToImageScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <TextToImageTask />
     </ScreenWrapper>
   );

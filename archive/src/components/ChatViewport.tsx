@@ -68,10 +68,7 @@ function AssistantBubble({
 
   let statsLabel: string | null = null;
   if (stats) {
-    const decodeMs = stats.inferenceEndMs - stats.firstTokenMs;
-    const tokensPerSec = decodeMs > 0 ? (stats.numGeneratedTokens / decodeMs) * 1000 : 0;
-    const ttftMs = stats.firstTokenMs - stats.inferenceStartMs + (stats.prefillDurationMs ?? 0);
-    statsLabel = `${tokensPerSec.toFixed(1)} tok/s · ${ttftMs.toFixed(0)} ms ttft · ${stats.numGeneratedTokens} tokens`;
+    statsLabel = `${stats.tokensPerSecond.toFixed(1)} tok/s · ${stats.prefill.durationMs.toFixed(0)} ms prefill · ${stats.numTokens} tokens`;
   }
 
   return (

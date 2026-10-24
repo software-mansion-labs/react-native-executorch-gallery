@@ -1,0 +1,3479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ExecuTorch Gallery · Design direction</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101114;
+        --surface: #1b1c20;
+        --line: #2b2c31;
+        --text: #f2f2f3;
+        --muted: #a3a4ad;
+        --accent: #a7bded;
+        --ink: #15213b;
+        --glow: #29385435;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          16px/1.6 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+      }
+      body.light {
+        color-scheme: light;
+        --bg: #fafafa;
+        --surface: #f0f0f2;
+        --line: #e1e1e6;
+        --text: #24252a;
+        --muted: #686a73;
+        --accent: #365b9b;
+        --ink: #fff;
+        --glow: #dce7ff55;
+      }
+      button {
+        font: inherit;
+        cursor: pointer;
+        color: inherit;
+      }
+      a {
+        color: var(--accent);
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 5px;
+      }
+      .shell {
+        max-width: 1190px;
+        margin: auto;
+        padding: 36px 32px 72px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+      }
+      .eyebrow {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      h1 {
+        font-size: 42px;
+        line-height: 1.15;
+        letter-spacing: -1.6px;
+        font-weight: 450;
+        margin: 40px 0 14px;
+      }
+      h2 {
+        font-size: 26px;
+        letter-spacing: -0.7px;
+        font-weight: 450;
+        margin: 0 0 16px;
+      }
+      h3 {
+        font-size: 17px;
+        font-weight: 550;
+        margin: 0 0 10px;
+      }
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+      .intro {
+        font-size: 16px;
+        max-width: 750px;
+      }
+      .note,
+      .caption {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .control {
+        border: 1px solid var(--line);
+        background: transparent;
+        border-radius: 99px;
+        padding: 8px 15px;
+        font-size: 12px;
+      }
+      .phones {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 28px;
+        margin: 36px 0;
+      }
+      .caption {
+        margin: 0 0 12px;
+      }
+      .phone {
+        position: relative;
+        height: 720px;
+        border: 1px solid var(--line);
+        border-radius: 38px;
+        overflow: hidden;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+      }
+      .status {
+        display: flex;
+        justify-content: space-between;
+        padding: 18px 25px 12px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        gap: 10px;
+      }
+      .brand {
+        font-size: 16px;
+        font-weight: 450;
+      }
+      .icon {
+        font-size: 22px;
+        font-weight: 300;
+        color: var(--text);
+        line-height: 1;
+      }
+      .top-title {
+        text-align: center;
+        font-size: 15px;
+        font-weight: 450;
+      }
+      .subtitle {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 400;
+      }
+      .pad {
+        padding: 0 26px;
+      }
+      .home-greeting {
+        margin-top: 50px;
+      }
+      .greeting {
+        font-size: 34px;
+        font-weight: 400;
+        letter-spacing: -1.1px;
+        line-height: 1.2;
+        margin: 0 0 14px;
+      }
+      .home-sub {
+        font-size: 13px;
+        line-height: 1.55;
+      }
+      .destinations {
+        margin-top: 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .destination {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 19px 20px;
+        background: var(--surface);
+        border: 0;
+        border-radius: 22px;
+        text-align: left;
+        min-height: 77px;
+      }
+      .destination .symbol {
+        font-size: 24px;
+        font-weight: 300;
+        width: 25px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .destination strong {
+        font-size: 15px;
+        display: block;
+        font-weight: 450;
+      }
+      .destination small {
+        font-size: 11px;
+        color: var(--muted);
+        display: block;
+        margin-top: 2px;
+      }
+      .browse {
+        display: block;
+        background: none;
+        border: 0;
+        font-size: 12px;
+        color: var(--muted);
+        padding: 20px 0;
+        margin: auto;
+        text-align: center;
+      }
+      .bottom {
+        margin-top: auto;
+      }
+      .bottom-line {
+        width: 100px;
+        height: 4px;
+        background: var(--text);
+        border-radius: 99px;
+        margin: 18px auto 10px;
+        opacity: 0.7;
+      }
+      .chat-space {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 22px;
+        position: relative;
+      }
+      .chat-space h3 {
+        font-size: 29px;
+        font-weight: 400;
+        letter-spacing: -0.8px;
+        line-height: 1.2;
+        margin-bottom: 12px;
+      }
+      .chat-space p {
+        font-size: 12px;
+      }
+      .examples {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 0 18px 18px;
+      }
+      .chip {
+        background: transparent;
+        border: 1px solid var(--line);
+        padding: 9px 13px;
+        border-radius: 99px;
+        font-size: 11px;
+      }
+      .composer {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        margin: 0 15px;
+        padding: 15px 15px 15px 19px;
+        border-radius: 28px;
+        background: var(--surface);
+      }
+      .composer textarea {
+        font:
+          14px/1.5 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        color: var(--text);
+        background: transparent;
+        border: 0;
+        resize: none;
+        min-width: 0;
+        flex: 1;
+        height: 36px;
+        max-height: 100px;
+        padding: 7px 0;
+      }
+      .composer textarea::placeholder {
+        color: var(--muted);
+      }
+      .send {
+        border: 0;
+        background: var(--accent);
+        color: var(--ink);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        font-size: 23px;
+        flex-shrink: 0;
+      }
+      .chat-bottom {
+        background: radial-gradient(ellipse at 50% 110%, var(--glow), transparent 70%);
+        padding-top: 14px;
+      }
+      .vision {
+        margin: 30px 18px 16px;
+        height: 390px;
+        border-radius: 26px;
+        overflow: hidden;
+        position: relative;
+        background: linear-gradient(150deg, #7e9aa3, #404d55 45%, #273638);
+      }
+      .land {
+        position: absolute;
+        inset: 100px -60px -100px;
+        transform: rotate(-15deg);
+        background: linear-gradient(135deg, #899184, #c4b8a0);
+        border-radius: 80% 30% 0 0;
+      }
+      .vase {
+        position: absolute;
+        width: 80px;
+        height: 125px;
+        left: 40px;
+        top: 160px;
+        border-radius: 22% 22% 40% 40%;
+        background: linear-gradient(90deg, #817e70, #ded7bd, #a19e87);
+        transform: rotate(5deg);
+      }
+      .branch {
+        position: absolute;
+        height: 90px;
+        width: 4px;
+        background: #606d50;
+        left: 85px;
+        top: 90px;
+        transform: rotate(-18deg);
+      }
+      .branch:before,
+      .branch:after {
+        content: '';
+        position: absolute;
+        width: 24px;
+        height: 45px;
+        border-radius: 100% 0 100% 0;
+        background: #768c62;
+        left: -20px;
+        top: 0;
+      }
+      .branch:after {
+        left: 3px;
+        top: 20px;
+        transform: rotate(30deg);
+      }
+      .book {
+        position: absolute;
+        right: 30px;
+        bottom: 75px;
+        background: #4b697c;
+        width: 95px;
+        height: 35px;
+        border-radius: 2px;
+        box-shadow: 0 4px 0 #d4cfbb;
+        transform: rotate(-20deg);
+      }
+      .box {
+        position: absolute;
+        border: 1px solid #bce7d7;
+        border-radius: 7px;
+        left: 30px;
+        top: 150px;
+        width: 105px;
+        height: 150px;
+      }
+      .box:before {
+        content: 'vase';
+        position: absolute;
+        left: -1px;
+        top: -23px;
+        background: #263e35;
+        color: #e2f5ec;
+        padding: 2px 7px;
+        font:
+          10px/1.5 -apple-system,
+          sans-serif;
+        border-radius: 4px;
+      }
+      .box.bookbox {
+        left: auto;
+        right: 22px;
+        top: auto;
+        bottom: 58px;
+        width: 115px;
+        height: 83px;
+      }
+      .box.bookbox:before {
+        content: 'book';
+      }
+      .sample-label {
+        position: absolute;
+        left: 16px;
+        bottom: 13px;
+        color: #eee;
+        font-size: 10px;
+      }
+      .result {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 25px;
+        font-size: 12px;
+      }
+      .result strong {
+        font-weight: 450;
+      }
+      .result span {
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin: 0 19px;
+      }
+      .actions button {
+        background: var(--surface);
+        border: 0;
+        border-radius: 99px;
+        padding: 15px;
+        font-size: 13px;
+        flex: 1;
+      }
+      .actions .camera {
+        flex: 0 0 48px;
+        padding: 10px;
+        font-size: 20px;
+      }
+      .feedback {
+        color: var(--muted);
+        font-size: 10px;
+        min-height: 16px;
+        text-align: center;
+        margin: 6px 12px 0;
+      }
+      .task-sheet {
+        position: absolute;
+        z-index: 2;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-radius: 28px 28px 0 0;
+        padding: 24px;
+        box-shadow: 0 -30px 80px #0005;
+      }
+      .task-sheet[hidden] {
+        display: none;
+      }
+      .task-sheet header {
+        margin-bottom: 18px;
+      }
+      .task-sheet h3 {
+        margin: 0;
+      }
+      .task-sheet button {
+        background: transparent;
+        border: 0;
+      }
+      .task-sheet .task-link {
+        display: block;
+        text-align: left;
+        width: 100%;
+        padding: 11px 0;
+        font-size: 13px;
+        border-top: 1px solid var(--line);
+      }
+      .panel {
+        border-top: 1px solid var(--line);
+        padding-top: 32px;
+        margin-top: 40px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+      }
+      .card p,
+      .card li {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      ul,
+      ol {
+        padding-left: 20px;
+        margin-bottom: 0;
+      }
+      li {
+        margin-bottom: 12px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+      }
+      td,
+      th {
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 12px;
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 500;
+      }
+      td:first-child {
+        width: 22%;
+      }
+      code {
+        font:
+          12px ui-monospace,
+          monospace;
+        color: var(--accent);
+      }
+      .shots {
+        display: flex;
+        overflow-x: auto;
+        gap: 18px;
+        padding-bottom: 20px;
+      }
+      .shots figure {
+        margin: 0;
+        flex: 0 0 220px;
+      }
+      .shots img {
+        width: 220px;
+        border-radius: 22px;
+        border: 1px solid var(--line);
+      }
+      figcaption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+      button:active {
+        opacity: 0.75;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *:before,
+        *:after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+      @media (max-width: 1000px) {
+        .phones {
+          grid-template-columns: repeat(3, 340px);
+          overflow-x: auto;
+          padding-bottom: 25px;
+        }
+        h1 {
+          font-size: 36px;
+        }
+        .shell {
+          padding: 26px 20px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        header {
+          align-items: flex-start;
+        }
+      }
+
+      @font-face {
+        font-family: Ionicons;
+        src: url('assets/ionicons.ttf') format('truetype');
+        font-display: block;
+      }
+      .ui-icon {
+        font-family: Ionicons !important;
+        font-size: 22px;
+        font-style: normal;
+        font-weight: normal;
+        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .executorch-mark {
+        width: 25px;
+        height: 32px;
+        object-fit: contain;
+      }
+      .destination > .ui-icon {
+        color: var(--muted);
+        font-size: 23px;
+      }
+      .quiet-icon {
+        background: transparent;
+        border: 0;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 50%;
+        color: var(--text);
+      }
+      .top {
+        min-height: 64px;
+      }
+      .top > .ui-icon {
+        width: 36px;
+      }
+      .actions {
+        justify-content: center;
+        gap: 16px;
+        margin: 0 24px;
+      }
+      .actions button {
+        flex: 0 0 52px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        padding: 0;
+        display: grid;
+        place-items: center;
+      }
+      .actions .ui-icon {
+        font-size: 23px;
+      }
+      .speech-section,
+      .models-section {
+        padding-top: 24px;
+        margin-top: 38px;
+      }
+      .section-intro {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+      }
+      .section-intro h2 {
+        margin-bottom: 8px;
+      }
+      .section-intro .control {
+        white-space: nowrap;
+      }
+      .section-note {
+        font-size: 13px;
+        max-width: 840px;
+      }
+      .speech-section .phones,
+      .models-section .phones {
+        margin-top: 24px;
+      }
+      .speech-caption {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 23px;
+      }
+      .mini-control {
+        padding: 0;
+        background: transparent;
+        border: 0;
+        color: var(--accent);
+        font-size: 11px;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .speech-body {
+        flex: 1;
+        min-height: 0;
+        padding: 48px 28px 24px;
+        display: flex;
+        flex-direction: column;
+      }
+      .speech-label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 20px;
+      }
+      .speech-script {
+        border: 0;
+        background: transparent;
+        resize: none;
+        width: 100%;
+        height: 180px;
+        font:
+          400 27px/1.4 -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        letter-spacing: -0.5px;
+        color: var(--text);
+        padding: 0;
+        outline-offset: 8px;
+      }
+      .transcript {
+        font-size: 26px;
+        font-weight: 400;
+        line-height: 1.48;
+        letter-spacing: -0.4px;
+        color: var(--text);
+        margin: 0;
+      }
+      .transcript .interim {
+        color: var(--muted);
+      }
+      .speech-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 24px 0;
+      }
+      .speech-state {
+        font-size: 12px;
+        color: var(--muted);
+        min-height: 20px;
+        margin: 0 0 14px;
+      }
+      .voice-action {
+        height: 64px;
+        width: 64px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--ink);
+        border: 0;
+      }
+      .voice-action .ui-icon {
+        font-size: 26px;
+      }
+      .wave {
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: var(--accent);
+        margin-bottom: 20px;
+      }
+      .wave i {
+        display: block;
+        width: 3px;
+        height: var(--h);
+        background: currentColor;
+        border-radius: 8px;
+        opacity: 0.75;
+      }
+      .wave.quiet i {
+        height: 3px !important;
+        opacity: 0.35;
+      }
+      .wave.active i {
+        animation: wave-breathe 1.7s ease-in-out infinite alternate;
+        animation-delay: var(--d, 0s);
+      }
+      @keyframes wave-breathe {
+        to {
+          transform: scaleY(0.65);
+          opacity: 0.45;
+        }
+      }
+      .voice-centre {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 30px;
+      }
+      .voice-centre h3 {
+        font-size: 29px;
+        font-weight: 400;
+        letter-spacing: -0.7px;
+        margin: 18px 0 8px;
+      }
+      .voice-centre p {
+        font-size: 12px;
+        text-align: center;
+        max-width: 240px;
+      }
+      .voice-centre .wave {
+        height: 72px;
+        margin: 0;
+      }
+      .speech-controls .bottom-line {
+        margin-top: 26px;
+      }
+      .speech-state .record-dot {
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+        margin: 0 6px 2px 0;
+      }
+      .tts-footer {
+        padding-top: 20px;
+      }
+      .speech-controls .feedback {
+        margin-bottom: 3px;
+      }
+      .speech-idle .speech-script {
+        opacity: 0.9;
+      }
+      .speech-idle .transcript {
+        font-size: 29px;
+        font-weight: 400;
+        line-height: 1.3;
+      }
+      .speech-idle .speech-label {
+        margin-bottom: 26px;
+      }
+      .speaker-model {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .model-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        display: flex;
+        align-items: flex-end;
+      }
+      .model-layer[hidden] {
+        display: none;
+      }
+      .model-scrim {
+        position: absolute;
+        inset: 0;
+        background: #0008;
+        border: 0;
+        cursor: default;
+      }
+      .model-sheet {
+        position: relative;
+        background: var(--surface);
+        width: 100%;
+        border-radius: 28px 28px 0 0;
+        padding: 10px 22px 12px;
+        max-height: calc(100% - 75px);
+        overflow-y: auto;
+        box-shadow: 0 -12px 40px #0002;
+      }
+      .sheet-handle {
+        height: 4px;
+        width: 32px;
+        background: var(--muted);
+        opacity: 0.3;
+        border-radius: 8px;
+        margin: 0 auto 16px;
+      }
+      .sheet-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .sheet-title h3 {
+        font-size: 23px;
+        font-weight: 450;
+        letter-spacing: -0.5px;
+        margin: 0;
+      }
+      .sheet-title p {
+        font-size: 11px;
+        margin: 2px 0 0;
+      }
+      .sheet-title .quiet-icon {
+        width: 30px;
+        height: 30px;
+      }
+      .model-row {
+        border-top: 1px solid var(--line);
+        padding: 18px 0;
+      }
+      .model-row-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .model-info {
+        background: none;
+        border: 0;
+        text-align: left;
+        padding: 0;
+        flex: 1;
+        min-width: 0;
+        line-height: 1.5;
+      }
+      .model-name {
+        font-size: 13px;
+        font-weight: 500;
+        display: block;
+      }
+      .model-info small {
+        font-size: 10px;
+        color: var(--muted);
+        display: block;
+        margin-top: 4px;
+      }
+      .model-state {
+        font-size: 10px;
+        color: var(--muted);
+        display: block;
+        margin-top: 7px;
+      }
+      .model-state.loaded {
+        color: var(--accent);
+      }
+      .model-state.loaded:before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: currentColor;
+        margin-right: 5px;
+        vertical-align: 2px;
+      }
+      .model-action {
+        background: var(--bg);
+        border: 0;
+        border-radius: 99px;
+        padding: 8px 11px;
+        min-width: 59px;
+        font-size: 11px;
+        color: var(--text);
+      }
+      .model-action.primary {
+        background: var(--accent);
+        color: var(--ink);
+      }
+      .model-action:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .model-more {
+        font-size: 10px;
+        color: var(--muted);
+        margin: 0 0 0 4px;
+      }
+      .model-details {
+        padding-top: 15px;
+      }
+      .model-details dl {
+        font-size: 10px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        row-gap: 7px;
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .model-details dd {
+        margin: 0;
+        text-align: right;
+        color: var(--text);
+      }
+      .delete-model {
+        font-size: 11px;
+        color: #e19a9f;
+        background: transparent;
+        border: 0;
+        padding: 5px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .delete-model .ui-icon {
+        font-size: 14px;
+        width: 16px;
+        height: 16px;
+      }
+      body.light .delete-model {
+        color: #a4424d;
+      }
+      .delete-confirm {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .delete-confirm p {
+        font-size: 11px;
+        margin-bottom: 9px;
+      }
+      .delete-confirm button {
+        font-size: 10px;
+        border: 0;
+        background: var(--bg);
+        color: var(--text);
+        padding: 7px 11px;
+        border-radius: 99px;
+        margin-right: 7px;
+      }
+      .delete-confirm .confirm-delete {
+        color: #e19a9f;
+      }
+      body.light .delete-confirm .confirm-delete {
+        color: #a4424d;
+      }
+      .download-track {
+        height: 2px;
+        background: var(--line);
+        border-radius: 5px;
+        margin-top: 15px;
+        overflow: hidden;
+      }
+      .download-track span {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+      }
+      .sheet-foot {
+        font-size: 10px;
+        color: var(--muted);
+        line-height: 1.7;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        margin: 0;
+      }
+      .sheet-announcement {
+        font-size: 10px;
+        min-height: 16px;
+        color: var(--muted);
+        margin: 8px 0 0;
+      }
+      .model-sheet .bottom-line {
+        height: 4px;
+        margin: 15px auto 0;
+      }
+      .model-choice-note {
+        font-size: 11px;
+        margin: 18px 0 0;
+      }
+      .model-preview .vision {
+        height: 390px;
+      }
+      .speech-rationale {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 28px;
+        margin-bottom: 10px;
+      }
+      .speech-rationale p {
+        font-size: 13px;
+      }
+      .speech-rationale h3 {
+        font-size: 15px;
+      }
+      .ui-icon {
+        user-select: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wave.active i {
+          animation: none !important;
+        }
+      }
+      @media (max-width: 1000px) {
+        .section-intro {
+          align-items: flex-start;
+        }
+        .speech-rationale {
+          grid-template-columns: 1fr;
+        }
+        .speech-section,
+        .models-section {
+          margin-top: 22px;
+        }
+      }
+
+      .model-sheet {
+        padding: 10px 22px 12px;
+        box-shadow: none;
+      }
+      .sheet-title {
+        margin-bottom: 6px;
+      }
+      .sheet-title h3 {
+        font-size: 22px;
+      }
+      .model-row {
+        padding: 17px 0;
+        border-top: 0;
+      }
+      .model-row + .model-row {
+        border-top: 1px solid var(--line);
+      }
+      .model-name {
+        font-size: 14px;
+        font-weight: 450;
+      }
+      .model-state {
+        font-size: 11px;
+        margin-top: 5px;
+      }
+      .model-controls {
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+      .model-action,
+      .delete-model {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 0;
+        border-radius: 50%;
+        padding: 0;
+        margin: 0;
+        width: 44px;
+        min-width: 44px;
+        height: 44px;
+        color: var(--muted);
+        font-size: inherit;
+      }
+      .model-action.primary {
+        background: transparent;
+        color: var(--accent);
+      }
+      .model-action .ui-icon,
+      .delete-model .ui-icon {
+        font-size: 20px;
+        width: 24px;
+        height: 24px;
+      }
+      body.light .delete-model {
+        color: var(--muted);
+      }
+      .delete-model:hover {
+        color: var(--text);
+      }
+      .model-details {
+        font-size: 10px;
+        color: var(--muted);
+        padding-top: 8px;
+      }
+      .delete-confirm {
+        padding: 12px 0 0;
+      }
+      .delete-confirm p {
+        font-size: 11px;
+        line-height: 1.6;
+        margin-bottom: 7px;
+      }
+      .delete-confirm > div {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+      }
+      .delete-confirm button {
+        background: transparent;
+        padding: 6px 0;
+        margin: 0;
+        border-radius: 0;
+        font-size: 11px;
+      }
+      .delete-confirm .confirm-delete {
+        color: #e19a9f;
+      }
+      .sheet-announcement:empty {
+        display: none;
+      }
+      .sheet-announcement {
+        margin: 10px 0 0;
+      }
+      .model-sheet .bottom-line {
+        margin-top: 18px;
+      }
+      .home-greeting.hero-branded {
+        margin-top: 23px;
+      }
+      .hero-mark {
+        width: 34px;
+        height: 43px;
+        object-fit: contain;
+        display: block;
+        margin-bottom: 19px;
+      }
+      .hero-branded .destinations {
+        margin-top: 34px;
+      }
+      .logo-section {
+        padding-top: 24px;
+        margin-top: 38px;
+      }
+      .logo-options {
+        display: grid;
+        grid-template-columns: repeat(2, 357px);
+        justify-content: center;
+        gap: 32px;
+        margin: 28px 0;
+      }
+      .logo-options .phone {
+        width: 357px;
+      }
+      @media (max-width: 1000px) {
+        .logo-options {
+          grid-template-columns: repeat(2, 340px);
+          justify-content: start;
+          overflow-x: auto;
+          padding-bottom: 20px;
+        }
+        .logo-options .phone {
+          width: 340px;
+        }
+      }
+
+      .tts-stage {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        padding: 30px;
+      }
+      .tts-stage .wave {
+        margin-bottom: 18px;
+      }
+      .tts-stage .wave[hidden],
+      .tts-greeting[hidden] {
+        display: none;
+      }
+      .tts-greeting {
+        font-size: 29px;
+        font-weight: 400;
+        line-height: 1.25;
+        letter-spacing: -0.8px;
+        text-align: center;
+        margin: 0 0 15px;
+      }
+      .tts-stage .speech-state {
+        font-size: 12px;
+        margin-bottom: 0;
+      }
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        width: 144px;
+        height: 42px;
+        flex: 0 0 144px;
+      }
+      .brand-lockup img {
+        width: 144px;
+        height: 42px;
+        object-fit: contain;
+      }
+      .brand-lockup .logo-light {
+        display: none;
+      }
+      body.light .brand-lockup .logo-light {
+        display: block;
+      }
+      body.light .brand-lockup .logo-dark {
+        display: none;
+      }
+      .home-header-centred {
+        position: relative;
+        justify-content: center;
+      }
+      .home-header-centred > .ui-icon {
+        position: absolute;
+        right: 24px;
+      }
+      .logo-options .caption {
+        min-height: 20px;
+      }
+
+      .catalogue-section {
+        margin-top: 38px;
+        padding-top: 24px;
+      }
+      .catalogue-page {
+        position: absolute;
+        inset: 0;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        z-index: 3;
+      }
+      .catalogue-page[hidden] {
+        display: none;
+      }
+      .catalogue-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 18px 12px;
+        min-height: 64px;
+        gap: 12px;
+      }
+      .catalogue-top h3 {
+        font-size: 16px;
+        font-weight: 450;
+        margin: 0;
+      }
+      .catalogue-spacer {
+        width: 36px;
+        height: 36px;
+      }
+      .catalogue-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 24px 18px;
+        background: var(--surface);
+        border-radius: 99px;
+        padding: 11px 15px;
+      }
+      .catalogue-search .ui-icon {
+        font-size: 18px;
+        width: 20px;
+        height: 20px;
+        color: var(--muted);
+      }
+      .catalogue-search input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline-offset: 4px;
+        background: transparent;
+        color: var(--text);
+        font: 13px/1.5 inherit;
+        font-family: inherit;
+        line-height: 1.5;
+        font-size: 13px;
+      }
+      .catalogue-search input::placeholder {
+        color: var(--muted);
+      }
+      .catalogue-content {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 0 24px;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+      }
+      .catalogue-content::-webkit-scrollbar {
+        display: none;
+      }
+      .catalogue-count {
+        font-size: 11px;
+        color: var(--muted);
+        margin: 0 0 20px;
+      }
+      .catalogue-group {
+        margin-bottom: 25px;
+      }
+      .catalogue-group h4 {
+        font-size: 11px;
+        font-weight: 450;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      .catalogue-task {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        width: 100%;
+        min-height: 52px;
+        padding: 13px 0;
+        border: 0;
+        background: none;
+        text-align: left;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+      .catalogue-task .ui-icon {
+        font-size: 15px;
+        color: var(--muted);
+        width: 16px;
+        height: 16px;
+      }
+      .catalogue-empty {
+        font-size: 13px;
+        line-height: 1.8;
+        padding-top: 40px;
+        text-align: center;
+      }
+      .catalogue-page > .bottom-line,
+      .catalogue-example > .bottom-line {
+        flex-shrink: 0;
+        margin-top: 16px;
+      }
+      .catalogue-section .logo-options {
+        margin-top: 28px;
+      }
+
+      .home-intro {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 26px 6px;
+        text-align: center;
+      }
+      .home-mark {
+        width: 46px;
+        height: 59px;
+        object-fit: contain;
+        display: block;
+        margin: 0 0 23px;
+      }
+      .home-intro .greeting {
+        font-size: 31px;
+        line-height: 1.25;
+        letter-spacing: -0.9px;
+        font-weight: 400;
+        margin: 0;
+      }
+      .home-discovery {
+        padding: 0 26px;
+      }
+      .home-discovery .destinations {
+        margin-top: 0;
+        gap: 10px;
+      }
+      .home-discovery .destination {
+        min-height: 66px;
+        padding: 14px 18px;
+      }
+      .home-discovery .browse {
+        padding: 18px 0;
+      }
+      .home-top .brand {
+        font-size: 15px;
+        font-weight: 450;
+      }
+      .top:has(.top-title) {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) 36px;
+        gap: 10px;
+        align-items: start;
+        padding: 12px 24px;
+        min-height: 76px;
+        flex-shrink: 0;
+      }
+      .top:has(.top-title) > .ui-icon,
+      .top:has(.top-title) > .quiet-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .top-title {
+        font-size: 15px;
+        line-height: 24px;
+        font-weight: 450;
+        padding-top: 6px;
+        min-width: 0;
+        text-align: center;
+      }
+      .top-title .subtitle {
+        font-size: 11px;
+        line-height: 16px;
+        font-weight: 400;
+        color: var(--muted);
+        margin-top: 0;
+      }
+      .header-brand-alternative .home-intro {
+        align-items: flex-start;
+        text-align: left;
+      }
+      .header-brand-alternative .home-mark {
+        display: none;
+      }
+      .header-brand-alternative .home-intro .greeting {
+        font-size: 31px;
+      }
+      .logo-options .home-intro {
+        min-height: 0;
+      }
+
+      .send {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .send .ui-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+      .model-action.text-action {
+        width: 56px;
+        min-width: 56px;
+        height: 44px;
+        font-size: 11px;
+        border-radius: 0;
+      }
+      .composer textarea {
+        height: 36px;
+        max-height: 100px;
+      }
+      .tts-bottom .bottom-line {
+        margin-top: 18px;
+      }
+
+      .delete-dialog-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 6;
+        background: #0006;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+      }
+      .delete-dialog-layer[hidden] {
+        display: none;
+      }
+      .delete-dialog {
+        width: 270px;
+        border-radius: 22px;
+        background: var(--surface);
+        text-align: center;
+        overflow: hidden;
+        box-shadow: 0 8px 30px #0003;
+      }
+      .delete-dialog h4 {
+        font-size: 16px;
+        font-weight: 550;
+        line-height: 1.4;
+        margin: 22px 20px 8px;
+      }
+      .delete-dialog p {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--muted);
+        margin: 0 20px 20px;
+      }
+      .delete-dialog-actions {
+        display: flex;
+        border-top: 1px solid var(--line);
+      }
+      .delete-dialog-actions button {
+        flex: 1;
+        min-height: 46px;
+        background: transparent;
+        border: 0;
+        color: var(--text);
+        font-size: 14px;
+      }
+      .delete-dialog-actions button + button {
+        border-left: 1px solid var(--line);
+      }
+      .delete-dialog-actions .confirm-delete {
+        color: #e19a9f;
+      }
+      body.light .delete-dialog-actions .confirm-delete {
+        color: #a4424d;
+      }
+
+      .unloaded-section {
+        margin-top: 38px;
+        padding-top: 24px;
+      }
+      .unloaded-section .phones {
+        margin-top: 24px;
+      }
+      .empty-stage {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 30px 28px 20px;
+      }
+      .empty-stage > .ui-icon {
+        font-size: 30px;
+        width: 36px;
+        height: 36px;
+        color: var(--muted);
+        margin-bottom: 24px;
+      }
+      .empty-stage h3 {
+        font-size: 27px;
+        line-height: 1.3;
+        font-weight: 400;
+        letter-spacing: -0.6px;
+        margin: 0 0 14px;
+      }
+      .empty-description {
+        font-size: 12px;
+        line-height: 1.65;
+        color: var(--muted);
+        margin-bottom: 22px;
+      }
+      .prepare-model {
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 12px 21px;
+        border: 0;
+        border-radius: 99px;
+        background: var(--accent);
+        color: var(--ink);
+        min-height: 44px;
+      }
+      .prepare-model:disabled {
+        opacity: 0.65;
+        cursor: default;
+      }
+      .empty-status {
+        font-size: 11px;
+        margin: 12px 0 0;
+        min-height: 18px;
+        color: var(--muted);
+      }
+      .empty-footer {
+        padding-top: 16px;
+      }
+      .empty-footer .send:disabled {
+        background: var(--surface);
+        color: var(--muted);
+        opacity: 0.5;
+        cursor: default;
+      }
+      .empty-footer .bottom-line {
+        margin-top: 18px;
+      }
+
+      .memory-glyph {
+        position: relative;
+        width: 28px;
+        height: 28px;
+        display: block;
+      }
+      .memory-glyph .memory-chip {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        font-size: 23px;
+        width: 25px;
+        height: 25px;
+      }
+      .memory-glyph .memory-arrow {
+        position: absolute;
+        right: -1px;
+        top: -2px;
+        width: 14px;
+        height: 16px;
+        font-size: 14px;
+        background: var(--surface);
+        border-radius: 5px;
+      }
+      .model-controls .model-action.primary {
+        color: var(--muted);
+      }
+      .memory-arrow {
+        color: var(--accent);
+      }
+      .top-title .subtitle {
+        min-height: 16px;
+      }
+
+      @keyframes logo-reveal {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .home-mark {
+        animation: logo-reveal 700ms ease-out both;
+        filter: none;
+      }
+      .home-intro[inert] .home-mark {
+        animation-play-state: paused;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .home-mark {
+          animation: none;
+          filter: none;
+        }
+      }
+
+      .overflow-dots {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+      }
+      .overflow-dots i {
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: currentColor;
+        display: block;
+      }
+      .top > .overflow-dots {
+        width: 36px;
+        height: 36px;
+      }
+      .top:has(.top-title) > .overflow-dots {
+        width: 36px;
+        height: 36px;
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        border: 1.5px solid var(--line);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: loading-spin 1s linear infinite;
+        flex-shrink: 0;
+      }
+      @keyframes loading-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .model-controls {
+        width: 100px;
+        min-width: 100px;
+        justify-content: flex-end;
+      }
+      .model-action:disabled {
+        opacity: 1;
+      }
+      .waiting-section {
+        padding-top: 24px;
+        margin-top: 38px;
+      }
+      .waiting-section .phones {
+        margin-top: 24px;
+      }
+      .inference-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .inference-waiting .actions button:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+      .inference-waiting .model-menu:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .inference-waiting .result {
+        min-height: 20px;
+        align-items: center;
+      }
+      .loading-example .prepare-model {
+        visibility: hidden;
+      }
+      .model-row {
+        min-height: 80px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .spinner {
+          animation: none;
+        }
+      }
+
+      .review-controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .shell > header {
+        flex-wrap: wrap;
+      }
+      .home-intro[inert] .home-mark {
+        animation-play-state: paused !important;
+      }
+
+      body.logo-reveal-preview .home-mark {
+        animation: logo-reveal 700ms ease-out both !important;
+        filter: none;
+      }
+      .model-card-section {
+        margin-top: 38px;
+        padding-top: 24px;
+      }
+      .model-card-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
+        align-items: center;
+        gap: 56px;
+        max-width: 980px;
+        margin: 30px auto;
+      }
+      .model-card-frame {
+        min-height: 360px;
+        display: flex;
+        align-items: center;
+      }
+      .model-card-sandbox {
+        position: relative;
+        width: 100%;
+        border-radius: 28px;
+        overflow: hidden;
+      }
+      .model-card-sandbox .model-layer {
+        position: relative;
+        inset: auto;
+        display: block;
+      }
+      .model-card-sandbox .model-layer[hidden] {
+        display: none;
+      }
+      .model-card-sandbox .model-scrim {
+        display: none;
+      }
+      .model-card-sandbox .model-sheet {
+        max-height: none;
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding-bottom: 22px;
+      }
+      .model-card-sandbox .model-sheet > .bottom-line {
+        display: none;
+      }
+      .model-card-notes {
+        max-width: 420px;
+      }
+      .model-card-notes h3 {
+        font-size: 18px;
+        font-weight: 450;
+      }
+      .model-card-notes p {
+        font-size: 13px;
+      }
+      .model-card-notes b {
+        font-weight: 500;
+        color: var(--text);
+      }
+      @media (max-width: 760px) {
+        .model-card-layout {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 24px;
+        }
+        .model-card-frame {
+          max-width: 400px;
+          width: 100%;
+          margin: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div class="eyebrow">ExecuTorch Gallery / Design study 03</div>
+        <div class="review-controls">
+          <button class="control" id="theme" aria-pressed="false">Switch to light</button
+          ><button class="control" id="logo-motion">Replay logo reveal</button>
+        </div>
+      </header>
+      <h1>A quieter gallery.</h1>
+      <p class="intro">
+        Gemini mobile first: open space, quiet surfaces, one clear action. TypeGPU Kit contributes a
+        little precision, rather than more decoration.
+      </p>
+      <p class="note">
+        Revised concept · Browser mockups, not app UI. Results below are illustrative. Try the
+        theme, “Browse all demos”, the vision model menu, and the speech controls.
+      </p>
+      <div class="phones">
+        <div>
+          <div class="caption">Discover / fewer decisions</div>
+          <section class="phone">
+            <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+            <div class="top home-top">
+              <span class="brand">Gallery</span
+              ><span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="home-intro">
+              <img class="home-mark" src="../../assets/images/logo-hero.svg" alt="ExecuTorch" />
+              <h2 class="greeting">A little wonder.<br />All on your phone.</h2>
+            </div>
+            <div class="home-discovery">
+              <div class="destinations">
+                <button class="destination" data-preview="chat">
+                  <span class="ui-icon" aria-hidden="true">&#xf215;</span
+                  ><span
+                    ><strong>Talk it through</strong><small>Chat with a local model</small></span
+                  ></button
+                ><button class="destination" data-preview="vision">
+                  <span class="ui-icon" aria-hidden="true">&#xf38f;</span
+                  ><span
+                    ><strong>See something new</strong><small>Explore computer vision</small></span
+                  ></button
+                ><button class="destination" data-preview="audio">
+                  <span class="ui-icon" aria-hidden="true">&#xf45e;</span
+                  ><span
+                    ><strong>Find your voice</strong><small>Listen, transcribe, create</small></span
+                  >
+                </button>
+              </div>
+              <button class="browse" id="browse">Browse all demos →</button>
+            </div>
+            <div class="bottom">
+              <div class="feedback" aria-live="polite"></div>
+              <div class="bottom-line"></div>
+            </div>
+            <div class="catalogue-page" hidden></div>
+          </section>
+        </div>
+        <div>
+          <div class="caption">Chat / room to think</div>
+          <section class="phone">
+            <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+            <div class="top">
+              <span class="ui-icon" aria-hidden="true">&#xf22d;</span>
+              <div class="top-title">
+                Local chat
+                <div class="subtitle">LFM 2.5</div>
+              </div>
+              <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            </div>
+            <div class="chat-space">
+              <div>
+                <h3>Where shall<br />we start?</h3>
+                <p>Just you and your on-device AI.</p>
+              </div>
+            </div>
+            <div class="chat-bottom">
+              <div class="examples">
+                <button class="chip" data-prompt="Explain on-device AI in one sentence.">
+                  Explain something</button
+                ><button class="chip" data-prompt="Write a short haiku about coding.">
+                  Write a haiku
+                </button>
+              </div>
+              <div class="composer">
+                <textarea
+                  id="prompt"
+                  aria-label="Message the local model"
+                  placeholder="Ask anything…"
+                ></textarea
+                ><button class="send" aria-label="Preview sending a message">
+                  <span class="ui-icon" aria-hidden="true">&#61765;</span>
+                </button>
+              </div>
+              <div class="feedback" id="chat-note" aria-live="polite"></div>
+              <div class="bottom-line"></div>
+            </div>
+          </section>
+        </div>
+        <div>
+          <div class="caption">Vision / shared image controls</div>
+          <section class="phone">
+            <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+            <div class="top">
+              <span class="ui-icon" aria-hidden="true">&#xf22d;</span>
+              <div class="top-title">
+                Object detection
+                <div class="subtitle">SSDLite MobileNetV3</div>
+              </div>
+              <button
+                class="quiet-icon model-menu"
+                aria-label="Choose and manage object detection models"
+                aria-haspopup="dialog"
+              >
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </button>
+            </div>
+            <div
+              class="vision"
+              role="img"
+              aria-label="Illustrative sample with vase and book detections"
+            >
+              <div class="land"></div>
+              <div class="branch"></div>
+              <div class="vase"></div>
+              <div class="book"></div>
+              <div class="box"></div>
+              <div class="box bookbox"></div>
+              <span class="sample-label">Sample illustration</span>
+            </div>
+            <div class="result"><strong>2 objects found</strong><span>42 ms</span></div>
+            <div class="bottom">
+              <div class="actions" role="group" aria-label="Image input">
+                <button
+                  data-action="library"
+                  aria-label="Choose an image from gallery"
+                  title="Choose image"
+                >
+                  <span class="ui-icon" aria-hidden="true">&#xf38f;</span>
+                </button>
+                <button data-action="camera" aria-label="Take a photo" title="Take photo">
+                  <span class="ui-icon" aria-hidden="true">&#xf1dc;</span>
+                </button>
+              </div>
+              <div class="feedback" aria-live="polite"></div>
+              <div class="bottom-line"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+      <section class="catalogue-section" id="catalogue-concepts">
+        <h2>A catalogue that can keep growing.</h2>
+        <p class="section-note">
+          “Browse all demos” pushes a dedicated screen with search and a scrolling task list. The
+          prototype uses all 15 tasks from the current app. Back returns to the calm home screen.
+          Model management stays contextual in its bottom sheet.
+        </p>
+        <div class="logo-options" id="catalogue-examples"></div>
+        <p class="section-note">
+          In the app, use a separate Expo Router route backed by the task registry. Search by task,
+          category, or model; add filters only as the catalogue grows. The prototype simulates the
+          navigation inside the phone frame.
+        </p>
+      </section>
+      <section class="unloaded-section" id="unloaded-concepts">
+        <div class="section-intro">
+          <h2>Before the first result.</h2>
+          <button class="control" id="downloaded-toggle">Show models already on disk</button>
+        </div>
+        <p class="section-note">
+          No model is loaded in these examples. The header shows a model only after it has been
+          loaded. “Choose a model” opens the task-specific model picker. You can prepare text or
+          choose an image before loading. All model actions are simulated here; no files are
+          downloaded.
+        </p>
+        <div class="phones">
+          <div>
+            <div class="caption">Object detection / before the model is loaded</div>
+            <section class="phone unloaded-phone" data-unloaded="vision">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#61997;</span>
+                <div class="top-title">
+                  Object detection
+                  <div class="subtitle">SSDLite MobileNetV3</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="empty-stage">
+                <span class="ui-icon" aria-hidden="true">&#62351;</span>
+                <h3>Start with a photo.</h3>
+                <p
+                  class="empty-description"
+                  data-first-description="Download a model to find objects<br>on this device."
+                >
+                  Download a model to find objects<br />on this device.
+                </p>
+                <button class="prepare-model">Choose a model</button>
+                <p class="empty-status" aria-live="polite"></p>
+              </div>
+              <div class="empty-footer">
+                <div class="actions">
+                  <button aria-label="Choose an image from gallery" data-empty-input>
+                    <span class="ui-icon" aria-hidden="true">&#62351;</span></button
+                  ><button aria-label="Take a photo" data-empty-input>
+                    <span class="ui-icon" aria-hidden="true">&#61916;</span>
+                  </button>
+                </div>
+                <div class="feedback" aria-live="polite"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+          <div>
+            <div class="caption">Local chat / before the model is loaded</div>
+            <section class="phone unloaded-phone" data-unloaded="chat">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#61997;</span>
+                <div class="top-title">
+                  Local chat
+                  <div class="subtitle">LFM 2.5</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="empty-stage">
+                <h3>Where shall<br />we start?</h3>
+                <p
+                  class="empty-description"
+                  data-first-description="Download the model to start a conversation."
+                >
+                  Download the model to start a conversation.
+                </p>
+                <button class="prepare-model">Choose a model</button>
+                <p class="empty-status" aria-live="polite"></p>
+              </div>
+              <div class="empty-footer">
+                <div class="composer">
+                  <textarea aria-label="Message" placeholder="Ask anything…"></textarea
+                  ><button class="send" disabled aria-label="Send message">
+                    <span class="ui-icon" aria-hidden="true">&#61765;</span>
+                  </button>
+                </div>
+                <div class="feedback" aria-live="polite"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+          <div>
+            <div class="caption">Text to speech / before the model is loaded</div>
+            <section class="phone unloaded-phone" data-unloaded="tts">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#61997;</span>
+                <div class="top-title">
+                  Text to speech
+                  <div class="subtitle">Kokoro</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="empty-stage">
+                <h3>Give your words<br />a voice.</h3>
+                <p
+                  class="empty-description"
+                  data-first-description="Download the model to hear it here."
+                >
+                  Download the model to hear it here.
+                </p>
+                <button class="prepare-model">Choose a model</button>
+                <p class="empty-status" aria-live="polite"></p>
+              </div>
+              <div class="empty-footer">
+                <div class="composer">
+                  <textarea
+                    aria-label="Text to read aloud"
+                    placeholder="What would you like to hear?"
+                  ></textarea
+                  ><button class="send" disabled aria-label="Read text aloud">
+                    <span class="ui-icon" aria-hidden="true">&#62662;</span>
+                  </button>
+                </div>
+                <div class="feedback" aria-live="polite"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <p class="section-note">
+          Choose a model opens the task-specific picker. Download stores the model on disk; Load
+          explicitly prepares it in memory. Real download size and progress should come from
+          metadata; preparation should use an indeterminate state. The model menu remains available
+          for choosing another model.
+        </p>
+      </section>
+      <section class="speech-section" id="speech-concepts">
+        <div class="section-intro">
+          <h2>Speech, with room to breathe.</h2>
+          <button class="control" id="speech-reset">Show ready states</button>
+        </div>
+        <p class="section-note">
+          Three different jobs, one quiet visual language. The controls below simulate states only;
+          no microphone is opened and no audio is generated.
+        </p>
+        <div class="phones">
+          <div>
+            <div class="caption speech-caption">Text to speech / a familiar composer</div>
+            <section class="phone speech-phone tts-phone" data-speech="tts">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#xf22d;</span>
+                <div class="top-title">
+                  Text to speech
+                  <div class="subtitle">Kokoro</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="tts-stage">
+                <h3 class="tts-greeting" hidden>Give your words<br />a voice.</h3>
+                <div class="wave active" aria-hidden="true">
+                  <i style="--h: 8px; --d: -0s"></i><i style="--h: 14px; --d: -0.2s"></i
+                  ><i style="--h: 22px; --d: -0.4s"></i
+                  ><i style="--h: 35px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 44px; --d: -0.8s"></i><i style="--h: 28px; --d: -0s"></i
+                  ><i style="--h: 19px; --d: -0.2s"></i><i style="--h: 38px; --d: -0.4s"></i
+                  ><i style="--h: 50px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 32px; --d: -0.8s"></i><i style="--h: 20px; --d: -0s"></i
+                  ><i style="--h: 42px; --d: -0.2s"></i><i style="--h: 30px; --d: -0.4s"></i
+                  ><i style="--h: 17px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 25px; --d: -0.8s"></i><i style="--h: 14px; --d: -0s"></i
+                  ><i style="--h: 8px; --d: -0.2s"></i>
+                </div>
+                <p class="speech-state" aria-live="polite">Speaking on this device</p>
+              </div>
+              <div class="chat-bottom tts-bottom">
+                <div class="examples">
+                  <button class="chip" data-speech-prompt="Welcome. Make yourself at home.">
+                    A short welcome</button
+                  ><button class="chip" data-speech-prompt="She sells seashells by the seashore.">
+                    A tongue twister
+                  </button>
+                </div>
+                <div class="composer">
+                  <textarea
+                    id="speech-text"
+                    class="tts-input"
+                    aria-label="Text to read aloud"
+                    placeholder="What would you like to hear?"
+                    spellcheck="false"
+                  >
+Say hello.</textarea
+                  ><button class="send" data-voice="tts" aria-label="Stop speaking">
+                    <span class="ui-icon" aria-hidden="true">&#xf59e;</span>
+                  </button>
+                </div>
+                <div class="feedback"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+          <div>
+            <div class="caption speech-caption">Speech to text / words on the page</div>
+            <section class="phone speech-phone stt-phone" data-speech="stt">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#xf22d;</span>
+                <div class="top-title">
+                  Speech to text
+                  <div class="subtitle">Whisper Tiny · English</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="speech-body">
+                <div class="speech-label">Live transcript</div>
+                <p class="transcript">
+                  Let’s keep the technology out of the way.
+                  <span class="interim">Just speak, and let the words follow.</span>
+                </p>
+              </div>
+              <div class="speech-controls">
+                <div class="wave active" aria-hidden="true">
+                  <i style="--h: 8px; --d: -0s"></i><i style="--h: 14px; --d: -0.2s"></i
+                  ><i style="--h: 22px; --d: -0.4s"></i
+                  ><i style="--h: 35px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 44px; --d: -0.8s"></i><i style="--h: 28px; --d: -0s"></i
+                  ><i style="--h: 19px; --d: -0.2s"></i><i style="--h: 38px; --d: -0.4s"></i
+                  ><i style="--h: 50px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 32px; --d: -0.8s"></i><i style="--h: 20px; --d: -0s"></i
+                  ><i style="--h: 42px; --d: -0.2s"></i><i style="--h: 30px; --d: -0.4s"></i
+                  ><i style="--h: 17px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 25px; --d: -0.8s"></i><i style="--h: 14px; --d: -0s"></i
+                  ><i style="--h: 8px; --d: -0.2s"></i>
+                </div>
+                <p class="speech-state" aria-live="polite">
+                  <span class="record-dot"></span>Listening on this device
+                </p>
+                <button class="voice-action" data-voice="stt" aria-label="Stop recording">
+                  <span class="ui-icon" aria-hidden="true">&#xf59e;</span>
+                </button>
+                <div class="feedback"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+          <div>
+            <div class="caption speech-caption">
+              <span>Voice activity / one clear signal</span
+              ><button class="mini-control" id="vad-sample">Preview silence</button>
+            </div>
+            <section class="phone speech-phone vad-phone" data-speech="vad">
+              <div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div>
+              <div class="top">
+                <span class="ui-icon" aria-hidden="true">&#xf22d;</span>
+                <div class="top-title">
+                  Voice activity
+                  <div class="subtitle">FSMN-VAD</div>
+                </div>
+                <span class="overflow-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              </div>
+              <div class="voice-centre">
+                <div class="wave active" aria-hidden="true">
+                  <i style="--h: 8px; --d: -0s"></i><i style="--h: 14px; --d: -0.2s"></i
+                  ><i style="--h: 22px; --d: -0.4s"></i
+                  ><i style="--h: 35px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 44px; --d: -0.8s"></i><i style="--h: 28px; --d: -0s"></i
+                  ><i style="--h: 19px; --d: -0.2s"></i><i style="--h: 38px; --d: -0.4s"></i
+                  ><i style="--h: 50px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 32px; --d: -0.8s"></i><i style="--h: 20px; --d: -0s"></i
+                  ><i style="--h: 42px; --d: -0.2s"></i><i style="--h: 30px; --d: -0.4s"></i
+                  ><i style="--h: 17px; --d: -0.6000000000000001s"></i
+                  ><i style="--h: 25px; --d: -0.8s"></i><i style="--h: 14px; --d: -0s"></i
+                  ><i style="--h: 8px; --d: -0.2s"></i>
+                </div>
+                <h3 class="vad-title" aria-live="polite">Speech detected</h3>
+                <p class="vad-hint">Voice activity, recognised on your phone.</p>
+              </div>
+              <div class="speech-controls">
+                <p class="speech-state" aria-live="polite">
+                  <span class="record-dot"></span>Microphone on
+                </p>
+                <button class="voice-action" data-voice="vad" aria-label="Stop listening">
+                  <span class="ui-icon" aria-hidden="true">&#xf59e;</span>
+                </button>
+                <div class="feedback"></div>
+                <div class="bottom-line"></div>
+              </div>
+            </section>
+          </div>
+        </div>
+        <div class="speech-rationale">
+          <div>
+            <h3>Write, then listen</h3>
+            <p>
+              Keep the same bottom composer used by chat. Short examples fill it, the read button
+              becomes stop during playback, and a quiet waveform sits above. Stop ends playback; the
+              editable text stays in place.
+            </p>
+          </div>
+          <div>
+            <h3>Listen, then read</h3>
+            <p>
+              Place the transcript directly on the page. Confirmed words stay solid; the live
+              fragment is quieter. Stop keeps the transcript visible. Starting again creates a new
+              recording.
+            </p>
+          </div>
+          <div>
+            <h3>Detect, then indicate</h3>
+            <p>
+              Give speech and silence an explicit text state. This visual indicates detector state,
+              not measured sound levels. Keep the microphone indicator visible until capture has
+              stopped.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="waiting-section" id="waiting-concepts">
+        <div class="section-intro">
+          <h2>When it needs a moment.</h2>
+          <button class="control" id="inference-preview-toggle">Show inference result</button>
+        </div>
+        <p class="section-note">
+          Model loading and inference are separate states. Loading stays in the selected model’s
+          row. During object detection, keep the input image visible, remove stale boxes, and show
+          an honest indeterminate indicator. The timings and images below are illustrative.
+        </p>
+        <div class="phones" id="waiting-states"></div>
+        <p class="section-note">
+          Keep layout and image controls in place. Disable conflicting actions until the operation
+          completes. Show latency only with the completed result, and offer cancellation only if the
+          underlying task can actually stop.
+        </p>
+      </section>
+      <section class="model-card-section" id="model-card-showcase">
+        <div class="section-intro">
+          <h2>Model choice card</h2>
+          <button class="control" id="model-card-open">Open card</button>
+        </div>
+        <p class="section-note">
+          The model picker on its own. Try Load, Unload, Download, or the trash button. All actions
+          are simulated; file sizes are illustrative.
+        </p>
+        <div class="model-card-layout">
+          <div class="model-card-frame">
+            <div class="model-card-sandbox" id="model-card-demo">
+              <div class="top-title" hidden><span class="subtitle"></span></div>
+              <button class="model-menu" hidden aria-label="Open model picker"></button>
+            </div>
+          </div>
+          <div class="model-card-notes">
+            <h3>A short list of clear choices.</h3>
+            <p><b>Download</b> stores the model on disk.</p>
+            <p>
+              <b>Load</b> prepares it in memory. A loading indicator stays in the row until it is
+              ready.
+            </p>
+            <p><b>Unload</b> frees memory and keeps the downloaded files.</p>
+            <p><b>Delete</b> removes the files after confirmation. The card keeps its height.</p>
+            <p>
+              Tap a model name for runtime details. The examples below show the card in the task
+              screen, including download and deletion states.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="models-section" id="model-concepts">
+        <h2>Model choice in context</h2>
+        <p class="section-note">
+          Tap the three dots on the vision concept above. A bottom sheet holds model selection and
+          storage controls. Below: a compact model list, disk deletion, and an illustrative
+          download. The names and CPU variants exist in the local registry; storage sizes and
+          progress are sample values. No files are changed.
+        </p>
+        <div class="phones" id="model-states"></div>
+        <p class="section-note">
+          Load and Unload are explicit text actions. Download uses the downward arrow. A visible
+          trash button deletes downloaded files from disk, with a native confirmation dialog. The
+          model sheet keeps its height. Unload releases memory and keeps the download. Switching
+          models should clear stale results, keep the selected image, and load only one model for
+          the task. Show compatibility and available variants in details, and keep failures or
+          retries in their row.
+        </p>
+      </section>
+      <div class="panel">
+        <div class="eyebrow">The direction</div>
+        <h2>Less chrome. More room.</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>What to borrow from Gemini mobile</h3>
+            <p>
+              Generous breathing room, a quiet model selector, large content-led cards, and a
+              composer close to the thumb. Keep the natural assistant response layout and soft
+              bottom glow. Use translucency locally where it helps establish depth.
+            </p>
+            <h3>What to borrow from TypeGPU Kit</h3>
+            <p>
+              Neutral graphite instead of navy, precise result metrics, and an identity built around
+              the actual technology. Keep these details quiet. The main screens do not need
+              decorative animation, a point cloud, or more badges.
+            </p>
+            <p>
+              Avoid making every surface glass, importing a desktop sidebar, or turning the entire
+              gallery into a chat interface. Each demo should retain a clear, useful dedicated
+              screen.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Other viable directions</h3>
+            <p>
+              <b>Soft studio:</b> Gemini-led, warm white, pale blue, bigger imagery. Most
+              approachable; less distinctive as a developer showcase.
+            </p>
+            <p>
+              <b>Technical lab:</b> TypeGPU-led, dense instrumentation, cyan lines, tiny mono
+              labels. Strong identity; easier to overdo on a phone.
+            </p>
+            <p>
+              <b>Recommended blend:</b> the mobile assistant’s spaciousness with a little technical
+              precision. System sans for reading; monospace only for model metadata and
+              measurements. Support both system themes with equal care.
+            </p>
+            <p>
+              Use neutral graphite and white, with a muted blue accent only on the primary action.
+              In light mode use neutral surfaces and a darker blue accent. Keep segmentation colors
+              in the results.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Interaction recommendations</div>
+        <h2>Feel better at the moments that matter.</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Moment</th>
+              <th>Recommendation</th>
+              <th>Implementation boundary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Discover a demo</td>
+              <td>
+                Show three simple entry points, then navigate to a dedicated searchable catalogue.
+                Keep technical task names searchable as secondary labels. Bring chat and speech
+                above the current seven vision rows.
+              </td>
+              <td>
+                Extract task data and home cards from <code>src/app/index.tsx</code>. No new
+                navigation tabs until there are useful distinct destinations.
+              </td>
+            </tr>
+            <tr>
+              <td>First run</td>
+              <td>
+                One clear “Download &amp; prepare” action with model download size where known, then
+                separate downloading, preparing, and ready states. Offer a real bundled sample so
+                users can get a result quickly. Explain that first use needs a download.
+              </td>
+              <td>
+                Extend <code>TaskHeader</code> and <code>StatusBanner</code>. Use real resource
+                metadata; progress must not imply measured inference progress. Keep disk deletion in
+                the model sheet, separate from unloading.
+              </td>
+            </tr>
+            <tr>
+              <td>Press / choose</td>
+              <td>
+                A small 120–160 ms press response; a light selection haptic on task selection and
+                useful discrete selections. Standard navigation usually needs visual feedback only.
+              </td>
+              <td>
+                Use existing Reanimated and shared controls. Add
+                <a href="https://docs.expo.dev/versions/v57.0.0/sdk/haptics/">expo-haptics</a>
+                through one shared, best-effort feedback hook. Keep inference independent of haptic
+                promises.
+              </td>
+            </tr>
+            <tr>
+              <td>Record / finish</td>
+              <td>
+                One clear haptic when recording starts or stops; one soft completion cue for a long
+                task; error feedback paired with actionable text. No haptics per streamed token,
+                waveform update, camera frame, or detection.
+              </td>
+              <td>
+                For Android use the platform haptic APIs documented by Expo. Some iOS
+                recording/camera states suppress haptics; visual state remains authoritative. Verify
+                on physical devices.
+              </td>
+            </tr>
+            <tr>
+              <td>Wait / cancel</td>
+              <td>
+                Show meaningful text (“Preparing response”, “Listening”, “Generating image”) and a
+                stable Stop action for operations the library can cancel. Transition from empty to
+                result with a short fade. Keep actual latency as a small result caption.
+              </td>
+              <td>
+                Shared viewports and action controls. Do not simulate percent completion for
+                inference or fake streaming. Keep the layout steady during state changes.
+              </td>
+            </tr>
+            <tr>
+              <td>Read / type</td>
+              <td>
+                Make the composer grow from one line to a capped height; move examples into the
+                empty state. Show assistant text on the page and user messages in a soft bubble.
+                Auto-follow streaming only while the reader is near the bottom.
+              </td>
+              <td>
+                <code>PromptInput</code> and <code>ChatViewport</code>; reusable scroll-follow logic
+                belongs in a documented hook.
+              </td>
+            </tr>
+            <tr>
+              <td>Access / comfort</td>
+              <td>
+                At least 44 pt iOS / 48 dp Android action targets, scalable text, explicit icon
+                labels, reduced motion, and status text alongside color. Keep the viewport flexible
+                at large font sizes.
+              </td>
+              <td>
+                Central tokens plus shared components; verify keyboard, safe areas, screen reader
+                labels, and both themes. The mockups are visual studies, not accessibility sign-off.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Architecture review</div>
+        <h2>Keep the examples easy to lift.</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>The existing pattern is worth preserving</h3>
+            <p>
+              15 task routes. Screens choose a model, call an ExecuTorch hook, hold input/results,
+              and invoke one task handler. <code>ScreenWrapper</code> unmounts task content when
+              unfocused; <code>TaskScreen</code> owns layout; <code>TaskHeader</code>,
+              <code>StatusBanner</code>, and shared inputs own the chrome. Task-specific overlays
+              own detection, segmentation, pose, OCR, and rendering. Audio and image lifetimes
+              already use helper hooks.
+            </p>
+            <p>
+              The largest presentation outlier is the home route: task registry, sections, cards,
+              and styles share one file. Split those before adding discovery interactions. The
+              task-screen skill requires minimal screens, documented custom hooks, and theme tokens.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Recommended implementation order</h3>
+            <ol>
+              <li>
+                <b>Foundation:</b> unify theme tokens and root navigation colors; add typography,
+                interaction, and motion tokens. Keep the Software Mansion identity.
+              </li>
+              <li>
+                <b>Discovery + one vertical slice:</b> build the home and chat direction, including
+                first-download, ready, streaming, error, keyboard, and large-text states.
+              </li>
+              <li>
+                <b>Shared task shell:</b> simplify model status, move model controls into the sheet,
+                improve empty states and add useful sample inputs.
+              </li>
+              <li>
+                <b>Roll out + tune:</b> migrate vision and audio, add selective haptics, and profile
+                on real devices while inference runs. Capture before/after screenshots.
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="eyebrow">Current app / captured from simulator</div>
+        <h2>The starting point.</h2>
+        <p>
+          Actual iPhone 17 / iOS 26.5 simulator captures, before any visual redesign. No
+          downloaded-model inference is implied by these images. Skia deprecation banners were
+          suppressed only during capture; the app source was restored afterward.
+        </p>
+        <div class="shots">
+          <figure>
+            <a href="screenshots/current-home-dark.png"
+              ><img src="screenshots/current-home-dark.png" alt="Current gallery home in dark mode"
+            /></a>
+            <figcaption>Home · dark</figcaption>
+          </figure>
+          <figure>
+            <a href="screenshots/current-home-light.png"
+              ><img
+                src="screenshots/current-home-light.png"
+                alt="Current gallery home in light mode"
+            /></a>
+            <figcaption>Home · light</figcaption>
+          </figure>
+          <figure>
+            <a href="screenshots/current-chat-dark.png"
+              ><img
+                src="screenshots/current-chat-dark.png"
+                alt="Current local chat before model load"
+            /></a>
+            <figcaption>Chat · before model load</figcaption>
+          </figure>
+          <figure>
+            <a href="screenshots/current-vision-dark.png"
+              ><img
+                src="screenshots/current-vision-dark.png"
+                alt="Current object detection before image selection"
+            /></a>
+            <figcaption>Vision · empty state</figcaption>
+          </figure>
+          <figure>
+            <a href="screenshots/current-speech-dark.png"
+              ><img
+                src="screenshots/current-speech-dark.png"
+                alt="Current text to speech before model load"
+            /></a>
+            <figcaption>Speech · before model load</figcaption>
+          </figure>
+        </div>
+      </div>
+      <footer class="panel">
+        <p class="note">
+          Reference evidence:
+          <a href="screenshots/reference-gemini-mobile.jpg"
+            >official Gemini iPhone App Store screenshot</a
+          >
+          ·
+          <a href="https://apps.apple.com/us/app/google-gemini/id6477489729">App Store source</a> ·
+          <a href="screenshots/reference-typegpu-kit.png">TypeGPU Kit browser capture</a>. Reference
+          images belong to their respective owners. Gemini mobile is the design reference; its
+          marketing website is not. Preview icons use the same Ionicons family as the app; the font
+          is bundled locally with its <a href="assets/IONICONS-LICENSE.txt">license</a>.
+        </p>
+      </footer>
+    </main>
+    <script>
+      const theme = document.querySelector('#theme');
+      theme.addEventListener('click', () => {
+        const light = document.body.classList.toggle('light');
+        theme.textContent = light ? 'Switch to dark' : 'Switch to light';
+        theme.setAttribute('aria-pressed', String(light));
+      });
+      document.querySelectorAll('[data-prompt]').forEach((b) =>
+        b.addEventListener('click', () => {
+          document.querySelector('#prompt').value = b.dataset.prompt;
+          document.querySelector('#prompt').focus();
+        })
+      );
+      document.querySelector('.send').addEventListener('click', () => {
+        document.querySelector('#chat-note').textContent = document
+          .querySelector('#prompt')
+          .value.trim()
+          ? 'Preview only · no model connected'
+          : 'Type a message to preview.';
+      });
+      document.querySelectorAll('[data-preview],[data-action],.task-link').forEach((b) =>
+        b.addEventListener('click', () => {
+          b.closest('.phone').querySelector('.feedback').textContent =
+            'Design preview · open the app to try a demo';
+        })
+      );
+      const prompt = document.querySelector('#prompt');
+      prompt.addEventListener('input', () => {
+        prompt.style.height = '36px';
+        prompt.style.height = Math.min(100, prompt.scrollHeight) + 'px';
+      });
+
+      const iconCodes = {
+        'stop': 62878,
+        'play': 62662,
+        'mic-outline': 62558,
+        'close-outline': 62030,
+        'chevron-down-outline': 62006,
+        'chevron-up-outline': 62021,
+        'trash-outline': 62966,
+        'play-outline': 62678,
+        'stop-outline': 62882,
+        'download-outline': 62138,
+        'power-outline': 62696,
+        'enter-outline': 62171,
+        'exit-outline': 62174,
+      };
+      const iconHtml = (name) =>
+        `<span class="ui-icon" aria-hidden="true">&#${iconCodes[name]};</span>`;
+      const speechStates = { tts: 'active', stt: 'active', vad: 'active' };
+      let vadSpeaking = true;
+      function setSpeech(kind, state) {
+        speechStates[kind] = state;
+        const phone = document.querySelector(`[data-speech="${kind}"]`);
+        const active = state === 'active';
+        phone.classList.toggle('speech-idle', !active);
+        const button = phone.querySelector('[data-voice]');
+        button.innerHTML = iconHtml(active ? 'stop' : kind === 'tts' ? 'play' : 'mic-outline');
+        button.setAttribute(
+          'aria-label',
+          active
+            ? kind === 'tts'
+              ? 'Stop speaking'
+              : 'Stop recording'
+            : kind === 'tts'
+              ? 'Read text aloud'
+              : 'Start recording'
+        );
+        const wave = phone.querySelector('.wave');
+        wave.classList.toggle('active', active && (kind !== 'vad' || vadSpeaking));
+        wave.classList.toggle('quiet', !active || (kind === 'vad' && !vadSpeaking));
+        if (kind === 'tts') {
+          phone.querySelector('.tts-greeting').hidden = active;
+          wave.hidden = !active;
+        }
+        const label = phone.querySelector('.speech-state');
+        label.innerHTML = active
+          ? kind === 'tts'
+            ? 'Speaking on this device'
+            : `<span class="record-dot"></span>${kind === 'stt' ? 'Listening on this device' : 'Microphone on'}`
+          : kind === 'tts'
+            ? 'Ready to read'
+            : state === 'finished'
+              ? 'Recording stopped'
+              : 'Tap the microphone to start';
+        if (kind === 'stt') {
+          phone.querySelector('.speech-label').textContent = active
+            ? 'Live transcript'
+            : state === 'finished'
+              ? 'Transcript'
+              : 'Speech to text';
+          phone.querySelector('.transcript').innerHTML =
+            state === 'ready'
+              ? 'Your words,<br>as you say them.'
+              : active
+                ? 'Let’s keep the technology out of the way. <span class="interim">Just speak, and let the words follow.</span>'
+                : 'Let’s keep the technology out of the way. Just speak, and let the words follow.';
+        }
+        if (kind === 'vad') {
+          phone.querySelector('.vad-title').textContent = !active
+            ? 'Ready to listen'
+            : vadSpeaking
+              ? 'Speech detected'
+              : 'Silence';
+          phone.querySelector('.vad-hint').textContent = !active
+            ? 'Detect when a voice is present.'
+            : vadSpeaking
+              ? 'Voice activity, recognised on your phone.'
+              : 'Still listening. Speak when you’re ready.';
+        }
+      }
+      document.querySelectorAll('[data-voice]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const k = b.dataset.voice;
+          if (k === 'tts' && !document.querySelector('#speech-text').value.trim()) {
+            b.closest('.phone').querySelector('.feedback').textContent = 'Add a little text first.';
+            return;
+          }
+          b.closest('.phone').querySelector('.feedback').textContent = '';
+          setSpeech(k, speechStates[k] === 'active' ? 'finished' : 'active');
+        })
+      );
+      document.querySelector('#vad-sample').addEventListener('click', (e) => {
+        vadSpeaking = !vadSpeaking;
+        e.currentTarget.textContent = vadSpeaking ? 'Preview silence' : 'Preview speech';
+        setSpeech('vad', 'active');
+      });
+      document.querySelector('#speech-reset').addEventListener('click', (e) => {
+        const ready = e.currentTarget.textContent === 'Show ready states';
+        for (const k of Object.keys(speechStates)) setSpeech(k, ready ? 'ready' : 'active');
+        e.currentTarget.textContent = ready ? 'Show active states' : 'Show ready states';
+      });
+
+      const baseModels = () => [
+        {
+          id: 'ssdlite',
+          name: 'SSDLite MobileNetV3',
+          variant: 'CPU · FP32 · 320 px',
+          size: '14 MB',
+          status: 'loaded',
+        },
+        {
+          id: 'nano',
+          name: 'YOLO26 Nano',
+          variant: 'CPU · INT8 · 384 px',
+          size: '3 MB',
+          status: 'saved',
+        },
+        {
+          id: 'small',
+          name: 'YOLO26 Small',
+          variant: 'CPU · INT8 · 384 px',
+          size: '11 MB',
+          status: 'remote',
+        },
+      ];
+
+      function modelsForTask(kind) {
+        const profile = {
+          chat: [
+            ['lfm', 'LFM 2.5 1.2B', 'CPU · 8DA4W', '900 MB'],
+            ['qwen', 'Qwen 2.5 0.5B', 'CPU · 8DA4W', '400 MB'],
+          ],
+          tts: [
+            ['kokoro-us', 'Kokoro · US English', 'CPU · FP32', '330 MB'],
+            ['kokoro-gb', 'Kokoro · British English', 'CPU · FP32', '330 MB'],
+          ],
+          stt: [['whisper', 'Whisper Tiny · English', 'CPU · FP32', '75 MB']],
+          vad: [['fsmn', 'FSMN-VAD', 'CPU', '2 MB']],
+        }[kind];
+        return profile
+          ? profile.map(([id, name, variant, size], index) => ({
+              id,
+              name,
+              variant,
+              size,
+              status: index === 0 ? 'loaded' : 'remote',
+            }))
+          : baseModels();
+      }
+      function setupModels(
+        phone,
+        {
+          open = false,
+          expanded = null,
+          confirm = null,
+          download = false,
+          taskKind = 'vision',
+          starting = 'loaded',
+          closeOnLoad = false,
+          loadingPreview = false,
+        } = {}
+      ) {
+        const models = modelsForTask(taskKind);
+        if (starting !== 'loaded')
+          models.forEach((model) => (model.status = starting === 'saved' ? 'saved' : 'remote'));
+        let selectedModelName = starting === 'loaded' ? models[0].name : 'No model selected';
+        let expandedId = expanded,
+          confirmId = confirm;
+        const timers = new Map();
+        let message = '';
+        if (download) {
+          models[0].status = 'saved';
+          models[1].status = 'loaded';
+          models[2].status = 'downloading';
+          models[2].progress = 64;
+        }
+        if (loadingPreview) {
+          models.forEach((model) => (model.status = 'remote'));
+          models[0].status = 'loading';
+        }
+        const layer = document.createElement('div');
+        layer.className = 'model-layer';
+        layer.hidden = !open;
+        layer.innerHTML =
+          '<button class="model-scrim" aria-label="Close model picker"></button><section class="model-sheet" role="dialog" aria-label="Object detection models"></section><div class="delete-dialog-layer" hidden></div>';
+        phone.append(layer);
+        const sheet = layer.querySelector('.model-sheet');
+        const dialog = layer.querySelector('.delete-dialog-layer');
+        const menu = phone.querySelector('.model-menu');
+        const setBackgroundInert = () => {
+          for (const el of phone.children) if (el !== layer) el.inert = !layer.hidden;
+        };
+        function close() {
+          layer.hidden = true;
+          setBackgroundInert();
+          menu.focus();
+        }
+        function render() {
+          const current = models.find((model) => model.status === 'loaded');
+          const subtitle = phone.querySelector('.top-title .subtitle');
+          subtitle.textContent = current?.name ?? '';
+          subtitle.style.visibility = current ? 'visible' : 'hidden';
+          sheet.innerHTML = `<div class="sheet-handle"></div><div class="sheet-title"><h3>Models</h3><button class="quiet-icon close-models" aria-label="Close model picker">${iconHtml('close-outline')}</button></div><div class="model-list">${models
+            .map((m) => {
+              const active = m.status === 'loaded',
+                saved = m.status === 'saved',
+                downloading = m.status === 'downloading',
+                loading = m.status === 'loading';
+              const expanded = m.id === expandedId;
+              const status = loading
+                ? 'Loading into memory…'
+                : active
+                  ? 'Loaded'
+                  : saved
+                    ? `On disk · ${m.size}`
+                    : downloading
+                      ? `Downloading · ${m.progress}%`
+                      : `${m.size} to download`;
+              const action = loading
+                ? 'Loading'
+                : active
+                  ? 'Unload'
+                  : saved
+                    ? 'Load'
+                    : downloading
+                      ? 'Cancel download'
+                      : 'Download';
+              const actionIcon =
+                active || saved
+                  ? 'power-outline'
+                  : downloading
+                    ? 'close-outline'
+                    : 'download-outline';
+              return `<div class="model-row" data-id="${m.id}"><div class="model-row-top"><button class="model-info" aria-expanded="${expanded}" aria-label="${m.name} details"><span class="model-name">${m.name}</span><span class="model-state ${active ? 'loaded' : ''}">${status}</span></button><div class="model-controls"><button class="model-action ${saved ? 'primary' : ''} ${active || saved ? 'text-action' : ''}" aria-label="${action} ${m.name}${active ? ' from memory' : saved ? ' into memory' : ''}" title="${active ? 'Unload from memory' : saved ? 'Load into memory' : action}" ${loading ? 'disabled' : ''} ${active || saved ? `aria-pressed="${active}"` : ''}>${loading ? '<span class="spinner" aria-hidden="true"></span>' : active || saved ? action : iconHtml(actionIcon)}</button>${active || saved ? `<button class="delete-model" aria-label="Delete ${m.name} from disk" title="Delete from disk">${iconHtml('trash-outline')}</button>` : ''}</div></div>${downloading ? `<div class="download-track" role="progressbar" aria-label="${m.name} download" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.progress}"><span style="width:${m.progress}%"></span></div>` : ''}${expanded ? `<div class="model-details">${m.variant} · CPU / XNNPACK</div>` : ''}</div>`;
+            })
+            .join('')}</div><div class="bottom-line"></div>`;
+          if (phone.classList.contains('unloaded-phone')) {
+            phone.querySelector('.prepare-model').hidden = !!current;
+            phone.querySelector('.empty-description').textContent = current
+              ? taskKind === 'vision'
+                ? 'Choose an image to begin.'
+                : 'Ready when you are.'
+              : 'Choose a model to run on this device.';
+            phone.querySelectorAll('.send').forEach((button) => (button.disabled = !current));
+          }
+          const isLoading = models.some((model) => model.status === 'loading');
+          phone
+            .querySelectorAll('.actions button')
+            .forEach((button) => (button.disabled = isLoading));
+          phone
+            .querySelectorAll('.send')
+            .forEach((button) => (button.disabled = !current || isLoading));
+          const target = models.find((model) => model.id === confirmId);
+          dialog.hidden = !target;
+          sheet.inert = !!target;
+          dialog.innerHTML = target
+            ? `<section class="delete-dialog" role="alertdialog" aria-label="Delete ${target.name} from disk"><h4>Delete ${target.name}?</h4><p>This removes ${target.size} from this device.${target.status === 'loaded' ? ' The model will also be unloaded.' : ''}<br>You can download it again.</p><div class="delete-dialog-actions"><button class="cancel-delete">Cancel</button><button class="confirm-delete">Delete</button></div></section>`
+            : '';
+        }
+        function openSheet() {
+          layer.hidden = false;
+          setBackgroundInert();
+          sheet.querySelector('.close-models').focus();
+        }
+        menu.addEventListener('click', openSheet);
+        layer.querySelector('.model-scrim').addEventListener('click', close);
+        function finishDownload(m) {
+          clearInterval(timers.get(m.id));
+          timers.delete(m.id);
+          m.status = 'saved';
+          message = `${m.name} downloaded. Load it when ready.`;
+          render();
+        }
+        layer.addEventListener('click', (e) => {
+          const button = e.target.closest('button');
+          if (!button) return;
+          if (button.classList.contains('close-models')) {
+            close();
+            return;
+          }
+          if (button.classList.contains('cancel-delete')) {
+            confirmId = null;
+            render();
+            return;
+          }
+          if (button.classList.contains('confirm-delete')) {
+            const model = models.find((model) => model.id === confirmId);
+            if (model) model.status = 'remote';
+            confirmId = null;
+            message = '';
+            render();
+            return;
+          }
+          const row = button.closest('.model-row');
+          if (!row) return;
+          const m = models.find((m) => m.id === row.dataset.id);
+          if (button.classList.contains('model-info')) {
+            expandedId = expandedId === m.id ? null : m.id;
+            confirmId = null;
+            render();
+          } else if (button.classList.contains('delete-model')) {
+            confirmId = m.id;
+            render();
+            dialog.querySelector('.cancel-delete').focus();
+          } else if (button.classList.contains('cancel-delete')) {
+            confirmId = null;
+            render();
+          } else if (button.classList.contains('confirm-delete')) {
+            m.status = 'remote';
+            confirmId = null;
+            message = 'Download removed. You can download it again.';
+            render();
+          } else if (button.classList.contains('model-action')) {
+            if (m.status === 'loaded') {
+              m.status = 'saved';
+              message = 'Model unloaded. Download kept on this device.';
+            } else if (m.status === 'saved') {
+              models.forEach((other) => {
+                if (other.status === 'loaded') other.status = 'saved';
+              });
+              m.status = 'loading';
+              render();
+              setTimeout(() => {
+                m.status = 'loaded';
+                if (phone.querySelector('.result'))
+                  phone.querySelector('.result').innerHTML =
+                    '<strong>Ready to detect</strong><span></span>';
+                phone
+                  .querySelectorAll('.vision .box')
+                  .forEach((element) => (element.hidden = true));
+                render();
+                if (closeOnLoad) close();
+              }, 1500);
+              return;
+            } else if (m.status === 'downloading') {
+              clearInterval(timers.get(m.id));
+              timers.delete(m.id);
+              m.status = 'remote';
+              message = 'Download cancelled.';
+            } else {
+              m.status = 'downloading';
+              m.progress = 0;
+              message = 'Simulated download. No files are changed.';
+              timers.set(
+                m.id,
+                setInterval(() => {
+                  m.progress = Math.min(100, m.progress + 20);
+                  if (m.progress === 100) finishDownload(m);
+                  else render();
+                }, 500)
+              );
+            }
+            render();
+            if (closeOnLoad && m.status === 'loaded') close();
+          }
+        });
+        sheet.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            close();
+          }
+          if (e.key === 'Tab') {
+            const focusable = [...sheet.querySelectorAll('button:not(:disabled)')];
+            const first = focusable[0],
+              last = focusable.at(-1);
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        });
+        dialog.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            confirmId = null;
+            render();
+          }
+          if (event.key === 'Tab') {
+            const first = dialog.querySelector('.cancel-delete'),
+              last = dialog.querySelector('.confirm-delete');
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first.focus();
+            }
+          }
+        });
+        render();
+        setBackgroundInert();
+        return {
+          open: openSheet,
+          resetStored: (stored) => {
+            for (const timer of timers.values()) clearInterval(timer);
+            timers.clear();
+            models.forEach((model) => (model.status = stored ? 'saved' : 'remote'));
+            selectedModelName = 'No model selected';
+            confirmId = null;
+            render();
+          },
+        };
+      }
+      const vision = document.querySelector('.model-menu').closest('.phone');
+      const modelStates = document.querySelector('#model-states');
+      for (const config of [
+        { caption: 'Choose / downloaded and loaded', open: true },
+        { caption: 'Delete / an explicit disk action', open: true, confirm: 'nano' },
+        { caption: 'Download / progress stays in its row', open: true, download: true },
+      ]) {
+        const item = document.createElement('div');
+        item.innerHTML = `<div class="caption">${config.caption}</div>`;
+        const phone = vision.cloneNode(true);
+        phone.classList.add('model-preview');
+        item.append(phone);
+        modelStates.append(item);
+        setupModels(phone, config);
+      }
+      setupModels(vision);
+
+      document.querySelectorAll('[data-speech-prompt]').forEach((button) =>
+        button.addEventListener('click', () => {
+          document.querySelector('#speech-text').value = button.dataset.speechPrompt;
+          setSpeech('tts', 'ready');
+          document.querySelector('#speech-text').focus();
+        })
+      );
+      document.querySelector('#speech-text').addEventListener('input', (event) => {
+        const input = event.currentTarget;
+        input.style.height = '36px';
+        input.style.height = Math.min(100, input.scrollHeight) + 'px';
+        if (speechStates.tts === 'active') setSpeech('tts', 'ready');
+      });
+
+      const catalogueSections = [
+        {
+          title: 'Computer Vision',
+          tasks: [
+            {
+              href: '/instance-segmentation',
+              title: 'Instance Segmentation',
+              subtitle: 'Detect and mask individual object instances',
+              model: 'YOLO26 Nano',
+              iconName: 'overlappingCircles',
+              tint: 'purple',
+              ready: true,
+            },
+            {
+              href: '/keypoint-detection',
+              title: 'Pose Estimation',
+              subtitle: 'Estimate 17 human body skeletal keypoints',
+              model: 'YOLO26 Pose',
+              iconName: 'person',
+              tint: 'cyan',
+              ready: true,
+            },
+            {
+              href: '/ocr',
+              title: 'OCR Text Recognition',
+              subtitle: 'Detect and read multilingual text in photos',
+              model: 'PaddleOCR PP-OCRv6',
+              iconName: 'textDoc',
+              tint: 'blue',
+              ready: true,
+            },
+            {
+              href: '/style-transfer',
+              title: 'Style Transfer',
+              subtitle: 'Transform photos into artistic paintings',
+              model: 'Mosaic Style',
+              iconName: 'palette',
+              tint: 'pink',
+              ready: true,
+            },
+            {
+              href: '/object-detection',
+              title: 'Object Detection',
+              subtitle: 'Locate and classify multiple objects in photos',
+              model: 'SSDLite MobileNetV3',
+              iconName: 'scan',
+              tint: 'green',
+              ready: true,
+            },
+            {
+              href: '/semantic-segmentation',
+              title: 'Semantic Segmentation',
+              subtitle: 'Segment objects by class with pixel-level masks',
+              model: 'DeepLabV3 ResNet50',
+              iconName: 'splitMask',
+              tint: 'red',
+              ready: true,
+            },
+            {
+              href: '/image-classification',
+              title: 'Image Classification',
+              subtitle: 'Identify 1,000 object categories with confidence',
+              model: 'EfficientNetV2-S',
+              iconName: 'eye',
+              tint: 'orange',
+              ready: true,
+            },
+          ],
+        },
+        {
+          title: 'Real Time',
+          tasks: [
+            {
+              href: '/realtime-object-detection',
+              title: 'Live Object Detection',
+              subtitle: 'Continuous camera detection using VisionCamera',
+              model: 'YOLO26 Nano',
+              iconName: 'videocam',
+              tint: 'green',
+              ready: true,
+            },
+          ],
+        },
+        {
+          title: 'Generative AI',
+          tasks: [
+            {
+              href: '/llm-chat',
+              title: 'LLM Chat',
+              subtitle: 'Interactive on-device conversational assistant',
+              model: 'LFM 2.5 1.2B',
+              iconName: 'chat',
+              tint: 'neutral',
+              ready: true,
+            },
+            {
+              href: '/text-to-image',
+              title: 'Text to Image',
+              subtitle: 'Generate synthetic imagery from natural language prompts',
+              model: 'SDXS 512 DreamShaper',
+              iconName: 'sparkle',
+              tint: 'pink',
+              ready: true,
+            },
+          ],
+        },
+        {
+          title: 'Audio & Speech',
+          tasks: [
+            {
+              href: '/text-to-speech',
+              title: 'Text to Speech',
+              subtitle: 'Expressive neural voice synthesis',
+              model: 'Kokoro 82M',
+              iconName: 'audio',
+              tint: 'purple',
+              ready: true,
+            },
+            {
+              href: '/speech-to-text',
+              title: 'Speech to Text',
+              subtitle: 'Multi-lingual automatic speech recognition',
+              model: 'Whisper Tiny',
+              iconName: 'mic',
+              tint: 'cyan',
+              ready: true,
+            },
+            {
+              href: '/voice-activity-detection',
+              title: 'Voice Activity Detection',
+              subtitle: 'Detect speech segments in real-time audio streams',
+              model: 'FSMN VAD',
+              iconName: 'pulse',
+              tint: 'blue',
+              ready: true,
+            },
+          ],
+        },
+        {
+          title: 'Embeddings & Search',
+          tasks: [
+            {
+              href: '/image-embeddings',
+              title: 'Multimodal Search',
+              subtitle: 'Rank text queries against images with CLIP',
+              model: 'CLIP ViT-B/32',
+              iconName: 'search',
+              tint: 'orange',
+              ready: true,
+            },
+          ],
+        },
+        {
+          title: 'Natural Language Processing',
+          tasks: [
+            {
+              href: '/privacy-filter',
+              title: 'Privacy Filter',
+              subtitle: 'Detect and redact personally identifiable information in text',
+              model: 'OpenAI PII Detector',
+              iconName: 'shield',
+              tint: 'green',
+              ready: true,
+            },
+          ],
+        },
+      ];
+      function setupCatalogue(page, { onBack = null, query = '' } = {}) {
+        page.innerHTML = `<div class="status"><span>9:41</span><span>▰ ▰ ▰</span></div><div class="catalogue-top"><button class="quiet-icon catalogue-back" aria-label="Back to gallery"><span class="ui-icon" aria-hidden="true">&#xf22d;</span></button><h3>All demos</h3><span class="catalogue-spacer"></span></div><label class="catalogue-search"><span class="ui-icon" aria-hidden="true">&#62819;</span><input type="search" placeholder="Search demos" aria-label="Search demos by name or model" /></label><div class="catalogue-content"><p class="catalogue-count" aria-live="polite"></p><div class="catalogue-list"></div><div class="feedback" aria-live="polite"></div></div><div class="bottom-line"></div>`;
+        const input = page.querySelector('input');
+        input.value = query;
+        function render() {
+          const q = input.value.trim().toLowerCase();
+          let count = 0;
+          const groups = catalogueSections
+            .map((section) => {
+              const tasks = section.tasks.filter((task) =>
+                [task.title, task.model, task.subtitle, section.title]
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(q)
+              );
+              count += tasks.length;
+              return tasks.length
+                ? `<section class="catalogue-group"><h4>${section.title}</h4>${tasks.map((task) => `<button class="catalogue-task" data-task="${task.title}"><span>${task.title}</span><span class="ui-icon" aria-hidden="true">&#62015;</span></button>`).join('')}</section>`
+                : '';
+            })
+            .join('');
+          page.querySelector('.catalogue-count').textContent = q
+            ? `${count} ${count === 1 ? 'result' : 'results'}`
+            : '15 demos';
+          page.querySelector('.catalogue-list').innerHTML =
+            groups || '<p class="catalogue-empty">No demos found.<br>Try a task or model name.</p>';
+        }
+        input.addEventListener('input', render);
+        page.querySelector('.catalogue-back').addEventListener('click', () => {
+          if (onBack) onBack();
+          else {
+            input.value = '';
+            render();
+          }
+        });
+        page.querySelector('.catalogue-list').addEventListener('click', (e) => {
+          const task = e.target.closest('[data-task]');
+          if (task)
+            page.querySelector('.feedback').textContent =
+              `${task.dataset.task} · design preview only`;
+        });
+        render();
+      }
+      const homePhone = document.querySelector('#browse').closest('.phone');
+      const cataloguePage = homePhone.querySelector('.catalogue-page');
+      function setHomeInert(value) {
+        for (const element of homePhone.children)
+          if (element !== cataloguePage) element.inert = value;
+      }
+      function closeCatalogue() {
+        cataloguePage.hidden = true;
+        setHomeInert(false);
+        document.querySelector('#browse').focus();
+      }
+      setupCatalogue(cataloguePage, { onBack: closeCatalogue });
+      document.querySelector('#browse').addEventListener('click', () => {
+        cataloguePage.hidden = false;
+        setHomeInert(true);
+        cataloguePage.querySelector('.catalogue-back').focus();
+      });
+      cataloguePage.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeCatalogue();
+        }
+      });
+      for (const example of [
+        { label: 'All demos / a dedicated list screen', query: '' },
+        { label: 'Search / name, category, or model', query: 'speech' },
+      ]) {
+        const item = document.createElement('div');
+        item.innerHTML = `<div class="caption">${example.label}</div>`;
+        const phone = document.createElement('section');
+        phone.className = 'phone catalogue-example';
+        item.append(phone);
+        document.querySelector('#catalogue-examples').append(item);
+        setupCatalogue(phone, { query: example.query });
+      }
+
+      let modelsOnDisk = false;
+      const unloadedPickers = [];
+      document.querySelectorAll('.unloaded-phone').forEach((phone) => {
+        const old = phone.querySelector('.top>span:last-child');
+        const menu = document.createElement('button');
+        menu.className = 'quiet-icon model-menu';
+        menu.setAttribute('aria-label', 'Choose and manage models');
+        menu.append(old.cloneNode(true));
+        old.replaceWith(menu);
+        const picker = setupModels(phone, {
+          taskKind: phone.dataset.unloaded,
+          starting: 'remote',
+          closeOnLoad: true,
+        });
+        unloadedPickers.push(picker);
+        const choose = phone.querySelector('.prepare-model');
+        choose.textContent = 'Choose a model';
+        choose.addEventListener('click', picker.open);
+      });
+      document.querySelector('#downloaded-toggle').addEventListener('click', (event) => {
+        modelsOnDisk = !modelsOnDisk;
+        event.currentTarget.textContent = modelsOnDisk
+          ? 'Show first-time download'
+          : 'Show models already on disk';
+        unloadedPickers.forEach((picker) => picker.resetStored(modelsOnDisk));
+      });
+      document.querySelectorAll('.unloaded-phone .send,[data-empty-input]').forEach((button) =>
+        button.addEventListener('click', () => {
+          button.closest('.phone').querySelector('.feedback').textContent = 'Design preview only';
+        })
+      );
+
+      const waitingStage = document.querySelector('#waiting-states');
+      function addWaitingPhone(caption, source) {
+        const item = document.createElement('div');
+        item.innerHTML = `<div class="caption">${caption}</div>`;
+        const phone = source.cloneNode(true);
+        phone.querySelectorAll('.model-layer').forEach((layer) => layer.remove());
+        phone.querySelectorAll('[inert]').forEach((element) => (element.inert = false));
+        item.append(phone);
+        waitingStage.append(item);
+        return phone;
+      }
+      const loadingExample = addWaitingPhone(
+        'Loading / prepare the selected model',
+        document.querySelector('.unloaded-phone')
+      );
+      loadingExample.classList.add('loading-example');
+      setupModels(loadingExample, {
+        taskKind: 'vision',
+        starting: 'remote',
+        open: true,
+        loadingPreview: true,
+      });
+      const inferenceExample = addWaitingPhone('Inference / finding objects', vision);
+      inferenceExample.classList.add('inference-waiting');
+      const finishedExample = addWaitingPhone('Complete / results and timing', vision);
+      function setInferenceWaiting(waiting) {
+        inferenceExample.querySelectorAll('.vision .box').forEach((box) => (box.hidden = waiting));
+        inferenceExample.querySelector('.result').innerHTML = waiting
+          ? '<div class="inference-status"><span class="spinner" aria-hidden="true"></span><span role="status">Finding objects…</span></div>'
+          : '<strong>2 objects found</strong><span>42 ms</span>';
+        inferenceExample
+          .querySelectorAll('.actions button,.model-menu')
+          .forEach((button) => (button.disabled = waiting));
+      }
+      let inferenceWaiting = true;
+      setInferenceWaiting(true);
+      document.querySelector('#inference-preview-toggle').addEventListener('click', (event) => {
+        inferenceWaiting = !inferenceWaiting;
+        setInferenceWaiting(inferenceWaiting);
+        event.currentTarget.textContent = inferenceWaiting
+          ? 'Show inference result'
+          : 'Show inference waiting state';
+      });
+
+      const modelCard = setupModels(document.querySelector('#model-card-demo'), { open: true });
+      document.querySelector('#model-card-open').addEventListener('click', modelCard.open);
+      const logoMotion = document.querySelector('#logo-motion');
+      logoMotion.textContent = 'Replay logo reveal';
+      logoMotion.addEventListener('click', () => {
+        const logo = document.querySelector('.home-mark');
+        document.body.classList.remove('logo-reveal-preview');
+        logo.style.animation = 'none';
+        void logo.offsetWidth;
+        logo.style.animation = '';
+        document.body.classList.add('logo-reveal-preview');
+      });
+    </script>
+  </body>
+</html>
