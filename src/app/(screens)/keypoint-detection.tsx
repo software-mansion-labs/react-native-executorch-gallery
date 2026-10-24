@@ -52,7 +52,7 @@ function PoseEstimationTask() {
     <TaskScreen title="Pose estimation" model={model} status={detector} error={error} busy={busy}>
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="Find the pose."
+        placeholderTitle="Find the pose"
         placeholderDescription="Trace body joints and connect them into a skeleton."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && detector.isReady}

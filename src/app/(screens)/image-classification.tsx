@@ -54,7 +54,7 @@ function ImageClassificationTask() {
     >
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="Put a name to it."
+        placeholderTitle="Put a name to it"
         placeholderDescription="Recognize the main subject in your photo."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && classifier.isReady}

@@ -46,7 +46,7 @@ function DepthEstimationTask() {
     <TaskScreen title="Depth estimation" model={model} status={estimator} error={error} busy={busy}>
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="Find your focus."
+        placeholderTitle="Find your focus"
         placeholderDescription="Choose a photo, then tap a subject to bring it into focus."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && estimator.isReady}

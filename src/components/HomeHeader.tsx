@@ -1,6 +1,5 @@
 import { StyleSheet, View } from 'react-native';
 
-import { AppText } from '@/components/AppText';
 import { IconButton } from '@/components/IconButton';
 import { tokens } from '@/theme';
 
@@ -9,13 +8,10 @@ type HomeHeaderProps = {
   onSettings: () => void;
 };
 
-/** A compact identity label and the design's simple horizontal three-dot settings action. */
+/** Keeps settings at the top right without shifting the home hero. */
 export function HomeHeader({ settingsVisible, onSettings }: HomeHeaderProps) {
   return (
     <View style={styles.header}>
-      <AppText variant="title" style={styles.title}>
-        React Native ExecuTorch
-      </AppText>
       <IconButton
         icon="ellipsis-horizontal"
         accessibilityLabel="Open settings"
@@ -34,11 +30,8 @@ const styles = StyleSheet.create({
     minHeight: layout.homeHeaderHeight,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     paddingLeft: spacing.xl,
     paddingRight: spacing.sm,
-    gap: spacing.sm,
-  },
-  title: {
-    flex: 1,
   },
 });

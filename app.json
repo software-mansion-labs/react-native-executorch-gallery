@@ -33,13 +33,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0D12",
+          "backgroundColor": "#FAFAFA",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "android": {
             "image": "./assets/images/android-splash-icon.png",
-            "imageWidth": 200,
-            "backgroundColor": "#0B0D12"
+            "imageWidth": 200
+          },
+          "dark": {
+            "backgroundColor": "#101114"
           }
         }
       ],

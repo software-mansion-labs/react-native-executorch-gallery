@@ -62,7 +62,7 @@ function ImageSession({ model, onNewChat }: { model: ModelControls; onNewChat: (
         session={session}
         model={model}
         onNewChat={onNewChat}
-        heroTitle="Every photo has a story."
+        heroTitle="Every photo has a story"
         heroDescription="Choose a photo, then ask what’s in it."
         suggestions={[]}
         canSend={chat.canSend && !photo.picking}

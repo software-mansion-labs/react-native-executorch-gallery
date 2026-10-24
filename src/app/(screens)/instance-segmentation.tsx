@@ -57,7 +57,7 @@ function InstanceSegmentationTask() {
     >
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="See each object clearly."
+        placeholderTitle="See each object clearly"
         placeholderDescription="Give every object its own colored mask, outline, and label."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && segmenter.isReady}

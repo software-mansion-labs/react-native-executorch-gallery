@@ -105,7 +105,7 @@ export function ImageGenerationView({
         {!image && !busy && (
           <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
             <TaskHero
-              title="Imagine it. Create it."
+              title="Imagine it. Create it"
               description="Turn a few words into a picture, right on your device."
               setup={<ModelSetup model={model} status={status} />}
             />

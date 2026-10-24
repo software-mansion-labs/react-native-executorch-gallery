@@ -53,7 +53,7 @@ function SemanticSegmentationTask() {
     >
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="See objects in color."
+        placeholderTitle="See objects in color"
         placeholderDescription="Highlight each region of your photo with a colored mask."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && segmenter.isReady}

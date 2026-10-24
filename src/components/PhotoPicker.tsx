@@ -73,7 +73,7 @@ export interface PhotoPickerProps {
  * @returns Responsive image viewport and selection action buttons.
  */
 export function PhotoPicker({
-  placeholderTitle = 'Find objects in a photo.',
+  placeholderTitle = 'Find objects in a photo',
   placeholderDescription = 'See what’s in your photo, with labels and boxes around each object.',
   onPick,
   renderOverlay,

@@ -38,7 +38,7 @@ export function ChatView({
   session,
   model,
   onNewChat,
-  heroTitle = 'Let’s talk it through.',
+  heroTitle = 'Let’s talk it through',
   heroDescription = 'A conversation, right on your device.',
   suggestions = defaultSuggestions,
   canSend = true,

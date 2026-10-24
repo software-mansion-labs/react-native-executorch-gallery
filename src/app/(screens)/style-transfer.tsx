@@ -50,7 +50,7 @@ function StyleTransferTask() {
     <TaskScreen title="Style transfer" model={model} status={styler} error={error} busy={busy}>
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="Give it a new style."
+        placeholderTitle="Give it a new style"
         placeholderDescription="Turn your photo into a mosaic, then hold to compare."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && styler.isReady}

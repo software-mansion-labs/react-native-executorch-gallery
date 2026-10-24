@@ -48,7 +48,7 @@ function OcrTask() {
       <PhotoPicker
         key={model.revision}
         targetWidth={null}
-        placeholderTitle="Read between the pixels."
+        placeholderTitle="Read between the pixels"
         placeholderDescription="Find text in your photo, then select or copy what it says."
         busy={busy || model.deleting}
         canPick={model.prepared && model.loaded && ocr.isReady}

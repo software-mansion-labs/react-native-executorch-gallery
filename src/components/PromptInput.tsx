@@ -164,7 +164,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   suggestionList: { flex: 1, minWidth: 0 },
-  suggestions: { flexGrow: 1, justifyContent: 'center', gap: spacing.sm },
+  suggestions: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   chip: {
     borderRadius: radius.pill,
     borderWidth: borderWidth.thin,
