@@ -10,6 +10,7 @@ type CircularProgressProps = {
   size?: number;
   color?: string;
   accessible?: boolean;
+  accessibilityLabel?: string;
 };
 
 /** A rounded hexagon showing download progress and rotating fully colored while preparing. */
@@ -19,6 +20,7 @@ export function CircularProgress({
   size = tokens.layout.modelProgressSize,
   color,
   accessible = true,
+  accessibilityLabel,
 }: CircularProgressProps) {
   const { colors } = useTheme();
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
@@ -29,7 +31,9 @@ export function CircularProgress({
       style={{ width: size, height: size }}
       accessible={accessible}
       accessibilityRole="progressbar"
-      accessibilityLabel={indeterminate ? 'Preparing model' : 'Downloading model'}
+      accessibilityLabel={
+        accessibilityLabel ?? (indeterminate ? 'Preparing model' : 'Downloading model')
+      }
       accessibilityState={{ busy: true }}
       accessibilityValue={
         indeterminate ? undefined : { min: 0, max: 100, now: Math.round(percentage) }

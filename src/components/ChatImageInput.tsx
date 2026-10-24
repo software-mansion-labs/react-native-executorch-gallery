@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { CircularProgress } from '@/components/CircularProgress';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { tokens, useTheme } from '@/theme';
 
@@ -13,7 +14,7 @@ export function ChatImageInput({
   disabled: boolean;
   picking: boolean;
 }) {
-  const { colors } = useTheme();
+  const { colors, iconSize } = useTheme();
   return (
     <View style={styles.row}>
       <PhotoActionButton
@@ -30,7 +31,15 @@ export function ChatImageInput({
         disabled={disabled || picking}
         onPress={() => void onChoose('camera')}
       />
-      {picking && <ActivityIndicator color={colors.muted} />}
+      {picking && (
+        <CircularProgress
+          progress={100}
+          indeterminate
+          size={iconSize.medium}
+          color={colors.muted}
+          accessibilityLabel="Preparing image"
+        />
+      )}
     </View>
   );
 }
