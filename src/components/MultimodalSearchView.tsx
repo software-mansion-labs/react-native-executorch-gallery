@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
@@ -12,6 +12,7 @@ import { SearchPhotoGrid } from '@/components/SearchPhotoGrid';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
+import { useKeyboardScroll } from '@/hooks/useKeyboardScroll';
 import type { ModelControls } from '@/hooks/useModelControls';
 import type { SearchPhoto, SearchResult } from '@/lib/search-photos';
 import { tokens, useTheme } from '@/theme';
@@ -48,10 +49,10 @@ export function MultimodalSearchView({
   const { keyboardStyle, heroStyle } = useChatKeyboard();
   const ready = model.prepared && model.loaded && status.isReady;
   const photos = result?.photos ?? collection;
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useKeyboardScroll();
   useEffect(() => {
     scroll.current?.scrollTo({ y: 0, animated: true });
-  }, [result]);
+  }, [result, scroll]);
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       {ready && (
@@ -82,15 +83,16 @@ export function MultimodalSearchView({
               />
             ) : null}
           </View>
-          <ScrollView
+          <Animated.ScrollView
             ref={scroll}
             style={styles.scroll}
             contentContainerStyle={styles.grid}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
           >
             <SearchPhotoGrid photos={photos} ranked={!!result} />
-          </ScrollView>
+          </Animated.ScrollView>
           <PromptInput
             value={draft}
             onChangeText={onDraftChange}
@@ -124,7 +126,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
-  collection: { flex: 1, gap: spacing.md },
+  collection: { flex: 1, gap: spacing.sm },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

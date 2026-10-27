@@ -1,4 +1,4 @@
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import type { SkImage } from '@shopify/react-native-skia';
 import type { useTextToImage } from 'react-native-executorch';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
@@ -11,6 +11,7 @@ import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
+import { useKeyboardScroll } from '@/hooks/useKeyboardScroll';
 import type { ModelControls } from '@/hooks/useModelControls';
 import { tokens } from '@/theme';
 
@@ -44,14 +45,17 @@ export function ImageGenerationView({
   status: ReturnType<typeof useTextToImage>;
 }) {
   const { keyboardStyle, heroStyle } = useChatKeyboard();
+  const scroll = useKeyboardScroll();
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
-        <ScrollView
+        <Animated.ScrollView
+          ref={scroll}
           style={styles.stage}
           contentContainerStyle={styles.previewContent}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
           showsVerticalScrollIndicator={false}
         >
           {image && (
@@ -83,7 +87,7 @@ export function ImageGenerationView({
               </AppText>
             </View>
           )}
-        </ScrollView>
+        </Animated.ScrollView>
         {ready && (
           <Animated.View entering={composerEntrance}>
             <PromptInput
@@ -121,7 +125,7 @@ const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.md },
+  content: { flex: 1, gap: spacing.sm },
   stage: { flex: 1, minHeight: 0 },
   previewContent: { flexGrow: 1, justifyContent: 'center', gap: spacing.md },
   loading: {

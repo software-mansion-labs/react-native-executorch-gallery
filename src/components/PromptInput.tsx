@@ -153,7 +153,7 @@ const suggestionEntrance = FadeIn.duration(tokens.motion.photoRevealDuration).re
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { gap: spacing.lg, paddingBottom: spacing.md },
+  root: { gap: spacing.sm, paddingBottom: spacing.sm },
   suggestionSpace: {
     minHeight: layout.touchTarget,
     flexDirection: 'row',

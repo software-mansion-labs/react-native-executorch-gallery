@@ -213,9 +213,9 @@ const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.md },
+  content: { flex: 1, gap: spacing.sm },
   scroll: { flex: 1, minHeight: 0 },
-  messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.xl },
+  messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
   turn: { gap: spacing.md },
   question: {
     alignSelf: 'flex-end',

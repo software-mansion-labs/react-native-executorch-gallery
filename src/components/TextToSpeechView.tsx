@@ -1,4 +1,4 @@
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { ModelSetup } from '@/components/ModelSetup';
@@ -10,6 +10,7 @@ import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
+import { useKeyboardScroll } from '@/hooks/useKeyboardScroll';
 import type { ModelControls } from '@/hooks/useModelControls';
 import { useReadAlongScroll } from '@/hooks/useReadAlongScroll';
 import type { useSpeechPlayback } from '@/hooks/useSpeechPlayback';
@@ -51,15 +52,16 @@ export function TextToSpeechView({
     text,
     playback.words[playback.activeWord]?.offset
   );
+  useKeyboardScroll(scroll);
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
-        <ScrollView
+        <Animated.ScrollView
           ref={scroll}
           onLayout={onLayout}
           style={styles.stage}
           contentContainerStyle={styles.result}
-          keyboardDismissMode="on-drag"
+          keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -71,16 +73,16 @@ export function TextToSpeechView({
               onTextLayout={onTextLayout}
             />
           )}
-        </ScrollView>
-        <View style={styles.activity}>
-          {playback.busy && (
+        </Animated.ScrollView>
+        {playback.busy && (
+          <View style={styles.activity}>
             <Animated.View entering={entrance} style={styles.status}>
               <ThinkingIndicator
                 accessibilityLabel={playback.playing ? 'Speaking' : 'Preparing speech'}
               />
             </Animated.View>
-          )}
-        </View>
+          </View>
+        )}
         {ready && (
           <Animated.View entering={entrance}>
             <PromptInput
@@ -137,9 +139,14 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration).reduceMotion
 );
 const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.md },
+  content: { flex: 1, gap: spacing.sm },
   stage: { flex: 1, minHeight: 0 },
-  result: { flexGrow: 1, justifyContent: 'center', paddingVertical: spacing.xl },
+  result: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.sm,
+  },
   activity: { height: typography.body.lineHeight, justifyContent: 'center', alignItems: 'center' },
   status: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
 });
