@@ -1,5 +1,8 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'migan_512_xnnpack_fp16.pte': 25_181_068,
+  'migan_512_coreml_fp16.pte': 13_968_400,
+  'migan_512_vulkan_fp16.pte': 14_058_114,
   'duration_predictor_std_coreml_fp32.pte': 68_064_101,
   'synthesizer_std_coreml_fp32.pte': 296_217_566,
   'duration_predictor_std_xnnpack_fp32.pte': 59_307_208,

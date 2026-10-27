@@ -50,6 +50,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'focus blur bokeh portrait distance Depth Anything',
       },
       {
+        id: 'inpainting',
+        href: '/inpainting',
+        title: 'Photo cleanup',
+        keywords: 'inpainting MI-GAN migan erase remove objects retouch brush',
+      },
+      {
         id: 'style-transfer',
         href: '/style-transfer',
         title: 'Style transfer',

@@ -164,6 +164,7 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
+    inpaintingBrushSize: 28,
     liveDetectionStatusWidth: 176,
     depthFocusRadius: 14,
     depthFocusStroke: 2,

@@ -39,6 +39,8 @@ export interface PhotoPickerProps {
   onPick: (image: PickedImage | null) => void;
   /** Optional render function for task-specific overlays (boxes, masks, landmarks). */
   renderOverlay?: (transform: ViewportTransform) => ReactNode;
+  /** Touch-enabled layer above the photo, using the same contain-fit coordinates. */
+  renderInteraction?: (transform: ViewportTransform) => ReactNode;
   /** Optional photo renderer receiving the same decoded Skia image used for raw input pixels. */
   renderPhoto?: (image: SkImage, transform: ViewportTransform) => ReactNode;
   /** Optional Skia Image overlay to render directly on the photo canvas (e.g. segmentation mask). */
@@ -77,6 +79,7 @@ export function PhotoPicker({
   placeholderDescription = 'See what’s in your photo, with labels and boxes around each object.',
   onPick,
   renderOverlay,
+  renderInteraction,
   renderPhoto,
   overlayImage,
   overlayOpacity = 0.65,
@@ -147,6 +150,7 @@ export function PhotoPicker({
               {renderOverlay?.(transform)}
             </Animated.View>
           ) : null}
+          {image && viewW > 0 && viewH > 0 && renderInteraction?.(transform)}
         </View>
 
         {resultsContent ?? (
