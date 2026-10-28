@@ -10,6 +10,7 @@ type IconButtonProps = PressableProps & {
   size?: keyof Theme['iconSize'];
   tone?: 'text' | 'muted' | 'danger';
   appearance?: Theme['scheme'];
+  color?: string;
 };
 
 /** A labeled icon action with a consistent touch target and pressed feedback.
@@ -19,6 +20,7 @@ export function IconButton({
   size = 'medium',
   tone = 'text',
   appearance,
+  color,
   ...props
 }: IconButtonProps) {
   const { colors, iconSize } = useTheme(appearance);
@@ -33,7 +35,7 @@ export function IconButton({
         props.disabled && styles.disabled,
       ]}
     >
-      <Ionicons name={icon} size={iconSize[size]} color={colors[tone]} />
+      <Ionicons name={icon} size={iconSize[size]} color={color ?? colors[tone]} />
     </Pressable>
   );
 }

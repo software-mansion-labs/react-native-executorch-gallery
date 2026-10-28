@@ -32,6 +32,13 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'VLM vision language photo caption visual chat LFM',
       },
       {
+        id: 'widget-builder',
+        href: '/widget-builder',
+        title: 'Tiny widget builder',
+        keywords:
+          'chat LLM constrained decoding generation JSON grammar UI interface interactive forms',
+      },
+      {
         id: 'text-to-image',
         href: '/text-to-image',
         title: 'Text to image',

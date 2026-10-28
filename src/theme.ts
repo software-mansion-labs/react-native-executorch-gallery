@@ -189,6 +189,7 @@ export const tokens = {
     thinkingIndicatorSize: 18,
   },
   motion: {
+    widgetExpandedScale: 1.04,
     themeTransitionDuration: 240,
     chatDisclosureDuration: 240,
     chatDisclosureFadeDuration: 180,
