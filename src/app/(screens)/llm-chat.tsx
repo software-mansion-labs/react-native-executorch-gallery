@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { models, useLLMChatSession } from 'react-native-executorch';
 
-import { ChatView } from '@/components/ChatView';
+import { ChatView } from '@/components/chat/ChatView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
@@ -11,8 +11,8 @@ import {
   createChatTools,
   parseLfmToolCalls,
   splitLfmResponse,
-} from '@/lib/chat-tools';
-import { updateLastTurn, type ChatTurn } from '@/lib/chat-presentation';
+} from '@/lib/chat/chat-tools';
+import { updateLastTurn, type ChatTurn } from '@/lib/chat/chat-presentation';
 
 const MODEL = models.llm.LFM2_5_2_6B.DEFAULT;
 

@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { models, useLLMChatSession } from 'react-native-executorch';
 
-import { ChatImagePreview } from '@/components/ChatImagePreview';
-import { ChatImageInput } from '@/components/ChatImageInput';
-import { ChatView } from '@/components/ChatView';
+import { ChatImagePreview } from '@/components/image-description/ChatImagePreview';
+import { ChatImageInput } from '@/components/image-description/ChatImageInput';
+import { ChatView } from '@/components/chat/ChatView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { usePhotoInput } from '@/hooks/usePhotoInput';
-import { useImageChatState } from '@/hooks/useImageChatState';
+import { useImageChatState } from '@/hooks/image-description/useImageChatState';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
-import { CHAT_GENERATION } from '@/lib/chat-tools';
+import { CHAT_GENERATION } from '@/lib/chat/chat-tools';
 
 const MODEL = models.llm.LFM2_5_VL_450M.DEFAULT;
 const INITIAL_MESSAGES = [

@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { models, usePrivacyFilter } from 'react-native-executorch';
 
-import { PrivacyFilterView, type PrivacyFilterOutput } from '@/components/PrivacyFilterView';
+import {
+  PrivacyFilterView,
+  type PrivacyFilterOutput,
+} from '@/components/privacy-filter/PrivacyFilterView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls } from '@/hooks/useModelControls';

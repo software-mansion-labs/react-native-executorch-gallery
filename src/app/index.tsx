@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { StyleSheet, Pressable, ScrollView, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
-import { DestinationLink } from '@/components/DestinationLink';
-import { HomeHero } from '@/components/HomeHero';
-import { HomeHeader } from '@/components/HomeHeader';
-import { SettingsSheet } from '@/components/SettingsSheet';
+import { DestinationLink } from '@/components/home/DestinationLink';
+import { HomeHero } from '@/components/home/HomeHero';
+import { HomeHeader } from '@/components/home/HomeHeader';
+import { SettingsSheet } from '@/components/settings/SettingsSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { tokens, useTheme } from '@/theme';
 

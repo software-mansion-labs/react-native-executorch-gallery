@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { models, useTextToImage } from 'react-native-executorch';
 
-import { ImageGenerationView } from '@/components/ImageGenerationView';
+import { ImageGenerationView } from '@/components/text-to-image/ImageGenerationView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useDisposableImage } from '@/hooks/useDisposableImage';

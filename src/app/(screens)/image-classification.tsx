@@ -6,7 +6,7 @@ import {
   type ImageNet1KLabel,
 } from 'react-native-executorch';
 
-import { ClassificationResult } from '@/components/ClassificationResult';
+import { ClassificationResult } from '@/components/image-classification/ClassificationResult';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';

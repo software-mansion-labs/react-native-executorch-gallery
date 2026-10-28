@@ -4,7 +4,7 @@ import { models, useStyleTransfer } from 'react-native-executorch';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { StyleTransferResult } from '@/components/StyleTransferResult';
+import { StyleTransferResult } from '@/components/style-transfer/StyleTransferResult';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useDisposableImage } from '@/hooks/useDisposableImage';
 import { useModelControls } from '@/hooks/useModelControls';

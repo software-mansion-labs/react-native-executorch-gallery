@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { models, useOpticalCharacterRecognizer, type OcrDetection } from 'react-native-executorch';
 
 import { ModelSetup } from '@/components/ModelSetup';
-import { OcrOverlay } from '@/components/OcrOverlay';
-import { OcrResult } from '@/components/OcrResult';
+import { OcrOverlay } from '@/components/ocr/OcrOverlay';
+import { OcrResult } from '@/components/ocr/OcrResult';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls } from '@/hooks/useModelControls';
-import { useOcrPresentation } from '@/hooks/useOcrPresentation';
+import { useOcrPresentation } from '@/hooks/ocr/useOcrPresentation';
 import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.ocr.PADDLE.PPOCRV6_SMALL.DEFAULT;

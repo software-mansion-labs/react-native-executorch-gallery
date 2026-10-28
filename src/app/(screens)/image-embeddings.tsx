@@ -6,7 +6,7 @@ import {
   useTextEmbedder,
 } from 'react-native-executorch';
 
-import { MultimodalSearchView } from '@/components/MultimodalSearchView';
+import { MultimodalSearchView } from '@/components/image-embeddings/MultimodalSearchView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
@@ -15,7 +15,7 @@ import {
   SEARCH_PHOTOS,
   type SearchPhoto,
   type SearchResult,
-} from '@/lib/search-photos';
+} from '@/lib/image-embeddings/search-photos';
 
 const IMAGE_MODEL = models.imageEmbeddings.CLIP_VIT_BASE_PATCH32.DEFAULT;
 const TEXT_MODEL = models.textEmbeddings.CLIP_VIT_BASE_PATCH32_TEXT.DEFAULT;

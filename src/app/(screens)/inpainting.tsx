@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { models, useInpainter } from 'react-native-executorch';
 
-import { InpaintingCanvas } from '@/components/InpaintingCanvas';
-import { InpaintingResult } from '@/components/InpaintingResult';
+import { InpaintingCanvas } from '@/components/inpainting/InpaintingCanvas';
+import { InpaintingResult } from '@/components/inpainting/InpaintingResult';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useDisposableImage } from '@/hooks/useDisposableImage';
-import { useInpaintingMask } from '@/hooks/useInpaintingMask';
+import { useInpaintingMask } from '@/hooks/inpainting/useInpaintingMask';
 import { useModelControls } from '@/hooks/useModelControls';
 import { useTaskState } from '@/hooks/useTaskState';
 import { bufferToSkImage } from '@/lib/image';

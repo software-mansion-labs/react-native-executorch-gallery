@@ -2,9 +2,9 @@ import { models, useTextToSpeech } from 'react-native-executorch';
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-import { TextToSpeechView } from '@/components/TextToSpeechView';
+import { TextToSpeechView } from '@/components/text-to-speech/TextToSpeechView';
 import { useModelControls } from '@/hooks/useModelControls';
-import { useSpeechPlayback } from '@/hooks/useSpeechPlayback';
+import { useSpeechPlayback } from '@/hooks/text-to-speech/useSpeechPlayback';
 import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.textToSpeech.KOKORO.EN_US.DEFAULT;

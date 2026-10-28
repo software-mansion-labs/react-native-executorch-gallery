@@ -11,9 +11,12 @@ import { GPUFrame, useResizer } from 'react-native-vision-camera-resizer';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { ModelSetup } from '@/components/ModelSetup';
-import { RealtimeDetectionView } from '@/components/RealtimeDetectionView';
+import { RealtimeDetectionView } from '@/components/realtime-object-detection/RealtimeDetectionView';
 import { useModelControls } from '@/hooks/useModelControls';
-import { RealtimeDetectionViewport, type ImageSize } from '@/components/RealtimeDetectionViewport';
+import {
+  RealtimeDetectionViewport,
+  type ImageSize,
+} from '@/components/realtime-object-detection/RealtimeDetectionViewport';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 

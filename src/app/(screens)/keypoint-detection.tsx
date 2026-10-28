@@ -6,7 +6,7 @@ import {
   type KeypointDetection,
 } from 'react-native-executorch';
 
-import { KeypointOverlay } from '@/components/KeypointOverlay';
+import { KeypointOverlay } from '@/components/keypoint-detection/KeypointOverlay';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';

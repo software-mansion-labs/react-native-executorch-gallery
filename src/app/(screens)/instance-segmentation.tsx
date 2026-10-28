@@ -6,7 +6,7 @@ import {
   type InstanceSegmentationResult,
 } from 'react-native-executorch';
 
-import { InstanceSegmentationOverlay } from '@/components/InstanceSegmentationOverlay';
+import { InstanceSegmentationOverlay } from '@/components/instance-segmentation/InstanceSegmentationOverlay';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';

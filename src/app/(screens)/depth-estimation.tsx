@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { models, useDepthEstimator } from 'react-native-executorch';
 
-import { DepthPhoto } from '@/components/DepthPhoto';
+import { DepthPhoto } from '@/components/depth-estimation/DepthPhoto';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
@@ -9,7 +9,7 @@ import { TaskScreen } from '@/components/TaskScreen';
 import { useDisposableImage } from '@/hooks/useDisposableImage';
 import { useModelControls } from '@/hooks/useModelControls';
 import { useTaskState } from '@/hooks/useTaskState';
-import { createDepthTexture } from '@/lib/depth-focus';
+import { createDepthTexture } from '@/lib/depth-estimation/depth-focus';
 
 const MODEL = models.depthEstimation.DEPTH_ANYTHING_V3_SMALL.DEFAULT;
 

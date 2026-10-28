@@ -3,19 +3,19 @@ import { models, useLLMChatSession } from 'react-native-executorch';
 
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-import { WidgetBuilderView } from '@/components/WidgetBuilderView';
-import { useAppBuilderGrammar } from '@/hooks/useAppBuilderGrammar';
-import { useWidgetSessionConfig } from '@/hooks/useWidgetSessionConfig';
+import { WidgetBuilderView } from '@/components/widget-builder/WidgetBuilderView';
+import { useAppBuilderGrammar } from '@/hooks/widget-builder/useAppBuilderGrammar';
+import { useWidgetSessionConfig } from '@/hooks/widget-builder/useWidgetSessionConfig';
 import { useModelControls } from '@/hooks/useModelControls';
 import { useTaskState } from '@/hooks/useTaskState';
-import { useWidgetBuildStream } from '@/hooks/useWidgetBuildStream';
+import { useWidgetBuildStream } from '@/hooks/widget-builder/useWidgetBuildStream';
 import {
   APP_BUILDER_MESSAGES,
   WIDGET_STOP_REGEX,
   parseGeneratedApp,
   type GeneratedApp,
-} from '@/lib/app-builder';
-import { appBuilderConstraints } from '@/lib/app-builder-grammar';
+} from '@/lib/widget-builder/app-builder';
+import { appBuilderConstraints } from '@/lib/widget-builder/app-builder-grammar';
 
 const MODEL = models.llm.LFM2_5_2_6B.DEFAULT;
 

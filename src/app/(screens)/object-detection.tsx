@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { models, useObjectDetector, type ObjectDetection } from 'react-native-executorch';
 
-import { DetectionOverlay } from '@/components/DetectionOverlay';
+import { DetectionOverlay } from '@/components/object-detection/DetectionOverlay';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
