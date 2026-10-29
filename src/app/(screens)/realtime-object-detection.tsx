@@ -10,18 +10,21 @@ import { useCameraDevice, useCameraPermission, useFrameOutput } from 'react-nati
 import { GPUFrame, useResizer } from 'react-native-vision-camera-resizer';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { CameraActionButton } from '@/components/CameraActionButton';
-import { RealtimeDetectionViewport, type ImageSize } from '@/components/RealtimeDetectionViewport';
+import { ModelSetup } from '@/components/ModelSetup';
+import { RealtimeDetectionView } from '@/components/realtime-object-detection/RealtimeDetectionView';
+import { useModelControls } from '@/hooks/useModelControls';
+import {
+  RealtimeDetectionViewport,
+  type ImageSize,
+} from '@/components/realtime-object-detection/RealtimeDetectionViewport';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
 
 const MODEL = models.objectDetection.YOLO26.NANO.SIZE_384.DEFAULT;
 const INPUT_SIZE: ImageSize = { width: 384, height: 384 };
 
 function RealtimeObjectDetectionTask() {
-  const [loaded, setLoaded] = useState(false);
+  const model = useModelControls(MODEL.modelPath, { name: 'YOLO26 Nano' });
   const [isActive, setIsActive] = useState(false);
 
   const [detections, setDetections] = useState<ObjectDetection<'xyxy', CocoClassYolo>[]>([]);
@@ -31,7 +34,7 @@ function RealtimeObjectDetectionTask() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
 
-  const detector = useObjectDetector(MODEL, { preventLoad: !loaded });
+  const detector = useObjectDetector(MODEL, { preventLoad: !model.loaded });
   const { detectObjectsWorklet, isReady } = detector;
 
   const { resizer } = useResizer({
@@ -103,42 +106,39 @@ function RealtimeObjectDetectionTask() {
     setIsActive(true);
   };
 
+  const ready = model.prepared && model.loaded && isReady;
+  const showCamera = ready && !!device && hasPermission;
   return (
     <TaskScreen
-      title="Live Detection"
-      subtitle="YOLO26 Nano"
+      title="Live object detection"
+      model={model}
       status={detector}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={false}
       busy={isActive}
-      onRun={() => undefined}
-      meta={
-        isActive && latency != null
-          ? `${Math.round(1000 / Math.max(latency, 1))} FPS · ${latency} ms / frame`
-          : undefined
-      }
-      onDeleteModel={async () => {
-        setIsActive(false);
-        setDetections([]);
-        setLatency(null);
-        await deleteCachedFiles(detector.resource);
-        setLoaded(false);
-      }}
-      footer={
-        <CameraActionButton
-          isActive={isActive}
-          enabled={isReady && !!device}
-          onPress={toggleDetection}
-        />
+      scrollable={false}
+      edgeToEdge
+      background={
+        showCamera ? (
+          <RealtimeDetectionViewport
+            fullScreen
+            device={device}
+            hasPermission={hasPermission}
+            frameOutput={frameOutput}
+            detections={isActive ? detections : []}
+            inputSize={INPUT_SIZE}
+            frameSize={frameSize}
+          />
+        ) : undefined
       }
     >
-      <RealtimeDetectionViewport
-        device={device}
-        hasPermission={hasPermission}
-        frameOutput={frameOutput}
-        detections={isActive ? detections : []}
-        inputSize={INPUT_SIZE}
-        frameSize={frameSize}
+      <RealtimeDetectionView
+        showCamera={showCamera}
+        hasCamera={!!device}
+        detectionCount={isActive ? detections.length : 0}
+        latency={latency}
+        isActive={isActive}
+        ready={ready}
+        onToggle={toggleDetection}
+        setup={<ModelSetup model={model} status={detector} />}
       />
     </TaskScreen>
   );
@@ -146,7 +146,7 @@ function RealtimeObjectDetectionTask() {
 
 export default function RealtimeObjectDetectionScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur edgeToEdge>
       <RealtimeObjectDetectionTask />
     </ScreenWrapper>
   );

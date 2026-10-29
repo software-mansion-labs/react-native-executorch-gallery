@@ -1,86 +1,81 @@
 import { useState } from 'react';
 import { models, useStyleTransfer } from 'react-native-executorch';
 
+import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { StyleTransferOverlay } from '@/components/StyleTransferOverlay';
+import { StyleTransferResult } from '@/components/style-transfer/StyleTransferResult';
 import { TaskScreen } from '@/components/TaskScreen';
-
 import { useDisposableImage } from '@/hooks/useDisposableImage';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 import { bufferToSkImage } from '@/lib/image';
 
 const MODEL = models.styleTransfer.MOSAIC.DEFAULT;
 
 function StyleTransferTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [styledImage, setStyledImage] = useDisposableImage();
-  const [showOriginal, setShowOriginal] = useState(false);
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'Mosaic' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [styledImage, setStyledImage] = useDisposableImage(model.revision);
+  const [showOriginal, setShowOriginal] = useTaskState(false, model.revision);
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const styler = useStyleTransfer(MODEL, { preventLoad: !loaded });
+  const styler = useStyleTransfer(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (busy || !image || !styler.transferStyle) return;
+    if (!image || !model.loaded || !styler.isReady || !styler.transferStyle) return;
+    if (busy || model.deleting) return;
     setBusy(true);
     setStyledImage(null);
+    setShowOriginal(false);
     setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
+      const started = performance.now();
       const output = await styler.transferStyle(image.buffer);
-      setLatency(Date.now() - t0);
-
-      const skiaStyled = bufferToSkImage(output);
-      if (!skiaStyled) throw new Error('Failed to create styled image from output data');
-      setStyledImage(skiaStyled);
-      setShowOriginal(false);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      setLatency(Math.round(performance.now() - started));
+      const nextImage = bufferToSkImage(output);
+      if (!nextImage) throw new Error('Failed to create styled image from output data');
+      setStyledImage(nextImage);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <TaskScreen
-      title="Style Transfer"
-      subtitle="Mosaic Style"
-      status={{ ...styler, error: error || styler.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && styler.isReady && !busy}
-      busy={busy}
-      onRun={run}
-      runLabel="Transfer Style"
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
-      onDeleteModel={async () => {
-        await deleteCachedFiles(styler.resource);
-        setLoaded(false);
-      }}
-    >
+    <TaskScreen title="Style transfer" model={model} status={styler} error={error} busy={busy}>
       <PhotoPicker
-        busy={busy}
+        key={model.revision}
+        placeholderTitle="Give it a new style"
+        placeholderDescription="Turn your photo into a mosaic, then hold to compare."
+        busy={busy || model.deleting}
+        canPick={model.prepared && model.loaded && styler.isReady}
+        setupAction={<ModelSetup model={model} status={styler} disabled={busy} />}
+        onRun={run}
+        canRun={model.prepared && !!image && styler.isReady && model.loaded}
+        running={busy}
+        resultsContent={
+          <StyleTransferResult
+            available={!!styledImage}
+            showOriginal={showOriginal}
+            latency={latency}
+            onPressInOriginal={() => setShowOriginal(true)}
+            onPressOutOriginal={() => setShowOriginal(false)}
+          />
+        }
         overlayImage={showOriginal ? null : styledImage}
         overlayOpacity={1}
-        onPick={(img) => {
-          setImage(img);
+        onPick={(picked) => {
+          setImage(picked);
           setStyledImage(null);
+          setShowOriginal(false);
           setLatency(null);
           setError(null);
         }}
-        renderOverlay={() =>
-          styledImage ? (
-            <StyleTransferOverlay
-              showOriginal={showOriginal}
-              onPressInOriginal={() => setShowOriginal(true)}
-              onPressOutOriginal={() => setShowOriginal(false)}
-            />
-          ) : null
-        }
       />
     </TaskScreen>
   );
@@ -88,7 +83,7 @@ function StyleTransferTask() {
 
 export default function StyleTransferScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <StyleTransferTask />
     </ScreenWrapper>
   );

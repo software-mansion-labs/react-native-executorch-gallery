@@ -1,49 +1,39 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { models, usePrivacyFilter, nlp } from 'react-native-executorch';
+import { models, usePrivacyFilter } from 'react-native-executorch';
 
-import { EmptyState } from '@/components/EmptyState';
-import { PrivacyFilterResults } from '@/components/PrivacyFilterResults';
-import { PromptInput } from '@/components/PromptInput';
+import {
+  PrivacyFilterView,
+  type PrivacyFilterOutput,
+} from '@/components/privacy-filter/PrivacyFilterView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
-import { spacing } from '@/theme';
-
-const SUGGESTIONS = [
-  'My name is Sarah Chen and I work as a senior engineer at Acme Corp. You can reach me at sarah.chen@acmecorp.io or call my direct line at (415) 923-0847. For billing inquiries, my account number is ACC-8821-4490-3371.',
-  'Contact me at john.doe@example.com or +1 (555) 123-4567.',
-  'My card number is 4111 1111 1111 1111 and SSN 123-45-6789.',
-];
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.privacyFilter.OPENAI.DEFAULT;
 
 function PrivacyFilterTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [input, setInput] = useState('');
-  const [submitted, setSubmitted] = useState('');
-  const [entities, setEntities] = useState<nlp.PiiEntity[]>([]);
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'OpenAI Privacy Filter' });
+  const [input, setInput] = useTaskState('', model.revision);
+  const [result, setResult] = useTaskState<PrivacyFilterOutput | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const privacyFilter = usePrivacyFilter(MODEL, { preventLoad: !loaded });
+  const filter = usePrivacyFilter(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (busy || !input.trim() || !privacyFilter.detectPii) return;
+    if (!input.trim() || !model.loaded || !filter.isReady || !filter.detectPii) return;
+    if (busy || model.deleting) return;
     setBusy(true);
-    setEntities([]);
-    setLatency(null);
     setError(null);
+    const text = input;
+    setInput('');
     try {
-      const t0 = Date.now();
-      const found = await privacyFilter.detectPii(input);
-      setLatency(Date.now() - t0);
-      setSubmitted(input);
-      setEntities(found);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      const started = performance.now();
+      const entities = await filter.detectPii(text);
+      setResult({ text, entities, latency: Math.round(performance.now() - started) });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
@@ -51,58 +41,29 @@ function PrivacyFilterTask() {
 
   return (
     <TaskScreen
-      title="Privacy Filter"
-      subtitle="OpenAI PII Detector"
-      status={{ ...privacyFilter, error: error || privacyFilter.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
+      title="Privacy filter"
+      model={model}
+      status={filter}
+      error={error}
       busy={busy}
-      onRun={() => undefined}
-      canRun={false}
-      onDeleteModel={async () => {
-        await deleteCachedFiles(privacyFilter.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
-      footer={
-        <PromptInput
-          value={input}
-          onChangeText={setInput}
-          onSubmit={run}
-          disabled={busy}
-          isExecuting={busy}
-          canSubmit={!!input.trim() && privacyFilter.isReady && !busy}
-          suggestions={SUGGESTIONS}
-          placeholder="Paste text to scan for emails, phone numbers, names…"
-        />
-      }
+      scrollable={false}
     >
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.body}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-      >
-        {entities.length === 0 ? (
-          <EmptyState
-            title="No PII detected yet"
-            message="Paste a text or pick a suggestion, then press send to scan for personally identifiable information."
-          />
-        ) : (
-          <PrivacyFilterResults text={submitted} entities={entities} />
-        )}
-      </ScrollView>
+      <PrivacyFilterView
+        input={input}
+        onInputChange={setInput}
+        onRun={run}
+        result={result}
+        busy={busy}
+        model={model}
+        status={filter}
+      />
     </TaskScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  scroll: { flex: 1 },
-  body: { gap: spacing.md, paddingBottom: spacing.md },
-});
-
 export default function PrivacyFilterScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <PrivacyFilterTask />
     </ScreenWrapper>
   );

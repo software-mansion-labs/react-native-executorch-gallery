@@ -1,42 +1,43 @@
 import { useState } from 'react';
 import { models, useSemanticSegmenter } from 'react-native-executorch';
 
+import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
 import { useDisposableImage } from '@/hooks/useDisposableImage';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
 import { bufferToSkImage } from '@/lib/image';
 
 const MODEL = models.semanticSegmentation.DEEPLAB_V3_RESNET50.DEFAULT;
 
 function SemanticSegmentationTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [segmentationImage, setSegmentationImage] = useDisposableImage();
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'DeepLabV3 ResNet50' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [segmentationImage, setSegmentationImage] = useDisposableImage(model.revision);
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const segmenter = useSemanticSegmenter(MODEL, { preventLoad: !loaded });
+  const segmenter = useSemanticSegmenter(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (busy || !image || !segmenter.segment) return;
+    if (!image || !model.loaded || !segmenter.isReady || !segmenter.segment) return;
+    if (busy || model.deleting) return;
     setBusy(true);
+    setSegmentationImage(null);
     setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
-      const { buffer: outBuffer } = await segmenter.segment(image.buffer);
-      setLatency(Date.now() - t0);
-
-      const nextImage = bufferToSkImage(outBuffer);
+      const started = performance.now();
+      const { buffer } = await segmenter.segment(image.buffer);
+      setLatency(Math.round(performance.now() - started));
+      const nextImage = bufferToSkImage(buffer);
       if (!nextImage) throw new Error('Failed to create overlay image from output data');
       setSegmentationImage(nextImage);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
@@ -44,26 +45,28 @@ function SemanticSegmentationTask() {
 
   return (
     <TaskScreen
-      title="Semantic Segmentation"
-      subtitle="DeepLabV3 ResNet50"
-      status={{ ...segmenter, error: error || segmenter.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && segmenter.isReady && !busy}
+      title="Semantic segmentation"
+      model={model}
+      status={segmenter}
+      error={error}
       busy={busy}
-      onRun={run}
-      runLabel="Segment Image"
-      onDeleteModel={async () => {
-        await deleteCachedFiles(segmenter.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
     >
       <PhotoPicker
-        busy={busy}
+        key={model.revision}
+        placeholderTitle="See objects in color"
+        placeholderDescription="Highlight each region of your photo with a colored mask."
+        busy={busy || model.deleting}
+        canPick={model.prepared && model.loaded && segmenter.isReady}
+        setupAction={<ModelSetup model={model} status={segmenter} disabled={busy} />}
+        onRun={run}
+        canRun={model.prepared && !!image && segmenter.isReady && model.loaded}
+        running={busy}
+        result={segmentationImage ? 'Image segmented' : undefined}
+        latency={latency}
         overlayImage={segmentationImage}
         overlayOpacity={0.65}
-        onPick={(img) => {
-          setImage(img);
+        onPick={(picked) => {
+          setImage(picked);
           setSegmentationImage(null);
           setLatency(null);
           setError(null);
@@ -75,7 +78,7 @@ function SemanticSegmentationTask() {
 
 export default function SemanticSegmentationScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <SemanticSegmentationTask />
     </ScreenWrapper>
   );

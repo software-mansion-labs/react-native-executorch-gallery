@@ -2,7 +2,7 @@
   "expo": {
     "name": "RN ExecuTorch Gallery",
     "slug": "react-native-executorch-gallery",
-    "version": "1.0.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "reactnativeexecutorchgallery",
@@ -10,7 +10,8 @@
     "ios": {
       "bundleIdentifier": "com.swm.react-native-executorch-gallery",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to access your camera for real-time vision tasks."
+        "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to take photos for vision demos.",
+        "NSPhotoLibraryUsageDescription": "Allow RN ExecuTorch Gallery to choose photos for vision demos."
       }
     },
     "android": {
@@ -32,13 +33,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0D12",
+          "backgroundColor": "#FAFAFA",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "android": {
             "image": "./assets/images/android-splash-icon.png",
-            "imageWidth": 200,
-            "backgroundColor": "#0B0D12"
+            "imageWidth": 200
+          },
+          "dark": {
+            "backgroundColor": "#101114"
           }
         }
       ],
