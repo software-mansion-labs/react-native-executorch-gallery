@@ -42,7 +42,7 @@ Title: short, starting with a matching emoji. Description: 2-4 words stating pur
 Appearance keys in order:
 {"scheme":"light"|"dark","background":COLOR,"accents":[COLOR,COLOR,COLOR],"layout":"stacked"|"grid","alignment":"left"|"center"}
 COLOR: ${WIDGET_COLOR_NAMES.join('|')}.
-Match requested colors and mood. Light backgrounds are pale, dark backgrounds deep. Accents are primary, secondary, tertiary. Text, gradients and typography are automatic. Use grid for counters/goals, stacked for longer controls.
+Use requested colors exactly: an unqualified color sets background; accent colors go in accents. Infer unspecified colors from mood. Light backgrounds are pale, dark backgrounds deep. Accents are primary, secondary, tertiary. Text, gradients and typography are automatic. Use grid for counters/goals, stacked for longer controls.
 
 Choose 1-6 controls. Follow these key orders:
 {"type":"single-select","label":STRING,"options":[STRING,...]}: exactly ONE alternative; selecting another replaces the previous selection.
