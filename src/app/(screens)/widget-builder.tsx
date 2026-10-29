@@ -17,10 +17,10 @@ import {
 } from '@/lib/widget-builder/app-builder';
 import { appBuilderConstraints } from '@/lib/widget-builder/app-builder-grammar';
 
-const MODEL = models.llm.LFM2_5_2_6B.DEFAULT;
+const MODEL = models.llm.LFM3_1_7B.DEFAULT;
 
 function WidgetBuilderTask() {
-  const model = useModelControls(MODEL.modelPath, { name: 'LFM 2.5 2.6B' });
+  const model = useModelControls(MODEL.modelPath, { name: 'LFM3 1.7B' });
   const [input, setInput] = useTaskState('', model.revision);
   const [lastPrompt, setLastPrompt] = useTaskState('', model.revision);
   const [widget, setWidget] = useTaskState<GeneratedApp | null>(null, model.revision);

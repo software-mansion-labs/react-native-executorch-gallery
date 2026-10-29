@@ -1,62 +1,33 @@
-import { parse, tokenize } from '@huggingface/jinja';
 import type { llm } from 'react-native-executorch';
 
-type Literal = { type: string; value: unknown };
-
-function literal(node: Literal): unknown {
-  if (['StringLiteral', 'IntegerLiteral', 'FloatLiteral'].includes(node.type)) return node.value;
-  if (node.type === 'ArrayLiteral') return (node.value as Literal[]).map(literal);
-  if (node.type === 'ObjectLiteral')
-    return Object.fromEntries(
-      [...(node.value as Map<Literal, Literal>)].map(([key, value]) => {
-        const name = literal(key);
-        if (typeof name !== 'string') throw new Error('Expected string key');
-        return [name, literal(value)];
-      })
-    );
-  const constants: Record<string, unknown> = {
-    True: true,
-    False: false,
-    None: null,
-    true: true,
-    false: false,
-    null: null,
-  };
-  if (node.type === 'Identifier' && Object.hasOwn(constants, String(node.value)))
-    return constants[String(node.value)];
-  throw new Error('Expected literal argument');
-}
-
-/** Parses the example app's LFM Python-style calls without evaluating generated code. */
-export function parseLfmToolCalls(text: string): llm.ToolParserResult | undefined {
+/** Parses LFM3's XML-style calls using the declared tool argument types. */
+export function parseLfmToolCalls(
+  text: string,
+  tools: llm.ToolDefinition[],
+  enableThinking = true
+): llm.ToolParserResult | undefined {
   const end = text.lastIndexOf('</think>');
-  if (end < 0) return;
-  const answer = text.slice(end + '</think>'.length);
-  const pattern = /<\|tool_call_start\|>([\s\S]*?)<\|tool_call_end\|>/g;
+  if (end < 0 && (enableThinking || text.includes('<think>'))) return;
+  const answer = end < 0 ? text : text.slice(end + '</think>'.length);
+  const pattern = /<tool_call>\s*<function=([^>\n]+)>([\s\S]*?)<\/function>\s*<\/tool_call>/g;
   const toolCalls: llm.ToolCall[] = [];
   try {
     for (const match of answer.matchAll(pattern)) {
-      const program = parse(tokenize(`{{ ${match[1]} }}`));
-      const list = program.body[0] as Literal;
-      if (program.body.length !== 1 || list.type !== 'ArrayLiteral') return;
-      for (const call of list.value as {
-        type: string;
-        callee: Literal;
-        args: { type: string; key: Literal; value: Literal }[];
-      }[]) {
-        if (call.type !== 'CallExpression' || call.callee.type !== 'Identifier') return;
-        const args = Object.fromEntries(
-          call.args.map((arg) => {
-            if (arg.type !== 'KeywordArgumentExpression')
-              throw new Error('Expected named argument');
-            return [String(arg.key.value), literal(arg.value)];
-          })
-        );
-        toolCalls.push({
-          type: 'function',
-          function: { name: String(call.callee.value), arguments: args },
-        });
+      const name = match[1].trim();
+      const tool = tools.find((candidate) => candidate.function.name === name);
+      if (!tool) return;
+      const parameters = tool.function.parameters;
+      const args: Record<string, unknown> = {};
+      for (const param of match[2].matchAll(
+        /<parameter=([^>\n]+)>\n?([\s\S]*?)\n?<\/parameter>/g
+      )) {
+        const key = param[1].trim();
+        const schema = parameters?.properties?.[key] as { type?: string } | undefined;
+        if (!schema || Object.hasOwn(args, key)) return;
+        args[key] = schema.type === 'string' ? param[2] : JSON.parse(param[2]);
       }
+      if (parameters?.required?.some((key) => !Object.hasOwn(args, key))) return;
+      toolCalls.push({ type: 'function', function: { name, arguments: args } });
     }
   } catch {
     return;
@@ -67,16 +38,19 @@ export function parseLfmToolCalls(text: string): llm.ToolParserResult | undefine
 }
 
 /** Splits LFM's implicitly opened thinking block and hides incomplete control tokens. */
-export function splitLfmResponse(raw: string) {
+export function splitLfmResponse(raw: string, enableThinking = true) {
   const end = raw.indexOf('</think>');
   const clean = (text: string) =>
     text
       .replace(/<think>/g, '')
+      .replace(/<tool_call>[\s\S]*$/g, '')
       .replace(/<\|[\s\S]*$/g, '')
       .replace(/<[^>]*$/g, '')
       .trim();
   return end < 0
-    ? { thinking: clean(raw), answer: '', reasoning: true }
+    ? enableThinking
+      ? { thinking: clean(raw), answer: '', reasoning: true }
+      : { thinking: '', answer: clean(raw), reasoning: false }
     : {
         thinking: clean(raw.slice(0, end)),
         answer: clean(raw.slice(end + '</think>'.length)),

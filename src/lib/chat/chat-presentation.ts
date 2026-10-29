@@ -17,11 +17,7 @@ export function updateLastTurn(turns: ChatTurn[], update: (turn: ChatTurn) => Ch
 
 /** Joins reasoning across tool rounds and displays only the latest answer. */
 export function presentChatTurn(turn: ChatTurn) {
-  const rounds = turn.responses.map((response) =>
-    turn.plainResponse
-      ? { thinking: '', answer: response.replace(/<\|[\s\S]*$/g, '').trim(), reasoning: false }
-      : splitLfmResponse(response)
-  );
+  const rounds = turn.responses.map((response) => splitLfmResponse(response, !turn.plainResponse));
   return {
     ...turn,
     thinking: rounds

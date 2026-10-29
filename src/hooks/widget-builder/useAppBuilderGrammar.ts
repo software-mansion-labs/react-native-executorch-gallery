@@ -20,8 +20,8 @@ const prepareTokens = wrapAsync((path: string): { grammar: AppGrammar; tokens: G
     for (let id = 0; id < size; id++) {
       pieces.push(widgetTokenBytes(tokenizer.idToToken(id), decoder));
     }
-    // LFM 2.5 2.6B has 128,000 output logits, including unused IDs beyond tokenizer entries.
-    // https://huggingface.co/LiquidAI/LFM2.5-2.6B/blob/main/config.json
+    // LFM3 1.7B has 128,000 output logits, including unused IDs beyond tokenizer entries.
+    // https://huggingface.co/LiquidAI/LFM3-1.7B/blob/main/config.json
     return { grammar: createAppGrammar(), tokens: createGrammarTokens(pieces, 128_000) };
   } finally {
     tokenizer.dispose();

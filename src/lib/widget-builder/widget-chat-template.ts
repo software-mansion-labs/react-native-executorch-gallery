@@ -1,8 +1,5 @@
-/** Isolates each build and closes LFM 2.6B's thinking prefix for direct structured output. */
+/** Isolates each build and disables thinking for direct structured output. */
 export function widgetChatTemplate(template: string): string {
-  const direct = template.replace(/<\|im_start\|>assistant(?:\\n|\n)<think>/g, '$&</think>');
-  if (direct === template)
-    throw new Error('Could not prepare the model for direct structured output.');
   return `{%- set widget_turn = namespace(index=0, messages=[]) -%}
 {%- for message in messages -%}
   {%- if message.role == 'user' -%}{%- set widget_turn.index = loop.index0 -%}{%- endif -%}
@@ -13,7 +10,8 @@ export function widgetChatTemplate(template: string): string {
   {%- endif -%}
 {%- endfor -%}
 {%- set messages = widget_turn.messages -%}
-${direct}`;
+{%- set enable_thinking = false -%}
+${template}`;
 }
 
 /** Versions the local session config so prompt edits replace a loaded session instead of retaining stale instructions. */

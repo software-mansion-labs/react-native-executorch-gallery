@@ -11,7 +11,7 @@ import { useImageChatState } from '@/hooks/image-description/useImageChatState';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
 import { CHAT_GENERATION } from '@/lib/chat/chat-tools';
 
-const MODEL = models.llm.LFM2_5_VL_450M.DEFAULT;
+const MODEL = models.llm.LFM3_VL_2B.DEFAULT;
 const INITIAL_MESSAGES = [
   {
     role: 'system',
@@ -24,7 +24,7 @@ function ImageSession({ model, onNewChat }: { model: ModelControls; onNewChat: (
   const session = useLLMChatSession(MODEL, {
     preventLoad: !model.loaded,
     initialMessages: INITIAL_MESSAGES,
-    generationConfig: CHAT_GENERATION,
+    generationConfig: { ...CHAT_GENERATION, enableThinking: false },
   });
   const chat = useImageChatState();
   const photo = usePhotoInput(chat.onPick, 800, chat.setError);
@@ -87,7 +87,7 @@ function ImageSession({ model, onNewChat }: { model: ModelControls; onNewChat: (
   );
 }
 function ImageTask() {
-  const model = useModelControls(MODEL.modelPath, { name: 'LFM 2.5 VL 450M' });
+  const model = useModelControls(MODEL.modelPath, { name: 'LFM3 VL 2B' });
   const [conversation, setConversation] = useState(0);
   return (
     <ImageSession

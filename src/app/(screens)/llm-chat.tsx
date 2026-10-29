@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { models, useLLMChatSession } from 'react-native-executorch';
 
+import { ChatThinkingToggle } from '@/components/chat/ChatThinkingToggle';
 import { ChatView } from '@/components/chat/ChatView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
@@ -14,10 +15,11 @@ import {
 } from '@/lib/chat/chat-tools';
 import { updateLastTurn, type ChatTurn } from '@/lib/chat/chat-presentation';
 
-const MODEL = models.llm.LFM2_5_2_6B.DEFAULT;
+const MODEL = models.llm.LFM3_1_7B.DEFAULT;
 
 function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: () => void }) {
   const [draft, setDraft] = useState('');
+  const [thinking, setThinking] = useState(true);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const active = useRef(false);
@@ -29,22 +31,22 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
     };
   }, []);
 
-  const toolOpts = useMemo(
-    () => ({
-      tools: createChatTools((name, detail, args) => {
-        setTurns((items) =>
-          updateLastTurn(items, (turn) => ({
-            ...turn,
-            responses: turn.responses.at(-1) ? [...turn.responses, ''] : turn.responses,
-            tools: [...turn.tools, { name, detail, arguments: args }],
-          }))
-        );
-      }),
-      parseToolCalls: parseLfmToolCalls,
+  const toolOpts = useMemo(() => {
+    const tools = createChatTools((name, detail, args) => {
+      setTurns((items) =>
+        updateLastTurn(items, (turn) => ({
+          ...turn,
+          responses: turn.responses.at(-1) ? [...turn.responses, ''] : turn.responses,
+          tools: [...turn.tools, { name, detail, arguments: args }],
+        }))
+      );
+    });
+    return {
+      tools,
+      parseToolCalls: (text: string) => parseLfmToolCalls(text, tools, false),
       maxToolTurns: 4,
-    }),
-    []
-  );
+    };
+  }, []);
 
   const session = useLLMChatSession(MODEL, {
     preventLoad: !model.loaded,
@@ -59,17 +61,24 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
     active.current = true;
     setDraft('');
     setBusy(true);
-    setTurns((items) => [...items, { question, responses: [''], pending: true, tools: [] }]);
+    setTurns((items) => [
+      ...items,
+      { question, responses: [''], pending: true, tools: [], plainResponse: !thinking },
+    ]);
     try {
-      const result = await session.sendMessage(question, (token) => {
-        if (!mounted.current || !active.current) return;
-        setTurns((items) =>
-          updateLastTurn(items, (turn) => ({
-            ...turn,
-            responses: [...turn.responses.slice(0, -1), (turn.responses.at(-1) ?? '') + token],
-          }))
-        );
-      });
+      const result = await session.sendMessage(
+        question,
+        (token) => {
+          if (!mounted.current || !active.current) return;
+          setTurns((items) =>
+            updateLastTurn(items, (turn) => ({
+              ...turn,
+              responses: [...turn.responses.slice(0, -1), (turn.responses.at(-1) ?? '') + token],
+            }))
+          );
+        },
+        { enableThinking: thinking }
+      );
       if (!mounted.current) return;
       if (result.finishReason === 'cancelled') {
         setTurns((items) => items.slice(0, -1));
@@ -79,7 +88,7 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
           .reverse()
           .find((message) => message.role === 'assistant' && !message.toolCalls?.length);
         const unfinished =
-          typeof answer?.content !== 'string' || !splitLfmResponse(answer.content).answer;
+          typeof answer?.content !== 'string' || !splitLfmResponse(answer.content, thinking).answer;
         const reachedLimit = (result.stats.at(-1)?.numTokens ?? 0) >= CHAT_GENERATION.maxNewTokens;
         const error =
           result.finishReason === 'maxToolTurns'
@@ -130,13 +139,16 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
         session={session}
         model={model}
         onNewChat={onNewChat}
+        contextAccessory={
+          <ChatThinkingToggle enabled={thinking} onChange={setThinking} disabled={busy} />
+        }
       />
     </TaskScreen>
   );
 }
 
 function ChatTask() {
-  const model = useModelControls(MODEL.modelPath, { name: 'LFM 2.5 2.6B' });
+  const model = useModelControls(MODEL.modelPath, { name: 'LFM3 1.7B' });
   const [conversation, setConversation] = useState(0);
   return (
     <ChatSession

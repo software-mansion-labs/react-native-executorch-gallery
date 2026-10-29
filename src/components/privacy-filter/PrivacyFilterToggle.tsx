@@ -1,16 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, {
-  ReduceMotion,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 
-import { tokens, useTheme } from '@/theme';
+import { IconToggle } from '@/components/IconToggle';
+import { useTheme } from '@/theme';
 
-/** A composer-sized icon toggle for filtered and original text, with a sliding selection. */
+/** Switches between filtered and original text in the composer. */
 export function PrivacyFilterToggle({
   original,
   onChange,
@@ -18,68 +11,20 @@ export function PrivacyFilterToggle({
   original: boolean;
   onChange: (original: boolean) => void;
 }) {
-  const { colors, iconSize } = useTheme();
-  const position = useSharedValue(original ? segmentWidth : 0);
-  useEffect(() => {
-    position.set(
-      withTiming(original ? segmentWidth : 0, {
-        duration: tokens.motion.modelSetupTransitionDuration,
-        reduceMotion: ReduceMotion.System,
-      })
-    );
-  }, [original, position]);
-  const selection = useAnimatedStyle(() => ({ transform: [{ translateX: position.get() }] }));
-
+  const { iconSize } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="switch"
-      accessibilityLabel="Show original text"
-      accessibilityState={{ checked: original }}
-      onPress={() => onChange(!original)}
-      style={styles.target}
-    >
-      <View style={[styles.control, { borderColor: colors.border }]} pointerEvents="none">
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.selection, { backgroundColor: colors.surface }, selection]}
+    <IconToggle
+      value={original}
+      onChange={onChange}
+      label="Show original text"
+      renderIcon={(value, color) => (
+        <Ionicons
+          name={value ? 'eye-outline' : 'eye-off-outline'}
+          size={iconSize.small}
+          color={color}
+          accessible={false}
         />
-        {([false, true] as const).map((value) => (
-          <View key={String(value)} style={styles.option}>
-            <Ionicons
-              name={value ? 'eye-outline' : 'eye-off-outline'}
-              size={iconSize.small}
-              color={original === value ? colors.text : colors.muted}
-              accessible={false}
-            />
-          </View>
-        ))}
-      </View>
-    </Pressable>
+      )}
+    />
   );
 }
-
-const { spacing, radius, borderWidth, layout } = tokens;
-const controlHeight = layout.promptSuggestionHeight;
-const controlWidth = controlHeight * 2 - spacing.sm;
-const selectionSize = controlHeight - (spacing.xs + borderWidth.thin) * 2;
-const segmentWidth = (controlWidth - (spacing.xs + borderWidth.thin) * 2) / 2;
-const styles = StyleSheet.create({
-  target: { minHeight: layout.touchTarget, justifyContent: 'center' },
-  control: {
-    flexDirection: 'row',
-    width: controlWidth,
-    height: controlHeight,
-    padding: spacing.xs,
-    borderWidth: borderWidth.thin,
-    borderRadius: radius.pill,
-  },
-  selection: {
-    position: 'absolute',
-    left: spacing.xs + (segmentWidth - selectionSize) / 2,
-    top: spacing.xs,
-    width: selectionSize,
-    height: selectionSize,
-    borderRadius: radius.pill,
-  },
-  option: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-});

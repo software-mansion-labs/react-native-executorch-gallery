@@ -1,20 +1,8 @@
-import { Platform } from 'react-native';
 import RNBlobUtil from 'react-native-blob-util';
+import { getResourceCachePath } from 'react-native-executorch';
 
-/** Matches the installed ExecuTorch fetcher's persistent cache naming. */
-export function modelCachePath(source: string): string {
-  if (!/^https?:\/\//.test(source)) return source.replace(/^file:\/\//, '');
-  const url = source.split('?')[0];
-  let hash = 5381;
-  for (let index = 0; index < url.length; index++) {
-    hash = (((hash << 5) + hash) ^ url.charCodeAt(index)) >>> 0;
-  }
-  const directory =
-    Platform.OS === 'android'
-      ? RNBlobUtil.fs.dirs.SDCardDir || RNBlobUtil.fs.dirs.DocumentDir
-      : RNBlobUtil.fs.dirs.DocumentDir;
-  return `${directory}/react-native-executorch/${hash}_${url.split('/').pop() || 'model'}`;
-}
+/** Uses the library cache path for status, size and deletion checks. */
+export const modelCachePath = getResourceCachePath;
 
 /** Reads only the final cache file; interrupted downloads use separate partial files. */
 export async function cachedModelBytes(path: string): Promise<number | null> {

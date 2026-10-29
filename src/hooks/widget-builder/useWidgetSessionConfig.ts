@@ -7,7 +7,7 @@ import { widgetChatTemplate, widgetConfigKey } from '@/lib/widget-builder/widget
 
 /**
  * Prepares a direct-output template with only the system message and latest build
- * request, closing LFM 2.6B's thinking prefix and excluding previous widgets.
+ * request, disabling thinking and excluding previous widgets.
  * Returns the local model configuration or a preparation/download error.
  */
 export function useWidgetSessionConfig(model: LLMModel, enabled: boolean) {

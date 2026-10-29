@@ -174,7 +174,14 @@ export function ChatView({
               reserveSuggestionSpace={!turns.length}
               attachment={composerAccessory}
               leadingAccessory={
-                <View style={[styles.contextActions, !!contextAccessory && styles.photoActions]}>
+                <View
+                  style={[
+                    styles.contextActions,
+                    !!contextAccessory &&
+                      (turns.length > 0 || suggestions.length === 0) &&
+                      styles.expandedActions,
+                  ]}
+                >
                   <ChatContext
                     session={session}
                     busy={busy}
@@ -234,6 +241,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   imageQuestion: { width: '90%', gap: spacing.md },
-  contextActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  photoActions: { flex: 1, justifyContent: 'space-between' },
+  contextActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
+  expandedActions: { flex: 1, justifyContent: 'space-between' },
 });
