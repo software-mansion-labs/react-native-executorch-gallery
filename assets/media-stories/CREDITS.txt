@@ -1,0 +1,7 @@
+Bloom
+Source: MDN interactive examples, CC0 video sample
+https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4
+Adaptations: muted, resized to 720px width, encoded as H.264.
+Poster image is a frame from this same clip.
+
+The sample is bundled locally and is never uploaded for analysis.

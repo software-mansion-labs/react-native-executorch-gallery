@@ -34,6 +34,16 @@ const palette = {
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
   camera: { chromeBlurIntensity: 60 },
+  media: {
+    cardWidthRatio: 0.7,
+    cardAspectRatio: 4 / 3,
+    inactiveScale: 0.98,
+    inactiveOpacity: 0.75,
+    previewSheenDuration: 2600,
+    previewSheenWidthRatio: 0.55,
+    previewSheenOpacity: 0.45,
+    previewSheenAngle: -18,
+  },
   annotation: {
     text: '#FFFFFF',
     colors: [
