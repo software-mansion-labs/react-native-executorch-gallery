@@ -1,112 +1,168 @@
-import { useRef, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { models, useLLMChatSession } from 'react-native-executorch';
 
-import { ChatViewport, type ChatMessage } from '@/components/ChatViewport';
-import { PromptInput } from '@/components/PromptInput';
+import { ChatThinkingToggle } from '@/components/chat/ChatThinkingToggle';
+import { ChatView } from '@/components/chat/ChatView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
+import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
+import {
+  CHAT_GENERATION,
+  CHAT_MESSAGES,
+  createChatTools,
+  parseLfmToolCalls,
+  splitLfmResponse,
+} from '@/lib/chat/chat-tools';
+import { updateLastTurn, type ChatTurn } from '@/lib/chat/chat-presentation';
 
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+const MODEL = models.llm.LFM3_1_7B.DEFAULT;
 
-const SUGGESTIONS = [
-  'Explain on-device AI in one sentence.',
-  'Why is the sky blue?',
-  'Write a short haiku about coding.',
-];
+function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: () => void }) {
+  const [draft, setDraft] = useState('');
+  const [thinking, setThinking] = useState(true);
+  const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [busy, setBusy] = useState(false);
+  const active = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-const SYSTEM_PROMPT =
-  'You are a helpful on-device LLM assistant running in React Native ExecuTorch';
-
-const MODEL = models.llm.LFM2_5_1_2B.XNNPACK_8DA4W;
-
-function LlmChatTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [streamingText, setStreamingText] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const toolOpts = useMemo(() => {
+    const tools = createChatTools((name, detail, args) => {
+      setTurns((items) =>
+        updateLastTurn(items, (turn) => ({
+          ...turn,
+          responses: turn.responses.at(-1) ? [...turn.responses, ''] : turn.responses,
+          tools: [...turn.tools, { name, detail, arguments: args }],
+        }))
+      );
+    });
+    return {
+      tools,
+      parseToolCalls: (text: string) => parseLfmToolCalls(text, tools, false),
+      maxToolTurns: 4,
+    };
+  }, []);
 
   const session = useLLMChatSession(MODEL, {
-    initialMessages: [{ role: 'system', content: SYSTEM_PROMPT }],
-    generationConfig: { temperature: 0.2, maxNewTokens: 512, echo: false },
-    preventLoad: !loaded,
+    preventLoad: !model.loaded,
+    initialMessages: CHAT_MESSAGES,
+    generationConfig: CHAT_GENERATION,
+    toolOpts,
   });
 
-  const isPrefilling = streamingText === '';
-  const hasReceivedTokens = typeof streamingText === 'string' && streamingText.length > 0;
-  const isGenerating = streamingText !== null;
-
-  const sendMessage = async () => {
-    const trimmed = input.trim();
-    if (!trimmed || !session.isReady || !session.sendMessage || isGenerating) return;
-
-    const userMessage: ChatMessage = { role: 'user', content: trimmed };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
-    setStreamingText('');
-    setError(null);
-
+  const send = async (prompt = draft) => {
+    const question = prompt.trim();
+    if (!session.sendMessage || !session.isReady || active.current || !question) return;
+    active.current = true;
+    setDraft('');
+    setBusy(true);
+    setTurns((items) => [
+      ...items,
+      { question, responses: [''], pending: true, tools: [], plainResponse: !thinking },
+    ]);
     try {
-      const result = await session.sendMessage(trimmed, (token) => {
-        setStreamingText((prev) => (prev !== null ? prev + token : token));
-      });
-
-      const content = result.messages.findLast((m) => m.role === 'assistant')?.content as string;
-      const stats = result.stats[result.stats.length - 1];
-      setMessages((prev) => [...prev, { role: 'assistant', content, stats }]);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+      const result = await session.sendMessage(
+        question,
+        (token) => {
+          if (!mounted.current || !active.current) return;
+          setTurns((items) =>
+            updateLastTurn(items, (turn) => ({
+              ...turn,
+              responses: [...turn.responses.slice(0, -1), (turn.responses.at(-1) ?? '') + token],
+            }))
+          );
+        },
+        { enableThinking: thinking }
+      );
+      if (!mounted.current) return;
+      if (result.finishReason === 'cancelled') {
+        setTurns((items) => items.slice(0, -1));
+        setDraft(question);
+      } else {
+        const answer = [...result.messages]
+          .reverse()
+          .find((message) => message.role === 'assistant' && !message.toolCalls?.length);
+        const unfinished =
+          typeof answer?.content !== 'string' || !splitLfmResponse(answer.content, thinking).answer;
+        const reachedLimit = (result.stats.at(-1)?.numTokens ?? 0) >= CHAT_GENERATION.maxNewTokens;
+        const error =
+          result.finishReason === 'maxToolTurns'
+            ? 'The tool limit was reached before the response finished.'
+            : unfinished
+              ? reachedLimit
+                ? 'The model reached its response limit before producing an answer.'
+                : 'The model stopped before producing an answer.'
+              : undefined;
+        setTurns((items) =>
+          updateLastTurn(items, (turn) => ({
+            ...turn,
+            pending: false,
+            error,
+            responses:
+              typeof answer?.content === 'string'
+                ? [...turn.responses.slice(0, -1), answer.content]
+                : turn.responses,
+          }))
+        );
+      }
+    } catch (cause) {
+      if (mounted.current) {
+        setTurns((items) =>
+          updateLastTurn(items, (turn) => ({
+            ...turn,
+            pending: false,
+            error: cause instanceof Error ? cause.message : String(cause),
+          }))
+        );
+        setDraft(question);
+      }
     } finally {
-      setStreamingText(null);
+      active.current = false;
+      if (mounted.current) setBusy(false);
     }
   };
 
   return (
-    <TaskScreen
-      title="LLM Chat"
-      subtitle="LFM 2.5 1.2B · CPU"
-      status={{
-        ...session,
-        error: error ? new Error(error) : session.error,
-      }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={false}
-      busy={isGenerating}
-      onRun={() => undefined}
-      onDeleteModel={async () => {
-        session.stop?.();
-        await deleteCachedFiles(session.resource);
-        setLoaded(false);
-        setMessages([]);
-        setStreamingText(null);
-      }}
-      footer={
-        <PromptInput
-          value={input}
-          onChangeText={setInput}
-          onSubmit={sendMessage}
-          placeholder="Ask LFM anything…"
-          suggestions={SUGGESTIONS}
-          disabled={!session.isReady}
-          canSubmit={!!input.trim() && session.isReady && !isGenerating}
-          isExecuting={isPrefilling}
-          isPlaying={hasReceivedTokens}
-          onStop={() => session.stop?.()}
-        />
-      }
-    >
-      <ChatViewport messages={messages} streamingText={streamingText} scrollRef={scrollRef} />
+    <TaskScreen title="Local chat" model={model} status={session} busy={busy} scrollable={false}>
+      <ChatView
+        draft={draft}
+        onDraftChange={setDraft}
+        turns={turns}
+        busy={busy}
+        onSend={send}
+        onStop={() => session.stop?.()}
+        session={session}
+        model={model}
+        onNewChat={onNewChat}
+        contextAccessory={
+          <ChatThinkingToggle enabled={thinking} onChange={setThinking} disabled={busy} />
+        }
+      />
     </TaskScreen>
   );
 }
 
-export default function LlmChatScreen() {
+function ChatTask() {
+  const model = useModelControls(MODEL.modelPath, { name: 'LFM3 1.7B' });
+  const [conversation, setConversation] = useState(0);
   return (
-    <ScreenWrapper>
-      <LlmChatTask />
+    <ChatSession
+      key={`${model.revision}:${conversation}`}
+      model={model}
+      onNewChat={() => setConversation((value) => value + 1)}
+    />
+  );
+}
+
+export default function ChatScreen() {
+  return (
+    <ScreenWrapper unmountOnBlur>
+      <ChatTask />
     </ScreenWrapper>
   );
 }

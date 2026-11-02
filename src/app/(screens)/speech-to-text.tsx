@@ -1,100 +1,99 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { models, useSpeechToText, WHISPER_SAMPLE_RATE_HZ } from 'react-native-executorch';
-
-import { MicActionButton } from '@/components/MicActionButton';
+import { MicrophoneStage } from '@/components/audio/MicrophoneStage';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { SpeechTranscriptionViewport } from '@/components/SpeechTranscriptionViewport';
+import { Transcript } from '@/components/speech-to-text/Transcript';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { useAudioRecorder } from '@/hooks/useAudioRecorder';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useAudioRecorder } from '@/hooks/audio/useAudioRecorder';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useTaskState } from '@/hooks/useTaskState';
+import { useSpeechLevel } from '@/hooks/speech-to-text/useSpeechLevel';
 
 const MODEL = models.speechToText.WHISPER.EN.TINY.DEFAULT;
+const MODEL_PATHS = [MODEL.modelPath, MODEL.vadModel.modelPath];
 
 function SpeechToTextTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [committedText, setCommittedText] = useState('');
-  const [nonCommittedText, setNonCommittedText] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const model = useModelControls(MODEL_PATHS, { name: 'Whisper Tiny · English' });
+  const [committed, setCommitted] = useTaskState('', model.revision);
+  const [partial, setPartial] = useTaskState('', model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
+  const [streaming, setStreaming] = useState(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
-  const recorder = useAudioRecorder();
-  const stt = useSpeechToText(MODEL, { preventLoad: !loaded });
+  const stt = useSpeechToText(MODEL, { preventLoad: !model.loaded });
+  const recorder = useAudioRecorder(() => stt.streamStop?.(), setError);
+  const { level, updateLevel } = useSpeechLevel(recorder.isRecording);
 
   const toggleRecording = async () => {
     if (recorder.isRecording) {
       await recorder.stopRecording();
-      stt.streamStop?.();
       return;
     }
-
-    if (!stt.isReady || !stt.stream || !stt.streamInsert) return;
-
+    if (!model.prepared || !stt.isReady || !stt.stream || !stt.streamInsert) return;
+    if (recorder.starting || streaming) return;
     setError(null);
-    setCommittedText('');
-    setNonCommittedText('');
-
-    try {
-      (async () => {
-        try {
-          const textStream = stt.stream!({ language: 'en' });
-          for await (const result of textStream) {
-            setCommittedText(result.committed);
-            setNonCommittedText(result.nonCommitted);
-          }
-        } catch (err: any) {
-          setError(err?.message ?? String(err));
+    setCommitted('');
+    setPartial('');
+    setStreaming(true);
+    const consume = async () => {
+      try {
+        for await (const result of stt.stream!({ language: 'en' })) {
+          if (!mounted.current) break;
+          setCommitted(result.committed);
+          setPartial(result.nonCommitted);
         }
-      })();
-
+      } catch (cause) {
+        if (mounted.current) setError(cause instanceof Error ? cause.message : String(cause));
+        await recorder.stopRecording();
+      } finally {
+        if (mounted.current) setStreaming(false);
+      }
+    };
+    void consume();
+    try {
       await recorder.startRecording(WHISPER_SAMPLE_RATE_HZ, (samples) => {
+        updateLevel(samples);
         stt.streamInsert?.(samples);
       });
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
-      await recorder.stopRecording();
-      stt.streamStop?.();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     }
   };
 
   return (
     <TaskScreen
-      title="Speech to Text"
-      subtitle="Whisper Tiny (EN)"
-      status={{
-        ...stt,
-        error: error || (stt.error ? stt.error.message : null),
-      }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      busy={recorder.isRecording}
-      onRun={() => undefined}
-      canRun={false}
-      onDeleteModel={async () => {
-        await recorder.stopRecording();
-        stt.streamStop?.();
-        await deleteCachedFiles(stt.resource);
-        setLoaded(false);
-      }}
-      footer={
-        <MicActionButton
-          isRecording={recorder.isRecording}
-          enabled={stt.isReady}
-          onPress={toggleRecording}
-        />
-      }
+      title="Speech to text"
+      model={model}
+      status={stt}
+      error={error}
+      busy={streaming || recorder.starting || recorder.isRecording}
+      scrollable={false}
     >
-      <SpeechTranscriptionViewport
-        isRecording={recorder.isRecording}
-        committedText={committedText}
-        nonCommittedText={nonCommittedText}
-      />
+      <MicrophoneStage
+        model={model}
+        status={stt}
+        title="Turn speech into words"
+        description="Speak naturally and watch your words appear, right on your device."
+        active={recorder.isRecording}
+        starting={recorder.starting}
+        finishing={streaming && !recorder.isRecording && !recorder.starting}
+        hasResult={!!committed || !!partial}
+        onToggle={toggleRecording}
+      >
+        <Transcript committed={committed} partial={partial} listening={streaming} level={level} />
+      </MicrophoneStage>
     </TaskScreen>
   );
 }
-
 export default function SpeechToTextScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <SpeechToTextTask />
     </ScreenWrapper>
   );

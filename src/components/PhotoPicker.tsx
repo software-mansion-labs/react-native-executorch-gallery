@@ -1,11 +1,15 @@
-import React, { ReactNode, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Canvas, Image as SkiaImage, useImage, type SkImage } from '@shopify/react-native-skia';
+import { type ReactNode, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Canvas, Image as SkiaImage, type SkImage } from '@shopify/react-native-skia';
 import type { ImageBuffer } from 'react-native-executorch/cv';
+import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
 
-import { borderWidth, radius, spacing, useTheme } from '@/theme';
-import { pickImage, skImageToBuffer } from '@/lib/image';
-import { Icon, type IconName } from '@/components/Icon';
+import { tokens, useTheme } from '@/theme';
+import { AppText } from '@/components/AppText';
+import { TaskHero } from '@/components/TaskHero';
+import { TaskHeroStage } from '@/components/TaskHeroStage';
+import { usePhotoInput } from '@/hooks/usePhotoInput';
+import { PhotoActionButton } from '@/components/PhotoActionButton';
 
 export interface PickedImage {
   /** Local file URI of the captured or selected image. */
@@ -28,10 +32,17 @@ export interface ViewportTransform {
 }
 
 export interface PhotoPickerProps {
+  /** Task-specific headline and explanation shown before a photo is selected. */
+  placeholderTitle?: string;
+  placeholderDescription?: string;
   /** Callback triggered when a photo is selected, captured, or cleared. */
   onPick: (image: PickedImage | null) => void;
   /** Optional render function for task-specific overlays (boxes, masks, landmarks). */
   renderOverlay?: (transform: ViewportTransform) => ReactNode;
+  /** Touch-enabled layer above the photo, using the same contain-fit coordinates. */
+  renderInteraction?: (transform: ViewportTransform) => ReactNode;
+  /** Optional photo renderer receiving the same decoded Skia image used for raw input pixels. */
+  renderPhoto?: (image: SkImage, transform: ViewportTransform) => ReactNode;
   /** Optional Skia Image overlay to render directly on the photo canvas (e.g. segmentation mask). */
   overlayImage?: SkImage | null;
   /** Opacity for the overlay image (default: 0.65). */
@@ -40,6 +51,18 @@ export interface PhotoPickerProps {
   targetWidth?: number | null;
   /** Whether the model is currently processing inference over the photo. */
   busy?: boolean;
+  /** Whether a photo may be chosen or captured; gate on model readiness. */
+  canPick?: boolean;
+  /** Run action displayed after the gallery and camera controls. */
+  onRun?: () => void;
+  canRun?: boolean;
+  running?: boolean;
+  result?: string;
+  latency?: number | null;
+  /** Optional result presentation below the photo, including its reserved empty space. */
+  resultsContent?: ReactNode;
+  /** Setup action shown before a photo is selected. */
+  setupAction?: ReactNode;
 }
 
 /**
@@ -52,31 +75,28 @@ export interface PhotoPickerProps {
  * @returns Responsive image viewport and selection action buttons.
  */
 export function PhotoPicker({
+  placeholderTitle = 'Find objects in a photo',
+  placeholderDescription = 'See what’s in your photo, with labels and boxes around each object.',
   onPick,
   renderOverlay,
+  renderInteraction,
+  renderPhoto,
   overlayImage,
   overlayOpacity = 0.65,
   targetWidth = 800,
   busy = false,
+  canPick = true,
+  onRun,
+  canRun = false,
+  running = false,
+  result,
+  latency,
+  resultsContent,
+  setupAction,
 }: PhotoPickerProps) {
   const { colors } = useTheme();
-  const [uri, setUri] = useState<string | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const image = useImage(uri, () => onPick(null));
-
-  const choose = async (source: 'library' | 'camera') => {
-    const widthToUse = targetWidth === null ? undefined : targetWidth;
-    const picked = await pickImage(source, widthToUse);
-    if (!picked) return;
-    onPick(null);
-    setUri(picked);
-  };
-
-  useEffect(() => {
-    if (!image || !uri) return;
-    onPick({ uri, buffer: skImageToBuffer(image), width: image.width(), height: image.height() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, uri]);
+  const { image, uri, choose, picking } = usePhotoInput(onPick, targetWidth);
 
   const { width: viewW, height: viewH } = viewportSize;
   const iw = image?.width() ?? 0;
@@ -94,187 +114,135 @@ export function PhotoPicker({
 
   return (
     <View style={styles.container}>
-      {/* Dynamic Viewfinder Frame */}
-      <View
-        onLayout={(e) => {
-          const { width: w, height: h } = e.nativeEvent.layout;
-          if (w > 0 && h > 0) {
-            setViewportSize({ width: Math.round(w), height: Math.round(h) });
-          }
-        }}
-        style={[
-          styles.viewport,
-          {
-            backgroundColor: colors.surfaceSubtle,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        {image && viewW > 0 && viewH > 0 ? (
-          <>
-            <Canvas style={StyleSheet.absoluteFill}>
-              <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
-              {overlayImage && (
-                <SkiaImage
-                  image={overlayImage}
-                  fit="contain"
-                  x={0}
-                  y={0}
-                  width={viewW}
-                  height={viewH}
-                  opacity={overlayOpacity}
-                />
+      <View style={styles.stage}>
+        <View
+          onLayout={(e) => {
+            const { width: w, height: h } = e.nativeEvent.layout;
+            if (w > 0 && h > 0) {
+              setViewportSize({ width: Math.round(w), height: Math.round(h) });
+            }
+          }}
+          style={[
+            styles.viewport,
+            {
+              backgroundColor: image ? colors.surface : colors.background,
+            },
+          ]}
+        >
+          {image && viewW > 0 && viewH > 0 ? (
+            <Animated.View key={uri} style={StyleSheet.absoluteFill} entering={photoEntrance}>
+              {renderPhoto?.(image, transform) ?? (
+                <Canvas style={StyleSheet.absoluteFill}>
+                  <SkiaImage image={image} fit="contain" x={0} y={0} width={viewW} height={viewH} />
+                  {overlayImage && (
+                    <SkiaImage
+                      image={overlayImage}
+                      fit="contain"
+                      x={0}
+                      y={0}
+                      width={viewW}
+                      height={viewH}
+                      opacity={overlayOpacity}
+                    />
+                  )}
+                </Canvas>
               )}
-            </Canvas>
-            {renderOverlay?.(transform)}
-          </>
-        ) : (
-          <View style={styles.placeholderContainer}>
-            <View
-              style={[
-                styles.iconCircle,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <Icon name="camera" size={28} color={colors.accent} strokeWidth={2} />
-            </View>
-            <Text style={[styles.placeholderTitle, { color: colors.text }]}>No Image Selected</Text>
-            <Text style={[styles.placeholderSub, { color: colors.textDim }]}>
-              Take a photo or choose an image from your library
-            </Text>
-          </View>
+              {renderOverlay?.(transform)}
+            </Animated.View>
+          ) : null}
+          {image && viewW > 0 && viewH > 0 && renderInteraction?.(transform)}
+        </View>
+
+        {resultsContent ?? (
+          <Animated.View
+            key={result ?? 'empty'}
+            style={styles.result}
+            accessibilityLiveRegion="polite"
+            entering={result != null ? resultEntrance : undefined}
+          >
+            <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
+              {result ?? ' '}
+            </AppText>
+            <AppText variant="caption" tone="muted" numberOfLines={1}>
+              {latency != null ? `${latency} ms` : ' '}
+            </AppText>
+          </Animated.View>
         )}
       </View>
-
-      {/* Action Buttons */}
-      <View style={styles.buttons}>
-        <PickButton
-          iconName="camera"
-          label="Take Photo"
-          variant="secondary"
-          onPress={() => choose('camera')}
-        />
-        <PickButton
-          iconName="photo"
-          label="Photo Gallery"
-          variant="secondary"
-          onPress={() => choose('library')}
-        />
+      <View style={styles.buttonsArea}>
+        {canPick && (
+          <Animated.View style={styles.buttons} entering={photoEntrance}>
+            <PhotoActionButton
+              iconName="images-outline"
+              label="Choose photo"
+              disabled={busy || picking || !canPick}
+              onPress={() => choose('library')}
+            />
+            <PhotoActionButton
+              iconName="camera-outline"
+              label="Take photo"
+              disabled={busy || picking || !canPick}
+              onPress={() => choose('camera')}
+            />
+            {onRun && (
+              <PhotoActionButton
+                iconName="arrow-up"
+                label={running ? 'Running inference' : 'Run inference'}
+                onPress={onRun}
+                disabled={!canRun || busy}
+                loading={running}
+                primary
+              />
+            )}
+          </Animated.View>
+        )}
       </View>
+      {!image && (
+        <TaskHeroStage pointerEvents={canPick ? 'none' : 'box-none'}>
+          <TaskHero
+            title={placeholderTitle}
+            description={placeholderDescription}
+            setup={setupAction}
+          />
+        </TaskHeroStage>
+      )}
     </View>
   );
 }
 
-function PickButton({
-  iconName,
-  label,
-  variant,
-  onPress,
-}: {
-  iconName: IconName;
-  label: string;
-  variant: 'primary' | 'secondary';
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  const isPrimary = variant === 'primary';
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.pickButton,
-        isPrimary
-          ? {
-              backgroundColor: colors.accentSoft,
-              borderColor: colors.accentBorder,
-              shadowColor: colors.accent,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 4,
-              elevation: 1,
-            }
-          : {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-        {
-          opacity: pressed ? 0.8 : 1,
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-      ]}
-    >
-      <Icon
-        name={iconName}
-        size={17}
-        color={isPrimary ? colors.accent : colors.textSecondary}
-        strokeWidth={2.2}
-      />
-      <Text style={[styles.pickLabel, { color: isPrimary ? colors.accent : colors.text }]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
+const { spacing, radius, layout } = tokens;
+const photoEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
+const resultEntrance = FadeIn.duration(tokens.motion.detectionFadeDuration)
+  .easing(Easing.out(Easing.cubic))
+  .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: spacing.md,
-    minHeight: 0,
-  },
+  container: { flex: 1, gap: spacing.lg, minHeight: 0 },
+  stage: { flex: 1, gap: spacing.lg, minHeight: 0 },
   viewport: {
     flex: 1,
-    borderRadius: radius.lg,
-    borderWidth,
+    borderRadius: radius.card,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 220,
+    minHeight: layout.photoMinHeight,
   },
-  placeholderContainer: {
+  result: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  resultLabel: { flex: 1 },
+  buttonsArea: {
+    minHeight: layout.photoControlSize + spacing.sm * 2,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.lg,
-    gap: spacing.xs + 2,
-  },
-  iconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  placeholderTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    letterSpacing: -0.2,
-  },
-  placeholderSub: {
-    fontSize: 12,
-    textAlign: 'center',
-    maxWidth: 240,
-    lineHeight: 16,
   },
   buttons: {
     flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  pickButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs + 2,
-    paddingVertical: spacing.sm + 1,
-    borderRadius: radius.md,
-    borderWidth,
-  },
-  pickLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    letterSpacing: 0.1,
+    gap: spacing.md,
   },
 });

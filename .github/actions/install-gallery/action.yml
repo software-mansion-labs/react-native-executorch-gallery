@@ -1,0 +1,21 @@
+name: Install gallery dependencies
+description: Restore the library selected in executorch.json, including ignored source snapshots.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: npm
+    - name: Enable the source repository's pinned Yarn
+      shell: bash
+      run: corepack enable
+    - uses: actions/cache@v4
+      with:
+        path: |
+          .executorch
+          ~/.yarn/berry/cache
+        key: executorch-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('executorch.json', '.nvmrc') }}
+    - name: Restore selected library and install dependencies
+      shell: bash
+      run: npm run deps:sync

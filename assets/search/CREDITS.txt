@@ -1,0 +1,8 @@
+Sample photos bundled for the multimodal search demo.
+Source: Unsplash. License: https://unsplash.com/license
+Downloaded 2026-10-24. Images remain the work of their respective photographers.
+
+dog.jpg: https://images.unsplash.com/photo-1517849845537-4d257902454a
+food.jpg: https://images.unsplash.com/photo-1512621776951-a57141f2eefd
+forest.jpg: https://images.unsplash.com/photo-1441974231531-c6227db76b6e
+city.jpg: https://images.unsplash.com/photo-1486406146926-c627a92ad1ab

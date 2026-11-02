@@ -1,77 +1,81 @@
 import { useState } from 'react';
 import { models, useOpticalCharacterRecognizer, type OcrDetection } from 'react-native-executorch';
 
-import { OcrOverlay } from '@/components/OcrOverlay';
+import { ModelSetup } from '@/components/ModelSetup';
+import { OcrOverlay } from '@/components/ocr/OcrOverlay';
+import { OcrResult } from '@/components/ocr/OcrResult';
 import { PhotoPicker, type PickedImage } from '@/components/PhotoPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
-
-import { deleteCachedFiles } from '@/lib/deleteCachedFiles';
+import { useModelControls } from '@/hooks/useModelControls';
+import { useOcrPresentation } from '@/hooks/ocr/useOcrPresentation';
+import { useTaskState } from '@/hooks/useTaskState';
 
 const MODEL = models.ocr.PADDLE.PPOCRV6_SMALL.DEFAULT;
 
 function OcrTask() {
-  const [loaded, setLoaded] = useState(false);
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [results, setResults] = useState<OcrDetection[]>([]);
-  const [latency, setLatency] = useState<number | null>(null);
+  const model = useModelControls(MODEL.modelPath, { name: 'PaddleOCR PP-OCRv6' });
+  const [image, setImage] = useTaskState<PickedImage | null>(null, model.revision);
+  const [results, setResults] = useTaskState<OcrDetection[] | null>(null, model.revision);
+  const [latency, setLatency] = useTaskState<number | null>(null, model.revision);
+  const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const presentation = useOcrPresentation(results);
 
-  const ocr = useOpticalCharacterRecognizer(MODEL, { preventLoad: !loaded });
+  const ocr = useOpticalCharacterRecognizer(MODEL, { preventLoad: !model.loaded });
 
   const run = async () => {
-    if (!image || !ocr.recognizeCharacters) return;
+    if (!image || !model.loaded || !ocr.isReady || !ocr.recognizeCharacters) return;
+    if (busy || model.deleting) return;
     setBusy(true);
-    setResults([]);
+    setResults(null);
     setLatency(null);
     setError(null);
     try {
-      const t0 = Date.now();
+      const started = performance.now();
       const output = await ocr.recognizeCharacters(image.buffer);
-      setLatency(Date.now() - t0);
+      setLatency(Math.round(performance.now() - started));
       setResults(output);
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <TaskScreen
-      title="OCR Text Recognition"
-      subtitle="PaddleOCR PP-OCRv6"
-      status={{ ...ocr, error: error || ocr.error }}
-      onLoadModel={!loaded ? () => setLoaded(true) : undefined}
-      canRun={!!image && ocr.isReady}
-      busy={busy}
-      onRun={run}
-      runLabel="Recognize Text"
-      onDeleteModel={async () => {
-        await deleteCachedFiles(ocr.resource);
-        setLoaded(false);
-      }}
-      meta={latency != null ? `Inference ${latency} ms` : undefined}
-    >
+    <TaskScreen title="Text recognition" model={model} status={ocr} error={error} busy={busy}>
       <PhotoPicker
+        key={model.revision}
         targetWidth={null}
-        busy={busy}
-        onPick={(img) => {
-          setImage(img);
-          setResults([]);
+        placeholderTitle="Read between the pixels"
+        placeholderDescription="Find text in your photo, then select or copy what it says."
+        busy={busy || model.deleting}
+        canPick={model.prepared && model.loaded && ocr.isReady}
+        setupAction={<ModelSetup model={model} status={ocr} disabled={busy} />}
+        onRun={run}
+        canRun={model.prepared && !!image && ocr.isReady && model.loaded}
+        running={busy}
+        resultsContent={<OcrResult presentation={presentation} latency={latency} />}
+        onPick={(picked) => {
+          setImage(picked);
+          setResults(null);
           setLatency(null);
           setError(null);
         }}
-        renderOverlay={(transform) => <OcrOverlay detections={results} transform={transform} />}
+        renderOverlay={(transform) =>
+          results && (
+            <OcrOverlay detections={results} transform={transform} onSelect={presentation.open} />
+          )
+        }
       />
     </TaskScreen>
   );
 }
 
-export default function OCRScreen() {
+export default function OcrScreen() {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper unmountOnBlur>
       <OcrTask />
     </ScreenWrapper>
   );

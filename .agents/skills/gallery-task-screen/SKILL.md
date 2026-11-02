@@ -46,7 +46,12 @@ clean as possible.
    a value. Exceptions: white-on-accent text/icon may use `colors.onAccent`, and
    geometric annotation boxes drawn over images keep their own visibility widths.
 
-7. **Typecheck & format.** Run `npm run typecheck` and `npx prettier --write`
+7. **Keep the README demo list current.** Whenever a demo is added, renamed, moved
+   between categories, or removed in `src/lib/tasks.ts`, update the corresponding
+   category and bullet in the root `README.md` Demos section. Use the catalogue's
+   display name, link to the task screen, and update any stated demo count.
+
+8. **Typecheck & format.** Run `npm run typecheck` and `npx prettier --write`
    after every change. Never leave type or format errors behind.
 
 ---
@@ -110,4 +115,5 @@ the screen.
 - [ ] Uses shared `<TaskScreen>` / `<ScreenWrapper>` / theme tokens.
 - [ ] Every color comes from `useTheme()` / `@/theme` — no hex, `rgba(...)`, or raw value inline.
 - [ ] No duplicated styles or raw pixel spacings/border widths.
+- [ ] README demo categories, screen links, and demo count match `src/lib/tasks.ts`.
 - [ ] `npm run typecheck` passes.

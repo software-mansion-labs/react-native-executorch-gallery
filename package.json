@@ -1,14 +1,17 @@
 {
   "name": "react-native-executorch-gallery",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "dependencies": {
     "@expo/ui": "~57.0.14",
     "@expo/vector-icons": "^15.1.1",
+    "@huggingface/jinja": "0.5.9",
+    "@react-native-masked-view/masked-view": "0.3.2",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "~57.0.17",
     "expo-blur": "~57.0.0",
     "expo-build-properties": "~57.0.15",
+    "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.15",
     "expo-device": "~57.0.1",
     "expo-font": "~57.0.1",
@@ -23,13 +26,15 @@
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.3",
+    "expo-video": "~57.0.5",
     "expo-web-browser": "~57.0.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-audio-api": "^0.13.1",
     "react-native-blob-util": "^0.24.10",
-    "react-native-executorch": "^0.10.0",
+    "react-native-enriched-markdown": "^1.1.1",
+    "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-d433b10c9eed.tgz",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-keyboard-controller": "^1.22.4",
     "react-native-nitro-modules": "^0.37.1",
@@ -51,6 +56,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "deps:local": "node scripts/install-local-executorch.mjs",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -58,7 +64,17 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deps:use": "node scripts/select-executorch.mjs",
+    "deps:sync": "node scripts/select-executorch.mjs sync",
+    "deps:status": "node scripts/select-executorch.mjs status",
+    "test": "node --test scripts/*.test.mjs",
+    "media:showcase": "node scripts/build-showcase.mjs"
   },
-  "private": true
+  "private": true,
+  "enriched-markdown": {
+    "enableMath": true,
+    "enableCodeHighlight": false,
+    "enableVideo": false
+  }
 }

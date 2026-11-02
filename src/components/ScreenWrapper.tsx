@@ -1,13 +1,36 @@
+import { StyleSheet } from 'react-native';
+import type { PropsWithChildren } from 'react';
 import { useIsFocused } from 'expo-router';
-import { PropsWithChildren } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-/**
- * Wraps a screen to ensure that it completely unmounts when navigating away
- * or returning to the main menu. This immediately frees all underlying native
- * ExecuTorch model instances, JSI handles, and memory allocations.
- */
-export function ScreenWrapper({ children }: PropsWithChildren) {
+import { useTheme } from '@/theme';
+
+type ScreenWrapperProps = PropsWithChildren<{
+  unmountOnBlur?: boolean;
+  edgeToEdge?: boolean;
+}>;
+
+/** Provides safe-area layout and optionally unmounts task content on blur to release native models. */
+export function ScreenWrapper({
+  children,
+  unmountOnBlur = false,
+  edgeToEdge = false,
+}: ScreenWrapperProps) {
+  const { colors } = useTheme();
   const isFocused = useIsFocused();
-  return isFocused ? <>{children}</> : null;
+
+  return (
+    <SafeAreaView
+      edges={edgeToEdge ? [] : undefined}
+      style={[styles.screen, { backgroundColor: colors.background }]}
+    >
+      {!unmountOnBlur || isFocused ? children : null}
+    </SafeAreaView>
+  );
 }
-export default ScreenWrapper;
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+});

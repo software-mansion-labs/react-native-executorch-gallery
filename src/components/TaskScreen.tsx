@@ -1,133 +1,142 @@
-import React, { ReactNode, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { BlurView } from 'expo-blur';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
 
-import { RunButton } from '@/components/RunButton';
-import type { TaskStatus } from '@/components/StatusBanner';
-import { TaskHeader } from '@/components/TaskHeader';
-import { spacing, useTheme } from '@/theme';
+import { AppText } from '@/components/AppText';
+import { IconButton } from '@/components/IconButton';
+import { ModelSheet, type ModelStatus } from '@/components/ModelSheet';
+import { PageHeader } from '@/components/PageHeader';
+import type { ModelControls } from '@/hooks/useModelControls';
+import { tokens, useTheme } from '@/theme';
 
-export type { TaskStatus };
-
-export interface TaskScreenProps {
-  /** Screen and navigation header title. */
+type TaskScreenProps = PropsWithChildren<{
   title: string;
-  /** Model architecture and dataset metadata subtitle (e.g. "SSDLite MobileNetV3 · COCO"). */
-  subtitle?: string;
-  /** Task hook status (isReady, downloadProgress, error, resource). */
-  status: TaskStatus;
-  /** Whether the user can currently run the model task. */
-  canRun: boolean;
-  /** Whether the model is actively processing on-device inference. */
-  busy?: boolean;
-  /** Action handler invoked when the user taps the primary task button. */
-  onRun: () => void;
-  /** Label for the primary action button. */
-  runLabel?: string;
-  /** Optional metadata chip text (e.g. latency metric). */
-  meta?: string;
-  /** Optional handler to trigger loading the model into memory. */
-  onLoadModel?: () => void;
-  /** Optional handler to delete/clear downloaded model weights from storage. */
-  onDeleteModel?: () => Promise<void> | void;
-  /** Replace the default footer CTA with custom content (e.g. a prompt input). */
-  footer?: ReactNode;
-  /** Task UI viewport content. */
-  children: ReactNode;
-}
+  status: ModelStatus;
+  model: ModelControls;
+  error?: string | null;
+  busy: boolean;
+  scrollable?: boolean;
+  /** Draws a camera or other full-screen backdrop beneath the header and task controls. */
+  background?: ReactNode;
+  /** Handles safe-area insets when the surrounding ScreenWrapper draws edge to edge. */
+  edgeToEdge?: boolean;
+}>;
 
-/**
- * Universal layout wrapper for on-device ExecuTorch ML tasks.
- *
- * Enforces unified typography, model ready indicators, download progress,
- * and responsive action controls.
- *
- * @param props Task screen configuration and children viewports.
- * @returns Fully styled task view with header and bottom action bar.
- */
+/** Stable task layout: capability-focused header and an information/storage sheet. */
 export function TaskScreen({
   title,
-  subtitle,
   status,
-  canRun,
-  busy = false,
-  onRun,
-  runLabel = 'Run task',
-  meta,
-  onLoadModel,
-  onDeleteModel,
-  footer,
+  model,
+  error,
+  busy,
   children,
+  scrollable = true,
+  background,
+  edgeToEdge = false,
 }: TaskScreenProps) {
-  const { colors } = useTheme();
+  const appearance = background ? 'dark' : undefined;
+  const { colors, scheme } = useTheme(appearance);
   const insets = useSafeAreaInsets();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const { loaded, loadFailed, refreshCache } = model;
+  useEffect(() => {
+    if (status.resource || status.isReady) void refreshCache();
+  }, [status.resource, status.isReady, refreshCache]);
+  useEffect(() => {
+    if (loaded && status.error) loadFailed(status.error);
+  }, [loaded, status.error, loadFailed]);
 
-  const isExecutingRef = useRef(false);
-
-  const handleRunPress = () => {
-    if (!canRun || busy || isExecutingRef.current) return;
-    isExecutingRef.current = true;
-    try {
-      onRun();
-    } finally {
-      setTimeout(() => {
-        isExecutingRef.current = false;
-      }, 300);
-    }
-  };
+  const modelError =
+    loaded && status.error
+      ? status.error instanceof Error
+        ? status.error.message
+        : String(status.error)
+      : null;
+  const message = error || model.error || modelError;
+  const Content = scrollable ? ScrollView : View;
 
   return (
     <View
       style={[
         styles.root,
-        {
-          backgroundColor: colors.bg,
-          paddingTop: spacing.sm,
-          paddingHorizontal: spacing.lg,
-          paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.xs,
-          gap: spacing.sm + 2,
-        },
+        edgeToEdge && styles.edgeToEdge,
+        edgeToEdge && { paddingBottom: insets.bottom },
       ]}
     >
-      <Stack.Screen
-        options={{
-          title,
-          headerBackTitle: 'Gallery',
-          headerTintColor: colors.text,
-          headerStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-        }}
-      />
-
-      <TaskHeader
-        subtitle={subtitle}
-        status={status}
-        meta={meta}
-        onLoadModel={onLoadModel}
-        onDeleteModel={onDeleteModel}
-      />
-
-      <View style={styles.contentBody}>{children}</View>
-
-      <View style={styles.footer}>
-        {footer || (
-          <RunButton canRun={canRun} busy={busy} onPress={handleRunPress} label={runLabel} />
+      {background && <StatusBar style="light" />}
+      {background && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {background}
+        </View>
+      )}
+      <View style={edgeToEdge && { paddingTop: insets.top }}>
+        {background && (
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            tint={scheme}
+            intensity={tokens.camera.chromeBlurIntensity}
+          />
         )}
+        <PageHeader
+          title={title}
+          subtitle={model.info.name}
+          appearance={appearance}
+          backLabel="Back to all demos"
+          onBack={() => router.dismissTo('/tasks')}
+          action={
+            <IconButton
+              icon="ellipsis-horizontal"
+              accessibilityLabel="Model status and storage"
+              appearance={appearance}
+              onPress={() => setMenuVisible(true)}
+            />
+          }
+        />
       </View>
+      <Content
+        {...(scrollable
+          ? { contentContainerStyle: styles.content, showsVerticalScrollIndicator: false }
+          : { style: styles.fixedContent })}
+      >
+        <View style={scrollable ? styles.viewport : styles.fixedViewport}>{children}</View>
+        {message && (
+          <AppText variant="secondary" accessibilityRole="alert" style={{ color: colors.danger }}>
+            {message}
+          </AppText>
+        )}
+      </Content>
+      <ModelSheet
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        model={model}
+        status={status}
+        busy={busy}
+      />
     </View>
   );
 }
 
+const { spacing, layout } = tokens;
 const styles = StyleSheet.create({
-  root: {
+  root: { flex: 1, width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
+  edgeToEdge: { maxWidth: '100%' },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.lg,
+  },
+  viewport: { flex: 1, minHeight: layout.photoMinHeight },
+  fixedContent: {
     flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
-  contentBody: {
-    flex: 1,
-    minHeight: 0,
-  },
-  footer: {
-    paddingTop: 2,
-  },
+  fixedViewport: { flex: 1 },
 });

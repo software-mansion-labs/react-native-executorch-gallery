@@ -2,3 +2,6 @@ android
 ios
 node_modules
 .expo
+.executorch
+.local-packages
+.artifacts
