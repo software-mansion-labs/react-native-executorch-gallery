@@ -32,20 +32,13 @@ npm run deps:local
 npm run ios       # or npm run android
 ```
 
-### Initial rebuild
+### App structure
 
-The app includes the home screen, a searchable task catalogue, and object detection
-with camera/library input and on-device inference. Other task entries are placeholders.
-Shared design tokens live in `src/theme.ts`, all components live directly in
-`src/components`, and hooks live in `src/hooks`.
-
-The previous app source is preserved in [`archive/src`](archive/src). The screenshots
-above show that archived app.
-
-The approved interactive design is [`archive/design/review.html`](archive/design/review.html).
-For sharing, send **[`archive/design/review-standalone.html`](archive/design/review-standalone.html)**;
-it embeds its images and fonts and works offline as a single file. Rebuild it
-from the modular review with `node scripts/build-design-review.mjs`.
+The gallery includes local chat, image and video descriptions, a widget builder,
+computer vision, speech, and privacy demos. Each task screen showcases the library
+API directly, with supporting components, hooks, and utilities grouped by task in
+`src/components`, `src/hooks`, and `src/lib`. Shared design tokens live in
+`src/theme.ts`.
 
 ### Local ExecuTorch development on this branch
 
@@ -77,10 +70,6 @@ source changes are snapshots, not live edits; native changes also require an app
 rebuild. The library's prebuilt ExecuTorch binaries follow its `nativeLibsVersion`
 pin; building the sibling C++ ExecuTorch fork is a separate workflow.
 
-The visual review, interactive design proposal, and simulator screenshots are in
-[`archive/design/review.html`](archive/design/review.html). Open it in a browser; its proposed UI
-is a mockup, while the “Current app” section contains actual simulator captures.
-
 ## Requirements
 
 - **Expo SDK 57** and **React Native 0.86**
@@ -88,7 +77,7 @@ is a mockup, while the “Current app” section contains actual simulator captu
 - **Android 13.0+**
 
 > [!IMPORTANT]
-> The app requires a development build (Expo Go is not supported). The initial rebuild currently provides navigation and catalogue placeholders.
+> The app requires a development build (Expo Go is not supported).
 
 ## Documentation
 
