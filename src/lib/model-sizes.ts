@@ -1,5 +1,8 @@
 /** Published byte sizes for pinned model weights, keyed by their download filename. */
 export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
+  'fsmn_vad_xnnpack_fp32.pte': 1_827_808,
+  'whisper_tiny_en_xnnpack_int8.pte': 183_194_496,
+  'whisper_tiny_en_coreml_fp16.pte': 76_477_024,
   'migan_512_xnnpack_fp16.pte': 25_181_068,
   'migan_512_coreml_fp16.pte': 13_968_400,
   'migan_512_vulkan_fp16.pte': 14_058_114,

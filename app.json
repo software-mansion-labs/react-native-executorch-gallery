@@ -10,6 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.swm.react-native-executorch-gallery",
       "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow RN ExecuTorch Gallery to record speech for audio demos.",
         "NSCameraUsageDescription": "Allow RN ExecuTorch Gallery to take photos for vision demos.",
         "NSPhotoLibraryUsageDescription": "Allow RN ExecuTorch Gallery to choose photos for vision demos."
       }
@@ -22,7 +23,7 @@
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.swm.reactnativeexecutorchgallery",
-      "permissions": ["android.permission.CAMERA"]
+      "permissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
     },
     "web": {
       "output": "static",

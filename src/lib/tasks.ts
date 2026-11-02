@@ -136,11 +136,13 @@ export const TASK_SECTIONS: TaskSection[] = [
       },
       {
         id: 'speech-to-text',
+        href: '/speech-to-text',
         title: 'Speech to text',
         keywords: 'transcription recognition Whisper',
       },
       {
         id: 'voice-activity-detection',
+        href: '/voice-activity-detection',
         title: 'Voice activity detection',
         keywords: 'microphone silence FSMN VAD',
       },

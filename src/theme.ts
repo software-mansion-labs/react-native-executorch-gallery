@@ -174,6 +174,9 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
+    speechWaveformHeight: 24,
+    speechLevelGain: 10,
+    speechWaveformBarWidth: 3,
     inpaintingBrushSize: 28,
     liveDetectionStatusWidth: 176,
     depthFocusRadius: 14,
@@ -199,6 +202,7 @@ export const tokens = {
     thinkingIndicatorSize: 18,
   },
   motion: {
+    speechLevelDuration: 220,
     widgetExpandedScale: 1.04,
     themeTransitionDuration: 240,
     chatDisclosureDuration: 240,
