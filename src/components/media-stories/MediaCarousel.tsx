@@ -131,9 +131,6 @@ function MediaCard({
         )}
       </View>
       <View style={styles.caption}>
-        <AppText variant="taskLabel" numberOfLines={1}>
-          {item.name}
-        </AppText>
         <AppText variant="secondary" tone="muted">
           {item.kind === 'video' ? mediaTimestamp(item.duration) : 'Photo'}
           {item.phase === 'reading' ? ` · ${framesRead}/${count} frames` : ''}
@@ -230,11 +227,7 @@ function Separator() {
   return <View style={styles.separator} />;
 }
 const { spacing, radius } = tokens;
-const captionHeight =
-  tokens.typography.taskLabel.lineHeight +
-  tokens.typography.secondary.lineHeight +
-  spacing.md * 2 +
-  spacing.xs;
+const captionHeight = tokens.typography.secondary.lineHeight + spacing.md * 2;
 const styles = StyleSheet.create({
   carousel: { marginHorizontal: -spacing.xl, flexGrow: 0 },
   separator: { width: spacing.md },
@@ -242,7 +235,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   preview: { overflow: 'hidden', borderRadius: radius.card },
-  caption: { paddingVertical: spacing.md, gap: spacing.xs },
+  caption: { paddingVertical: spacing.md },
   playback: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
   playIcon: { padding: spacing.md, borderRadius: radius.pill },
 });

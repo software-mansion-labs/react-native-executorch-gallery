@@ -48,7 +48,6 @@ export function MediaStoriesView({
   const { colors } = useTheme();
   const { items, selected, busy, picking } = collection;
   const ready = model.loaded && model.prepared && status.isReady;
-  const completed = items.filter((item) => item.phase === 'done').length;
   const active = items.find((item) => item.phase === 'reading' || item.phase === 'describing');
   const pending = items.some((item) => item.phase !== 'done');
   const story = mediaStorySections(selected?.description ?? '');
@@ -65,24 +64,6 @@ export function MediaStoriesView({
       )}
       {ready && selected && (
         <Animated.View entering={entrance} style={styles.workspace}>
-          <View style={styles.status}>
-            <AppText variant="secondary" tone="muted">
-              {active?.phase === 'reading'
-                ? 'Reading frames…'
-                : busy
-                  ? 'Describing…'
-                  : completed === items.length
-                    ? items.length === 1
-                      ? 'Clip analyzed'
-                      : 'Collection analyzed'
-                    : 'Ready to analyze'}
-            </AppText>
-            {items.length > 1 && (
-              <AppText variant="secondary" tone="muted" style={styles.count}>
-                {completed} / {items.length}
-              </AppText>
-            )}
-          </View>
           <MediaCarousel items={items} selectedId={selected.id} onSelect={collection.select} />
           <View
             style={[
@@ -102,6 +83,11 @@ export function MediaStoriesView({
               showsVerticalScrollIndicator={false}
             >
               <Animated.View entering={entrance} style={styles.story}>
+                {(selected.phase === 'reading' || selected.phase === 'describing') && (
+                  <AppText variant="secondary" tone="muted">
+                    {selected.phase === 'reading' ? 'Reading frames…' : 'Describing…'}
+                  </AppText>
+                )}
                 {story.summary ? (
                   <AppText variant="body">{story.summary}</AppText>
                 ) : selected.error ? (
@@ -174,13 +160,6 @@ const entrance = FadeIn.duration(motion.photoRevealDuration).reduceMotion(Reduce
 const styles = StyleSheet.create({
   root: { flex: 1 },
   workspace: { flex: 1, gap: spacing.lg },
-  status: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  count: { fontVariant: ['tabular-nums'] },
   result: { flex: 1, borderRadius: radius.card, overflow: 'hidden' },
   resultScroll: { flex: 1 },
   activity: {
