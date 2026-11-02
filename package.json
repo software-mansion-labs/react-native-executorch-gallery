@@ -34,7 +34,7 @@
     "react-native-audio-api": "^0.13.1",
     "react-native-blob-util": "^0.24.10",
     "react-native-enriched-markdown": "^1.1.1",
-    "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-28a96291df2e.tgz",
+    "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-d433b10c9eed.tgz",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-keyboard-controller": "^1.22.4",
     "react-native-nitro-modules": "^0.37.1",
@@ -64,7 +64,12 @@
     "lint": "expo lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "deps:use": "node scripts/select-executorch.mjs",
+    "deps:sync": "node scripts/select-executorch.mjs sync",
+    "deps:status": "node scripts/select-executorch.mjs status",
+    "test": "node --test scripts/*.test.mjs",
+    "media:showcase": "node scripts/build-showcase.mjs"
   },
   "private": true,
   "enriched-markdown": {

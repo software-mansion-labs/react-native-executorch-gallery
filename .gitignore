@@ -3,6 +3,7 @@
 # dependencies
 node_modules/
 .local-packages/
+.executorch/
 
 # Expo
 .expo/
@@ -45,3 +46,7 @@ example
 
 # Raw screen recordings
 assets/Simulator Screen Recording*
+
+# Local test and build outputs
+.artifacts/
+.artifacts-*.log

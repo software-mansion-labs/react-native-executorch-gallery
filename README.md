@@ -1,92 +1,115 @@
-<div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://github.com/software-mansion/react-native-executorch/raw/main/docs/static/img/logo-vertical-dark.svg">
-    <img src="https://github.com/software-mansion/react-native-executorch/raw/main/docs/static/img/logo-vertical.svg" alt="React Native ExecuTorch" width="260">
-  </picture>
-  <br />
-  <br />
-  <img src="media/gallery-title.svg" alt="Gallery" width="280">
-</div>
+**React Native ExecuTorch Gallery** showcases on-device AI. Download models once, then run inference privately and fully offline on your device.
 
-<br />
-<br />
+<img src="media/showcase.webp" width="1200" alt="Three iPhone simulator recordings showing local chat, text to speech with word highlighting, and multimodal photo search">
 
-**React Native ExecuTorch Gallery** is an interactive showcase app designed to demonstrate what is possible with on-device AI and experience firsthand how fast it can run on your own phone.
+## Demos
 
-Built with [`react-native-executorch`](https://github.com/software-mansion/react-native-executorch), each screen is a real, standalone example of idiomatic library usage across computer vision, local LLMs, speech synthesis, and natural language processing that can be lifted straight into your own app.
+### Generative AI
 
-<div align="center">
+- [Local chat](<src/app/(screens)/llm-chat.tsx>)
+- [Image descriptions](<src/app/(screens)/image-description.tsx>)
+- [Media stories](<src/app/(screens)/media-stories.tsx>)
+- [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
+- [Text to image](<src/app/(screens)/text-to-image.tsx>)
 
-|                                  **LLM Chat**                                  |                              **Text to Image**                               |                                     **Real-Time Vision**                                     |                               **Text to Speech**                               |
-| :----------------------------------------------------------------------------: | :--------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------: |
-|       <img src="media/llm-chat-framed.svg" width="180" alt="LLM Chat" />       | <img src="media/text-to-image-framed.svg" width="180" alt="Text to Image" /> | <img src="media/real-time-object-detection-framed.svg" width="180" alt="Object Detection" /> | <img src="media/text-to-speech-framed.svg" width="180" alt="Text to Speech" /> |
-|                               **Speech to Text**                               |                           **OCR Text Recognition**                           |                                   **Privacy Filter (PII)**                                   |                              **Gallery Overview**                              |
-| <img src="media/speech-to-text-framed.svg" width="180" alt="Speech to Text" /> |     <img src="media/ocr-framed.svg" width="180" alt="OCR Recognition" />     |        <img src="media/privacy-filter-framed.svg" width="180" alt="Privacy Filter" />        |   <img src="media/gallery-menu-framed.svg" width="180" alt="Gallery Menu" />   |
+### Computer vision
 
-</div>
+- [Depth estimation](<src/app/(screens)/depth-estimation.tsx>)
+- [Photo cleanup](<src/app/(screens)/inpainting.tsx>)
+- [Style transfer](<src/app/(screens)/style-transfer.tsx>)
+- [Instance segmentation](<src/app/(screens)/instance-segmentation.tsx>)
+- [Pose estimation](<src/app/(screens)/keypoint-detection.tsx>)
+- [Text recognition](<src/app/(screens)/ocr.tsx>)
+- [Semantic segmentation](<src/app/(screens)/semantic-segmentation.tsx>)
+- [Object detection](<src/app/(screens)/object-detection.tsx>)
+- [Image classification](<src/app/(screens)/image-classification.tsx>)
 
-## Getting Started
+### Real time
+
+- [Live object detection](<src/app/(screens)/realtime-object-detection.tsx>)
+
+### Audio & speech
+
+- [Text to speech](<src/app/(screens)/text-to-speech.tsx>)
+- [Speech to text](<src/app/(screens)/speech-to-text.tsx>)
+- [Voice activity detection](<src/app/(screens)/voice-activity-detection.tsx>)
+
+### Embeddings & search
+
+- [Multimodal search](<src/app/(screens)/image-embeddings.tsx>)
+
+### Natural language processing
+
+- [Privacy filter](<src/app/(screens)/privacy-filter.tsx>)
+
+## Getting started
+
+Requirements: Node.js 24 and npm. Git/source builds also use Corepack for the library’s pinned Yarn version. Native builds require Xcode 26.4 or newer for iOS, or Android Studio and Java 17 for Android.
 
 ```bash
+nvm use
+corepack enable
+npm run deps:sync
+npm run ios        # or npm run android
+```
+
+The app uses Expo SDK 57 and React Native 0.86, targeting iOS 17+ and Android 13+. It requires a native build; Expo Go is not supported.
+
+## Choosing the library version
+
+[`executorch.json`](executorch.json) records the selected source. The default is a pinned Git revision, so a fresh checkout can restore the same library without a sibling repository or submodule.
+
+```bash
+npm run deps:status                    # Show the selection and installed version
+npm run deps:sync                      # Restore the recorded choice
+```
+
+Choose a published release:
+
+```bash
+npm run deps:use -- npm latest
+```
+
+Replace `latest` with an exact published version or another npm dist-tag. Tags resolve to an exact version before installation.
+
+Choose cutting-edge source:
+
+```bash
+npm run deps:use -- git main
+```
+
+A branch, tag, or commit is accepted. The resolved commit is saved; `deps:sync` reuses that pin. Run the selection command again to update a moving branch. Git builds use the source repository's pinned Yarn and a managed checkout in the ignored `.executorch/` directory.
+
+Use an existing monorepo while developing the library:
+
+```bash
+npm run deps:use -- local ../react-native-executorch
+# Existing shortcut:
 npm run deps:local
-npm run ios       # or npm run android
 ```
 
-### App structure
+Local mode builds the working tree, including uncommitted changes. Before sharing a version change, choose a published release or a Git revision that CI can fetch. The selector never switches or resets your editable library checkout.
 
-The gallery includes local chat, image and video descriptions, a widget builder,
-computer vision, speech, and privacy demos. Each task screen showcases the library
-API directly, with supporting components, hooks, and utilities grouped by task in
-`src/components`, `src/hooks`, and `src/lib`. Shared design tokens live in
-`src/theme.ts`.
+Commit `executorch.json`, `package.json`, and `package-lock.json` together after changing the selection, and rebuild the native app. The chosen library must support the APIs used by this gallery revision.
 
-### Local ExecuTorch development on this branch
+Source builds are packed into content-addressed `.local-packages/*.tgz` files, exercising the package's exports, postinstall, and native autolinking. These snapshots are ignored by Git: run `deps:sync` before `npm ci` on a fresh checkout. Library source is a snapshot, not a live symlink. The package's `nativeLibsVersion` selects its prebuilt ExecuTorch binaries; building the underlying C++ runtime is a separate workflow.
 
-This branch installs an npm tarball built from the sibling
-`../react-native-executorch` monorepo, rather than a symlink or a registry release.
-Install that workspace's Yarn dependencies first, then run:
+## Development and testing
 
 ```bash
-npm run deps:local
-npm run ios       # or npm run android
+npm start               # Metro for an installed development build
+npm test                # Version-selector regression tests
+npm run typecheck
+npm run lint
+npm run format:check
 ```
-
-`deps:local` builds the library's JavaScript and declarations, packs its published
-files, and installs the resulting archive with npm, including its native artifact
-postinstall. It updates `package.json` and `package-lock.json`. The archive lives
-in the gitignored `.local-packages/` directory; run `deps:local` before the first
-install on a fresh checkout of this branch. The script uses only Node built-ins
-and npm, so it does not require the gallery's `node_modules` to exist yet.
-
-To use a different monorepo location:
-
-```bash
-npm run deps:local -- /absolute/path/to/react-native-executorch
-```
-
-Run it again after library changes. Each archive includes a content hash in its
-filename so npm cannot silently reuse a cached same-version package. Library
-source changes are snapshots, not live edits; native changes also require an app
-rebuild. The library's prebuilt ExecuTorch binaries follow its `nativeLibsVersion`
-pin; building the sibling C++ ExecuTorch fork is a separate workflow.
-
-## Requirements
-
-- **Expo SDK 57** and **React Native 0.86**
-- **iOS 17.0+**
-- **Android 13.0+**
-
-> [!IMPORTANT]
-> The app requires a development build (Expo Go is not supported).
 
 ## Documentation
 
-The full library documentation, task guides, architecture deep dives, and API references live in the main [`react-native-executorch`](https://github.com/software-mansion/react-native-executorch) repository. Each task screen in this showcase maps directly to an extension guide in the docs:
-
-**[docs.swmansion.com/react-native-executorch](https://docs.swmansion.com/react-native-executorch/)**
+Library guides and API references: **[docs.swmansion.com/react-native-executorch](https://docs.swmansion.com/react-native-executorch/)**.
 
 ## Created by Software Mansion
 
-Since 2012, [Software Mansion](https://swmansion.com) has been building mobile and web apps, contributing to open-source software, and dealing with all kinds of React Native challenges. We are Core React Native Contributors. We can help you build your next AI product – [Hire us](https://swmansion.com/contact?utm_source=react-native-executorch-gallery&utm_medium=readme).
+Since 2012, [Software Mansion](https://swmansion.com) has been building mobile and web apps, contributing to open-source software, and working on React Native as Core React Native Contributors. We can help you build your next AI product — [Hire us](https://swmansion.com/contact?utm_source=react-native-executorch-gallery&utm_medium=readme).
 
 [![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-executorch-gallery-github 'Software Mansion')](https://swmansion.com)
