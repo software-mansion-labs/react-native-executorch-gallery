@@ -1,6 +1,6 @@
 **React Native ExecuTorch Gallery** showcases on-device AI. Download models once, then run inference privately and fully offline on your device.
 
-<img src="media/showcase.webp" width="1200" alt="Three iPhone simulator recordings showing local chat, text to speech with word highlighting, and multimodal photo search">
+<img src=".github/assets/showcase.webp" width="1200" alt="Three iPhone simulator recordings showing local chat, text to speech with word highlighting, and multimodal photo search">
 
 ## Demos
 

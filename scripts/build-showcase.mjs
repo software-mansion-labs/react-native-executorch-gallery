@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const media = resolve(root, 'media');
+const media = resolve(root, '.github/assets');
 const recordings = resolve(root, process.argv[2] ?? '.artifacts/showcase/recordings');
 const duration = 24;
 const fps = 30;
@@ -210,9 +210,10 @@ try {
       const delay = Math.round(((index + 1) * 1000) / 24) - Math.round((index * 1000) / 24);
       webp.push('-d', String(delay), join(frames, file));
     });
+  mkdirSync(media, { recursive: true });
   webp.push('-o', resolve(media, 'showcase.webp'));
   execFileSync('img2webp', webp, { stdio: 'inherit' });
-  console.log('Built media/showcase.webp (24 fps, 1440px).');
+  console.log('Built .github/assets/showcase.webp (24 fps, 1440px).');
 } finally {
   rmSync(work, { recursive: true, force: true });
 }
