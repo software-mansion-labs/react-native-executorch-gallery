@@ -21,7 +21,8 @@ Use `src/app/(screens)/image-classification.tsx` as a current small example.
 Use Node 24 (`nvm use`), npm and Corepack (`corepack enable`). On a fresh checkout,
 run `npm run deps:sync`: it restores the selected archive before running `npm ci`.
 Plain `npm ci` needs that ignored archive to exist first. See README for native prerequisites.
-Use `npm run check` for the same fast checks as CI, including draft pull requests.
+Use `npm run check` for the same fast checks as CI. CI skips draft pull requests
+and starts when they are marked ready for review.
 
 ## Expo and native code
 

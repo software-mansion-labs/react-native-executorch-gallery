@@ -98,7 +98,7 @@ Source builds are packed into content-addressed `.local-packages/*.tgz` files, e
 
 ```bash
 npm start               # Metro for an installed development build
-npm run check           # All fast checks used in CI (including draft PRs)
+npm run check           # All fast checks used in CI
 npm test                # Version-selector regression tests
 npm run typecheck
 npm run lint
@@ -110,7 +110,8 @@ run `npm run hooks:install`. Hooks check formatting without modifying staged fil
 
 For native release builds and model/device checks,
 see [Verification](.agents/skills/gallery-verification/SKILL.md). CI builds Android and iOS
-release binaries on every pull request without signing credentials.
+release binaries on pull requests ready for review without signing credentials.
+Draft pull requests skip CI; marking them ready starts the checks and builds.
 
 ## Documentation
 

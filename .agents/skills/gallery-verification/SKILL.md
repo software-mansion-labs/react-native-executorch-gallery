@@ -15,7 +15,8 @@ checks below. Report what ran and what could not run.
 Follow root `AGENTS.md` for bootstrap and dependency selection.
 
 Run `npm run check`: selector regression tests, TypeScript, ESLint and Prettier.
-The same checks run on all pull requests, including drafts. These checks do not
+The same checks run on pull requests ready for review. Drafts skip CI; run the
+fast checks locally while iterating. These checks do not
 establish that native code compiles or that inference succeeds.
 
 Lefthook is installed as a dev dependency and installs its pre-commit hooks during
@@ -26,13 +27,15 @@ CI remains the authoritative check when hooks are unavailable or bypassed.
 
 ## Native builds
 
-Every pull request (including drafts) and push to `main` runs the fast checks,
+Every non-draft pull request and push to `main` runs the fast checks,
 then Android and iOS release builds in parallel. `CI Status` requires all three
 jobs to pass. Builds need no Expo account or signing secrets. Android builds a
 standalone release APK for arm64 devices and x86_64 emulators. iOS builds an
 unsigned Release app for an Apple Silicon simulator (the pinned library supplies
 an arm64 simulator slice). Build products and failure diagnostics are retained
-as workflow artifacts for seven days. Use `workflow_dispatch` to rerun CI manually.
+as workflow artifacts for seven days. Marking a draft ready for review starts CI;
+converting it back to draft cancels the active run without starting build jobs.
+Use `workflow_dispatch` to run CI manually on a branch, including a draft branch.
 
 For local equivalents, install Android Studio / SDK and Java 17, or Xcode 26.4+
 and CocoaPods, then run:
