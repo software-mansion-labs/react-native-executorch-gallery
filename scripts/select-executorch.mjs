@@ -27,7 +27,7 @@ function readConfig() {
   return JSON.parse(readFileSync(configPath, 'utf8'));
 }
 
-function packLocal(workspace) {
+function packLocal(workspace, install = true) {
   const source = resolve(workspace, 'packages/react-native-executorch');
   const manifest = JSON.parse(readFileSync(resolve(source, 'package.json'), 'utf8'));
   if (manifest.name !== 'react-native-executorch')
@@ -42,10 +42,12 @@ function packLocal(workspace) {
   const hash = createHash('sha256').update(readFileSync(archive)).digest('hex').slice(0, 12);
   const snapshot = resolve(destination, `react-native-executorch-${manifest.version}-${hash}.tgz`);
   renameSync(archive, snapshot);
-  run('npm', ['install', '--save-exact', `./${relative(gallery, snapshot)}`]);
+  const dependency = `file:${relative(gallery, snapshot)}`;
+  if (install) run('npm', ['install', '--save-exact', `./${relative(gallery, snapshot)}`]);
+  return dependency;
 }
 
-function checkoutGit(config) {
+function checkoutGit(config, install = true) {
   const ref = config.commit ?? config.ref;
   if (typeof ref !== 'string' || !ref || ref.startsWith('-'))
     throw new Error('Choose a Git branch, tag, or commit.');
@@ -66,10 +68,39 @@ function checkoutGit(config) {
   run('git', ['fetch', '--depth=1', 'origin', ref], cache);
   const commit = output('git', ['rev-parse', 'FETCH_HEAD'], cache);
   run('git', ['checkout', '--detach', commit], cache);
+  // Native speech code is supplied by a pinned submodule and must be inside the packed snapshot.
+  run('git', ['submodule', 'update', '--init', '--recursive'], cache);
   // Corepack reads the source repository's own packageManager pin.
   run('corepack', ['yarn', 'install', '--immutable'], cache);
-  packLocal(cache);
-  return { ...config, repository: repo, commit };
+  const dependency = packLocal(cache, install);
+  return { config: { ...config, repository: repo, commit }, dependency };
+}
+
+/** Restores the recorded snapshot without resolving versions or rewriting tracked manifests. */
+function syncSelection(config) {
+  const manifest = JSON.parse(readFileSync(resolve(gallery, 'package.json'), 'utf8'));
+  const dependency = manifest.dependencies['react-native-executorch'];
+  if (config.source === 'npm') {
+    if (dependency !== config.version || !/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(config.version))
+      throw new Error('The npm selection must match the exact version in package.json.');
+  } else if (config.source === 'git' || config.source === 'local') {
+    if (!/^file:\.local-packages\/react-native-executorch-[\w.+-]+\.tgz$/.test(dependency))
+      throw new Error('Expected a recorded .local-packages snapshot in package.json.');
+    if (config.source === 'git' && !/^[a-f0-9]{40}$/.test(config.commit ?? ''))
+      throw new Error('Git sync requires a pinned commit. Select the Git source again.');
+    if (!existsSync(resolve(gallery, dependency.slice('file:'.length)))) {
+      const restored =
+        config.source === 'git'
+          ? checkoutGit(config, false).dependency
+          : packLocal(resolve(gallery, config.path), false);
+      if (restored !== dependency)
+        throw new Error(
+          'Rebuilt snapshot differs from the recorded dependency. Use deps:use to select and commit the new snapshot.'
+        );
+    }
+  } else throw new Error(`Unknown source in executorch.json: ${config.source}`);
+  // npm ci checks lockfile consistency and archive integrity, and never updates the lockfile.
+  run('npm', ['ci']);
 }
 
 /** Selects an npm release, managed Git snapshot, or existing editable monorepo; persists only successful installs. */
@@ -99,17 +130,18 @@ Commit executorch.json, package.json, and package-lock.json together after switc
   if (extra || !['sync', 'npm', 'git', 'local'].includes(mode) || (mode === 'sync' && value)) {
     throw new Error('Invalid selection. Run npm run deps:use -- --help.');
   }
-  let config =
-    mode === 'sync'
-      ? readConfig()
-      : {
-          source: mode,
-          ...(mode === 'local'
-            ? { path: value ?? '../react-native-executorch' }
-            : mode === 'git'
-              ? { ref: value }
-              : { version: value }),
-        };
+  if (mode === 'sync') {
+    syncSelection(readConfig());
+    return;
+  }
+  let config = {
+    source: mode,
+    ...(mode === 'local'
+      ? { path: value ?? '../react-native-executorch' }
+      : mode === 'git'
+        ? { ref: value }
+        : { version: value }),
+  };
   if (config.source === 'npm') {
     if (typeof config.version !== 'string' || !config.version || config.version.startsWith('-'))
       throw new Error('Choose an npm version or dist-tag.');
@@ -121,7 +153,7 @@ Commit executorch.json, package.json, and package-lock.json together after switc
     run('npm', ['install', '--save-exact', `react-native-executorch@${version}`]);
     config = { source: 'npm', version };
   } else if (config.source === 'git') {
-    config = checkoutGit(config);
+    config = checkoutGit(config).config;
   } else if (config.source === 'local') {
     if (typeof config.path !== 'string' || !config.path)
       throw new Error('Choose a local monorepo path.');

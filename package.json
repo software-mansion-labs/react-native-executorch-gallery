@@ -34,7 +34,7 @@
     "react-native-audio-api": "^0.13.1",
     "react-native-blob-util": "^0.24.10",
     "react-native-enriched-markdown": "^1.1.1",
-    "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-d433b10c9eed.tgz",
+    "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-8cb03becc713.tgz",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-keyboard-controller": "^1.22.4",
     "react-native-nitro-modules": "^0.37.1",
@@ -51,6 +51,7 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
+    "lefthook": "2.2.2",
     "prettier": "^3.5.3",
     "sharp": "^0.35.4",
     "typescript": "~6.0.3"
@@ -69,7 +70,11 @@
     "deps:sync": "node scripts/select-executorch.mjs sync",
     "deps:status": "node scripts/select-executorch.mjs status",
     "test": "node --test scripts/*.test.mjs",
-    "media:showcase": "node scripts/build-showcase.mjs"
+    "media:showcase": "node scripts/build-showcase.mjs",
+    "check": "npm test && npm run typecheck && npm run lint && npm run format:check",
+    "hooks:install": "lefthook install",
+    "native:android": "node scripts/build-native.mjs android",
+    "native:ios": "node scripts/build-native.mjs ios"
   },
   "private": true,
   "enriched-markdown": {

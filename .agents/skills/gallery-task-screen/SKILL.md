@@ -17,12 +17,11 @@ clean as possible.
 
 ## 🚦 Rules
 
-1. **A screen is a thin wrapper.** The `src/app/*.tsx` file should contain only:
+1. **A screen is a thin wrapper.** The `src/app/(screens)/*.tsx` file should contain only:
    - A `use<Task>` hook call.
    - A few `useState`s for input, result, and error state.
    - A single `run()` handler that awaits the hook's callable.
    - The `<TaskScreen>` layout with the minimal UI needed to show the result.
-   -
 2. **Show the idiomatic library usage, nothing more.** Do not bloat the screen
    with preprocessing details, tensor manipulations, or library internals. The
    reader should see exactly how the hook + model config + callable are used.
@@ -40,7 +39,7 @@ clean as possible.
 
 6. **No inline colors or style values — always theme tokens.** Every color
    must come from the palette through `useTheme()` (`colors.*`), and `spacing`,
-   `radius`, and `borderWidth` must come from `@/theme`. Never hardcode hex
+   `radius`, and `borderWidth` must come from `tokens` in `@/theme`. Never hardcode hex
    values, `rgba(...)` strings, raw pixel spacings, or raw border widths in a
    component. If a token doesn't exist, add it to `@/theme` rather than inlining
    a value. Exceptions: white-on-accent text/icon may use `colors.onAccent`, and
@@ -51,58 +50,30 @@ clean as possible.
    category and bullet in the root `README.md` Demos section. Use the catalogue's
    display name, link to the task screen, and update any stated demo count.
 
-8. **Typecheck & format.** Run `npm run typecheck` and `npx prettier --write`
-   after every change. Never leave type or format errors behind.
+8. **Typecheck & format.** Format changed files with `npx prettier --write <paths>`, then run
+   `npm run check` before finishing. Verify changed UI using `.agents/skills/gallery-verification/SKILL.md`.
 
 ---
 
-## ✅ The shape to aim for
+## Current examples and lifecycle
 
-```tsx
-import { useState } from 'react';
-import { models, useMyTask } from 'react-native-executorch';
+Read `src/app/(screens)/image-classification.tsx` for a small photo task and
+`src/app/(screens)/llm-chat.tsx` for streaming chat. Follow the real components'
+current props rather than inventing a parallel example.
 
-import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { TaskScreen } from '@/components/TaskScreen';
-
-function MyTaskScreen() {
-  const [result, setResult] = useState<...>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const task = useMyTask(models.myTask.DEFAULT);
-
-  const run = async () => {
-    if (busy || !...) return;
-    setBusy(true);
-    setError(null);
-    try {
-      setResult(await task.run(...));
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <TaskScreen title="..." subtitle="..." status={task} canRun={...} busy={busy} onRun={run}>
-      {/* minimal result UI */}
-    </TaskScreen>
-  );
-}
-
-export default function MyTaskScreenPage() {
-  return (
-    <ScreenWrapper>
-      <MyTaskScreen />
-    </ScreenWrapper>
-  );
-}
-```
-
-When the display logic grows, move it into a hook with JSDoc instead of growing
-the screen.
+- Use `useModelControls` for explicit model loading, cached size and deletion.
+- Pass `preventLoad: !model.loaded` to library hooks that support it; opening a
+  screen must not start a model download.
+- Use `useTaskState(initialValue, model.revision)` for task data that must reset
+  after deletion. It ignores results from an earlier model revision.
+- Pass `model`, `status`, `busy` and any `error` to `TaskScreen`.
+- Render `ModelSetup` in the input's setup slot and guard inference on model
+  readiness, input availability, busy and deleting states.
+- Use `ScreenWrapper unmountOnBlur` when leaving the screen should release the model.
+- Import `{ tokens, useTheme }` from `@/theme`; use `tokens.spacing`,
+  `tokens.radius` and `tokens.borderWidth` (or destructure them from `tokens`).
+  Annotation colors and generated widget palettes have domain tokens in their
+  existing modules; preserve those rather than moving them into the app palette.
 
 ---
 
@@ -116,4 +87,4 @@ the screen.
 - [ ] Every color comes from `useTheme()` / `@/theme` — no hex, `rgba(...)`, or raw value inline.
 - [ ] No duplicated styles or raw pixel spacings/border widths.
 - [ ] README demo categories, screen links, and demo count match `src/lib/tasks.ts`.
-- [ ] `npm run typecheck` passes.
+- [ ] `npm run check` passes; relevant native/device verification is recorded.
