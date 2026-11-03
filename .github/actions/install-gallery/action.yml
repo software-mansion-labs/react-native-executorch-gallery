@@ -19,3 +19,6 @@ runs:
     - name: Restore selected library and install dependencies
       shell: bash
       run: npm run deps:sync
+    - name: Verify dependency restore preserved manifests
+      shell: bash
+      run: git diff --exit-code -- executorch.json package.json package-lock.json

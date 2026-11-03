@@ -14,6 +14,8 @@ function fixture(t) {
   mkdirSync(join(root, 'bin'));
   cpSync(join(scripts, 'select-executorch.mjs'), join(root, 'scripts/select-executorch.mjs'));
   const initial = { source: 'local', path: '../working-library' };
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ dependencies: {} }));
+  writeFileSync(join(root, 'package-lock.json'), 'fixture lockfile');
   writeFileSync(join(root, 'executorch.json'), JSON.stringify(initial));
   writeFileSync(
     join(root, 'state.json'),
@@ -26,7 +28,11 @@ const state = JSON.parse(fs.readFileSync(path.join(root,'state.json')));
 fs.appendFileSync(path.join(root,'calls.jsonl'),JSON.stringify({command,args,cwd:process.cwd()})+'\\n');
 if (command === 'npm') {
  if (args[0] === 'view') console.log(JSON.stringify(state.version));
- if (args[0] === 'install' && state.failInstall) process.exit(1);
+ if ((args[0] === 'install' || args[0] === 'ci') && state.failInstall) process.exit(1);
+ if (args[0] === 'install') {
+  const spec=args.at(-1), manifest={dependencies:{'react-native-executorch':spec.startsWith('./')?'file:'+spec.slice(2):spec.split('@').at(-1)}};
+  fs.writeFileSync(path.join(root,'package.json'),JSON.stringify(manifest));
+ }
  if (args[0] === 'pack') {
   const filename='react-native-executorch-1.2.3.tgz';
   fs.writeFileSync(path.join(args[args.indexOf('--pack-destination')+1],filename),'test package contents');
@@ -92,6 +98,7 @@ test('Git mode pins a commit; sync does not follow the moving branch', (t) => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(f.config().commit, 'a'.repeat(40));
   f.state({ version: '1.2.3', commit: 'b'.repeat(40) });
+  rmSync(join(f.root, '.local-packages'), { recursive: true });
   result = f.run('sync');
   assert.equal(result.status, 0, result.stderr);
   assert.equal(f.config().commit, 'a'.repeat(40));
@@ -155,4 +162,57 @@ test('invalid sources, missing refs, and npm ranges fail without changing the se
   f.state({ version: ['1.2.3', '1.2.4'] });
   assert.notEqual(f.run('npm', '^1').status, 0);
   assert.deepEqual(f.config(), f.initial);
+});
+
+test('sync reuses a restored archive and runs npm ci without rewriting manifests', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('git', 'main').status, 0);
+  const names = ['executorch.json', 'package.json', 'package-lock.json'];
+  const before = names.map((name) => readFileSync(join(f.root, name), 'utf8'));
+  const calls = f.calls().length;
+  const result = f.run('sync');
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(
+    names.map((name) => readFileSync(join(f.root, name), 'utf8')),
+    before
+  );
+  assert.deepEqual(
+    f
+      .calls()
+      .slice(calls)
+      .map(({ command, args }) => [command, args]),
+    [['npm', ['ci']]]
+  );
+});
+
+test('npm sync uses the exact recorded selection without querying a moving tag', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('npm', 'latest').status, 0);
+  f.state({ version: '9.9.9' });
+  const calls = f.calls().length;
+  assert.equal(f.run('sync').status, 0);
+  assert.deepEqual(
+    f
+      .calls()
+      .slice(calls)
+      .map(({ command, args }) => [command, args]),
+    [['npm', ['ci']]]
+  );
+});
+
+test('sync rejects source drift and propagates frozen install failures', (t) => {
+  const f = fixture(t);
+  assert.equal(f.run('git', 'main').status, 0);
+  const before = readFileSync(join(f.root, 'package.json'), 'utf8');
+  const manifest = JSON.parse(before);
+  manifest.dependencies['react-native-executorch'] =
+    'file:.local-packages/react-native-executorch-other.tgz';
+  writeFileSync(join(f.root, 'package.json'), JSON.stringify(manifest));
+  const result = f.run('sync');
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /differs from the recorded dependency/);
+  writeFileSync(join(f.root, 'package.json'), before);
+  f.state({ failInstall: true });
+  assert.notEqual(f.run('sync').status, 0);
+  assert.equal(readFileSync(join(f.root, 'package.json'), 'utf8'), before);
 });

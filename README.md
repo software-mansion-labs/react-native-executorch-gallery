@@ -92,17 +92,26 @@ Local mode builds the working tree, including uncommitted changes. Before sharin
 
 Commit `executorch.json`, `package.json`, and `package-lock.json` together after changing the selection, and rebuild the native app. The chosen library must support the APIs used by this gallery revision.
 
-Source builds are packed into content-addressed `.local-packages/*.tgz` files, exercising the package's exports, postinstall, and native autolinking. These snapshots are ignored by Git: run `deps:sync` before `npm ci` on a fresh checkout. Library source is a snapshot, not a live symlink. The package's `nativeLibsVersion` selects its prebuilt ExecuTorch binaries; building the underlying C++ runtime is a separate workflow.
+Source builds are packed into content-addressed `.local-packages/*.tgz` files, exercising the package's exports, postinstall, and native autolinking. These snapshots are ignored by Git: run `deps:sync` on a fresh checkout to restore the recorded archive and perform a frozen `npm ci` installation. Sync fails rather than rewriting the dependency selection if a rebuilt archive differs. Library source is a snapshot, not a live symlink. The package's `nativeLibsVersion` selects its prebuilt ExecuTorch binaries; building the underlying C++ runtime is a separate workflow.
 
 ## Development and testing
 
 ```bash
 npm start               # Metro for an installed development build
+npm run check           # All fast checks used in CI
 npm test                # Version-selector regression tests
 npm run typecheck
 npm run lint
 npm run format:check
 ```
+
+Lefthook installs pre-commit checks with the dev dependencies. If hooks were skipped,
+run `npm run hooks:install`. Hooks check formatting without modifying staged files.
+
+For native release builds and model/device checks,
+see [Verification](.agents/skills/gallery-verification/SKILL.md). CI builds Android and iOS
+release binaries on pull requests ready for review without signing credentials.
+Draft pull requests skip CI; marking them ready starts the checks and builds.
 
 ## Documentation
 
