@@ -158,6 +158,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         title: 'Multimodal search',
         keywords: 'photo collection semantic similarity text CLIP',
       },
+      {
+        id: 'colbert-retrieval',
+        href: '/colbert-retrieval',
+        title: 'ColBERT retrieval',
+        keywords: 'text document search token embeddings MaxSim LFM',
+      },
     ],
   },
   {
@@ -169,6 +175,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         href: '/privacy-filter',
         title: 'Privacy filter',
         keywords: 'chat redact personal information PII',
+      },
+      {
+        id: 'translation',
+        href: '/translation',
+        title: 'Translation',
+        keywords: 'language English German Opus MT',
       },
     ],
   },

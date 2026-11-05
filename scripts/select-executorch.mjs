@@ -34,7 +34,20 @@ function packLocal(workspace, install = true) {
     throw new Error(`No ExecuTorch package at ${source}`);
   const destination = resolve(gallery, '.local-packages');
   mkdirSync(destination, { recursive: true });
-  run('npm', ['run', 'prepare'], source);
+  // Recursive native submodules can contain unrelated TypeScript projects. Keep
+  // them out of declaration generation, restoring the source config before pack.
+  const buildConfig = resolve(source, 'tsconfig.build.json');
+  const original = existsSync(buildConfig) ? readFileSync(buildConfig, 'utf8') : undefined;
+  try {
+    if (original) {
+      const config = JSON.parse(original);
+      config.exclude = [...(config.exclude ?? []), 'third-party'];
+      writeFileSync(buildConfig, `${JSON.stringify(config, null, 2)}\n`);
+    }
+    run('npm', ['run', 'prepare'], source);
+  } finally {
+    if (original !== undefined) writeFileSync(buildConfig, original);
+  }
   const [packed] = JSON.parse(
     output('npm', ['pack', '--ignore-scripts', '--json', '--pack-destination', destination], source)
   );

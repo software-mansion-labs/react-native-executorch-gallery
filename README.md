@@ -37,10 +37,12 @@
 ### Embeddings & search
 
 - [Multimodal search](<src/app/(screens)/image-embeddings.tsx>)
+- [ColBERT retrieval](<src/app/(screens)/colbert-retrieval.tsx>)
 
 ### Natural language processing
 
 - [Privacy filter](<src/app/(screens)/privacy-filter.tsx>)
+- [Translation](<src/app/(screens)/translation.tsx>)
 
 ## Getting started
 
