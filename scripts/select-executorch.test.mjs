@@ -27,6 +27,11 @@ const root = process.env.FIXTURE_ROOT, args = process.argv.slice(2), command = p
 const state = JSON.parse(fs.readFileSync(path.join(root,'state.json')));
 fs.appendFileSync(path.join(root,'calls.jsonl'),JSON.stringify({command,args,cwd:process.cwd()})+'\\n');
 if (command === 'npm') {
+ if (args[0] === 'run' && args[1] === 'prepare' && state.inspectBuild) {
+  const config=fs.readFileSync(path.join(process.cwd(),'tsconfig.build.json'),'utf8');
+  fs.writeFileSync(path.join(root,'prepared-config.json'),config);
+  if (state.failPrepare) process.exit(1);
+ }
  if (args[0] === 'view') console.log(JSON.stringify(state.version));
  if ((args[0] === 'install' || args[0] === 'ci') && state.failInstall) process.exit(1);
  if (args[0] === 'install') {
@@ -152,6 +157,29 @@ test('local mode packs a content-addressed snapshot from a path with spaces', (t
           /react-native-executorch-1\.2\.3-[a-f0-9]{12}\.tgz$/.test(call.args.at(-1))
       )
   );
+});
+
+test('snapshot builds exclude native submodule TypeScript and restore source config on success or failure', (t) => {
+  const f = fixture(t);
+  const workspace = join(f.root, 'library');
+  const pkg = join(workspace, 'packages/react-native-executorch');
+  mkdirSync(pkg, { recursive: true });
+  writeFileSync(
+    join(pkg, 'package.json'),
+    JSON.stringify({ name: 'react-native-executorch', version: '1.2.3' })
+  );
+  const config = '{ "extends": "./tsconfig", "exclude": ["lib", "__tests__"] }\n';
+  writeFileSync(join(pkg, 'tsconfig.build.json'), config);
+  for (const failPrepare of [false, true]) {
+    f.state({ inspectBuild: true, failPrepare });
+    const result = f.run('local', workspace);
+    assert.equal(result.status === 0, !failPrepare, result.stderr);
+    assert.deepEqual(
+      JSON.parse(readFileSync(join(f.root, 'prepared-config.json'), 'utf8')).exclude,
+      ['lib', '__tests__', 'third-party']
+    );
+    assert.equal(readFileSync(join(pkg, 'tsconfig.build.json'), 'utf8'), config);
+  }
 });
 test('invalid sources, missing refs, and npm ranges fail without changing the selection', (t) => {
   const f = fixture(t);
