@@ -210,6 +210,7 @@ export const tokens = {
   },
   motion: {
     speechLevelDuration: 220,
+    orbStateDuration: 600,
     speechLevelAttackDuration: 60,
     speechLevelReleaseDuration: 160,
     widgetExpandedScale: 1.04,

@@ -7,11 +7,11 @@ export const OMNI_ORB_MAX_RADIUS = OMNI_ORB_RADIUS * 1.12;
 export function omniOrbShape(time: number, energy: number, activity: number) {
   'worklet';
   const e = Math.max(0, Math.min(1, energy));
-  const w4 = 0.25 + Math.sin(time * 0.67 + e * 2) * 0.06;
-  const w5 = 0.45 + Math.sin(time * 0.91 + 1.7 - e) * 0.08;
-  const w7 = 0.3 + Math.sin(time * 1.13 + 4 + e) * 0.06;
+  const w4 = 0.25 + Math.sin(time * 0.37) * 0.06;
+  const w5 = 0.45 + Math.sin(time * 0.51 + 1.7) * 0.08;
+  const w7 = 0.3 + Math.sin(time * 0.63 + 4) * 0.06;
   const weight = w4 + w5 + w7;
-  const amplitude = 0.105 + activity * 0.025 + e * 0.025 + Math.sin(time * 1.1) * 0.008;
+  const amplitude = 0.09 + activity * 0.015 + e * 0.035 + Math.sin(time * 0.8) * 0.008;
   const a4 = (0.625836 * w4 * amplitude) / weight;
   const a5 = (0.656382 * w5 * amplitude) / weight;
   const a7 = (0.707163 * w7 * amplitude) / weight;
@@ -19,9 +19,9 @@ export function omniOrbShape(time: number, energy: number, activity: number) {
     // Area stays constant as individual bumps change their strength.
     lobes: [a4, a5, a7, OMNI_ORB_RADIUS / Math.sqrt(1 + (a4 * a4 + a5 * a5 + a7 * a7) / 2)],
     phases: [
-      time * 0.75 + Math.sin(time * 0.53) * 0.65 + e * 1.3,
-      -time * 0.57 + 1.1 + Math.sin(time * 0.41 + 2) * 0.85 - e * 1.7,
-      time * 0.91 + 2.2 + Math.sin(time * 0.73 + 0.9) * 0.55 + e * 0.9,
+      time * 0.7 + Math.sin(time * 0.33) * 0.35,
+      -time * 0.53 + 1.1 + Math.sin(time * 0.29 + 2) * 0.45,
+      time * 0.83 + 2.2 + Math.sin(time * 0.43 + 0.9) * 0.3,
       0,
     ],
   };
@@ -55,7 +55,7 @@ export const OMNI_ORB_SHADER = `
   uniform float4 cloud;
 
   float surfaceRadius(float angle) {
-    // Real sectoral harmonics with independent, audio-driven phases and weights.
+    // Smooth independent harmonics; audio changes amplitude without jumping phase.
     return lobes.w * (1.0 + lobes.x * cos(4.0 * angle + phases.x)
                          + lobes.y * cos(5.0 * angle + phases.y)
                          + lobes.z * cos(7.0 * angle + phases.z));
@@ -93,7 +93,7 @@ export const OMNI_ORB_SHADER = `
     float3 color = mix(cloud.rgb, mist.rgb, blue);
     float depths = smoothstep(0.05, 1.0, q.y + (billow - 0.5) * 0.65);
     color = mix(color, deep.rgb, depths * 0.95);
-    float vapor = clouds(uv * 1.35 - drift * 0.8 + 11.0);
+    float vapor = billow * 0.7 + 0.3 * (0.5 + 0.5 * sin(uv.x * 2.1 + uv.y * 1.7 - t * 0.4));
     float wisps = smoothstep(0.43, 0.72, vapor + q.x * 0.08 - q.y * 0.12);
     color = mix(color, cloud.rgb, wisps * (0.55 + e * 0.08));
     // A narrow glass reflection catches one moving crescent, with a quieter
@@ -102,12 +102,12 @@ export const OMNI_ORB_SHADER = `
     float2 light = normalize(float2(-0.7 + sin(time * 0.2) * 0.18, -0.65));
     float facing = dot(direction, light);
     float edgeDepth = max(0.0, 1.0 - dist / radius);
-    float rim = exp(-edgeDepth * 65.0);
-    float crescent = pow(max(facing, 0.0), 6.0);
-    float reflection = pow(max(-facing, 0.0), 8.0);
+    float rim = 1.0 - smoothstep(0.0, 0.035, edgeDepth);
+    float crescent = smoothstep(0.25, 1.0, facing);
+    float reflection = smoothstep(0.4, 1.0, -facing);
     color = mix(color, cloud.rgb, rim * (0.06 + crescent * 0.38));
     color = mix(color, mist.rgb, rim * reflection * 0.16);
-    float innerRim = exp(-pow((dist / radius - 0.963) * 90.0, 2.0));
+    float innerRim = 1.0 - smoothstep(0.0, 0.014, abs(dist / radius - 0.963));
     color = mix(color, cloud.rgb, innerRim * crescent * 0.12);
     float breath = pulse * 0.08 + activity * e * 0.04;
     color = mix(color, cloud.rgb, breath);

@@ -1,5 +1,5 @@
-import { memo, useRef, useState } from 'react';
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { memo, useRef } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { BottomSheet } from '@/components/BottomSheet';
@@ -11,61 +11,31 @@ import { ChatText } from '@/components/chat/ChatText';
 import { ChatImageInput } from '@/components/image-description/ChatImageInput';
 import { ChatImagePreview } from '@/components/image-description/ChatImagePreview';
 import { ModelSetup } from '@/components/ModelSetup';
-import type { PickedImage } from '@/components/PhotoPicker';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { PromptInput } from '@/components/PromptInput';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
-import { TaskScreen } from '@/components/TaskScreen';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
 import { useOmni, type OmniChatTurn } from '@/hooks/omni/useOmni';
-import { usePhotoInput } from '@/hooks/usePhotoInput';
+import { useOmniComposer } from '@/hooks/omni/useOmniComposer';
 import { tokens, useTheme } from '@/theme';
 
-export function OmniDemo() {
-  const omni = useOmni();
-  return (
-    <TaskScreen
-      title="Omni conversation"
-      model={omni.model}
-      status={omni.status}
-      error={omni.error}
-      busy={omni.busy || omni.isRecording || omni.recordingStarting}
-      scrollable={false}
-    >
-      <OmniConversation key={omni.revision} omni={omni} />
-    </TaskScreen>
-  );
-}
-
-function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
+export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
   const { keyboardStyle, heroStyle } = useChatKeyboard();
   const scroll = useRef<ScrollView>(null);
-  const [historyVisible, setHistoryVisible] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [image, setImage] = useState<PickedImage | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const photo = usePhotoInput(setImage, 800, setError);
-  const ready = omni.model.loaded && omni.model.prepared && omni.status.isReady;
-  const blocked = omni.busy || omni.model.deleting || omni.isRecording || omni.recordingStarting;
-  const clearComposer = () => {
-    setDraft('');
-    photo.clear();
-  };
-  const send = async () => {
-    if (!ready || blocked || photo.picking || (!draft.trim() && !image)) return;
-    Keyboard.dismiss();
-    setError(null);
-    await omni.run(
-      {
-        prompt: draft.trim() || (image ? 'Describe this photo briefly.' : ''),
-        imageUri: image?.uri,
-        image: image?.buffer,
-      },
-      clearComposer
-    );
-  };
+  const {
+    historyVisible,
+    setHistoryVisible,
+    draft,
+    setDraft,
+    error,
+    photo,
+    ready,
+    blocked,
+    send,
+    pressOrb,
+  } = useOmniComposer(omni);
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
@@ -79,16 +49,7 @@ function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
               buffering={omni.bufferingSpeech}
               paused={historyVisible}
               level={omni.isRecording ? omni.microphoneLevel : omni.playbackLevel}
-              onPress={() => {
-                if (omni.busy || omni.playing || omni.bufferingSpeech) omni.stop();
-                else {
-                  Keyboard.dismiss();
-                  void omni.record(
-                    { prompt: draft.trim(), image: image?.buffer, imageUri: image?.uri },
-                    clearComposer
-                  );
-                }
-              }}
+              onPress={pressOrb}
             />
           </Animated.View>
         )}
@@ -102,7 +63,7 @@ function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
               onStop={omni.stop}
               isGenerating={omni.busy}
               disabled={omni.isRecording || omni.recordingStarting || omni.model.deleting}
-              canSubmit={!blocked && !photo.picking && (!!draft.trim() || !!image)}
+              canSubmit={!blocked && !photo.picking && (!!draft.trim() || !!photo.image)}
               placeholder="Ask for a spoken reply…"
               attachment={
                 photo.image ? (
@@ -203,7 +164,7 @@ const SpeechTurn = memo(function SpeechTurn({
         style={[
           styles.question,
           turn.imageUri && styles.imageQuestion,
-          { backgroundColor: colors.background },
+          { backgroundColor: colors.surface },
         ]}
       >
         {turn.imageUri && <ChatPhoto uri={turn.imageUri} />}
@@ -212,7 +173,7 @@ const SpeechTurn = memo(function SpeechTurn({
       {(text || result || turn.error) && (
         <Animated.View
           entering={entrance}
-          style={[styles.answer, { backgroundColor: colors.background }]}
+          style={[styles.answer, { backgroundColor: colors.surface }]}
         >
           {!!text && <ChatText>{text}</ChatText>}
           {result && (
@@ -246,7 +207,7 @@ const SpeechTurn = memo(function SpeechTurn({
           {turn.error && <AppText accessibilityRole="alert">{turn.error}</AppText>}
         </Animated.View>
       )}
-      {turn.pending && <ThinkingIndicator accessibilityLabel="Preparing spoken reply" />}
+      {turn.pending && <ThinkingIndicator accessibilityLabel="Thinking" />}
     </View>
   );
 });
@@ -259,7 +220,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, overflow: 'hidden' },
   content: { flex: 1, gap: spacing.sm },
   scroll: { flex: 1, minHeight: 0 },
-  messages: { flexGrow: 1, gap: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
+  messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
   question: {
     alignSelf: 'flex-end',
     maxWidth: '90%',
@@ -272,7 +233,7 @@ const styles = StyleSheet.create({
   imageQuestion: { width: '90%' },
   answer: {
     alignSelf: 'flex-start',
-    maxWidth: '90%',
+    width: '95%',
     gap: spacing.md,
     borderRadius: radius.card,
     borderBottomLeftRadius: radius.annotation,
