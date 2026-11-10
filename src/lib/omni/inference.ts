@@ -20,7 +20,13 @@ export function runOmni(
 ): OmniResult {
   'worklet';
   const model = loadModel(modelPath, { eagerLoadMethods: false });
-  const tokenizer = nlp.loadTokenizer(tokenizerPath);
+  let tokenizer: ReturnType<typeof nlp.loadTokenizer>;
+  try {
+    tokenizer = nlp.loadTokenizer(tokenizerPath);
+  } catch (cause) {
+    model.dispose();
+    throw cause;
+  }
   const owned: Tensor[] = [];
   const alloc = (
     dtype: DType,
