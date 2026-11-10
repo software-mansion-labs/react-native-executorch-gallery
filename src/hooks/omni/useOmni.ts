@@ -139,14 +139,28 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
       imageUri: input.imageUri,
     };
     setTurns((previous) => [...previous, { ...question, pending: true }]);
-    stopPlayback();
     try {
+      const acceptedAt = performance.now();
       onAccepted?.();
+      // Let React commit the cleared composer and pending turn before native
+      // AudioContext construction or worklet argument serialization begins.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      if (request !== generation.current || stopped.current) {
+        if (request === generation.current)
+          setTurns((previous) => previous.filter((turn) => turn.id !== question.id));
+        return;
+      }
+      const playbackStarted = performance.now();
       if (!(await playback.begin(question.id)) || stopped.current) {
         if (request === generation.current)
           setTurns((previous) => previous.filter((turn) => turn.id !== question.id));
         return;
       }
+      if (__DEV__)
+        console.info('[Omni] Request setup:', {
+          uiYieldMs: Math.round(playbackStarted - acceptedAt),
+          playbackSetupMs: Math.round(performance.now() - playbackStarted),
+        });
       const generated = await runner.generate(
         { prompt: input.prompt, image: input.image, audio: inputAudio },
         (samples, final) => {
@@ -162,6 +176,7 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
         }
       );
       if (request === generation.current) {
+        playback.finalize(question.id, generated.audio);
         const value: OmniResult = {
           text: generated.text,
           audio: generated.audio,

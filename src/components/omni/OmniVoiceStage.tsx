@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Canvas, Fill, Shader, Skia } from '@shopify/react-native-skia';
-import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { Keyboard, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { TaskHero } from '@/components/TaskHero';
@@ -74,6 +74,7 @@ export function OmniVoiceStage({
           disabled={starting}
           onPress={(event) => {
             if (insideOrb(event)) onPress();
+            else Keyboard.dismiss();
           }}
           onAccessibilityTap={onPress}
           onPressIn={(event) => {

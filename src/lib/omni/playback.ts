@@ -32,10 +32,14 @@ export async function createOmniPlayback(callbacks: {
   let firstChunkAt = 0;
   let firstChunkSamples = 0;
   let generationRtf = 1;
+  let queuedEndTime = 0;
+  let endTimer: ReturnType<typeof setTimeout> | undefined;
   const created = performance.now();
   const finish = () => {
     if (closed) return;
     closed = true;
+    if (endTimer !== undefined) clearTimeout(endTimer);
+    endTimer = undefined;
     playing = false;
     source.onbufferended = null;
     source.onpositionchanged = null;
@@ -45,6 +49,30 @@ export async function createOmniPlayback(callbacks: {
     callbacks.onPlaying(false);
     callbacks.onLevel(0);
   };
+  const complete = () => {
+    if (closed) return;
+    finish();
+    callbacks.onEnd();
+  };
+  const waitForDrain = () => {
+    if (closed || !final || !starts || endTimer !== undefined) return;
+    // The native queue stays alive when empty. A missed final buffer event must
+    // not leave it producing silence forever. Use audio-context time so a
+    // suspended context cannot cause a wall-clock timeout to cut off speech.
+    const remaining = queuedEndTime + 0.2 - context.currentTime;
+    if (remaining <= 0) {
+      if (__DEV__) console.info('[Omni] Closing drained speech queue after missing end event.');
+      complete();
+      return;
+    }
+    endTimer = setTimeout(
+      () => {
+        endTimer = undefined;
+        waitForDrain();
+      },
+      Math.min(remaining * 1000, 250)
+    );
+  };
   source.onbufferended = ({ bufferId }) => {
     if (closed) return;
     const chunk = chunks.find((c) => c.id === bufferId);
@@ -52,8 +80,7 @@ export async function createOmniPlayback(callbacks: {
     consumed = Math.max(consumed, chunk.offset + chunk.audio.length);
     if (consumed === samples) {
       if (final) {
-        finish();
-        callbacks.onEnd();
+        complete();
       } else {
         underruns++;
         if (__DEV__)
@@ -118,10 +145,15 @@ export async function createOmniPlayback(callbacks: {
           const buffer = context.createBuffer(1, chunk.audio.length, SAMPLE_RATE);
           buffer.copyToChannel(new Float32Array(chunk.audio), 0);
           chunk.id = source.enqueueBuffer(buffer);
+          queuedEndTime =
+            Math.max(queuedEndTime, context.currentTime) + chunk.audio.length / SAMPLE_RATE;
         }
       }
       if (!playing && ready) {
-        if (!starts) source.start(0, 0);
+        if (!starts) {
+          queuedEndTime = Math.max(queuedEndTime, context.currentTime + samples / SAMPLE_RATE);
+          source.start(0, 0);
+        }
         playing = true;
         starts++;
         firstStartMs ??= performance.now() - created;
@@ -135,10 +167,8 @@ export async function createOmniPlayback(callbacks: {
           });
         callbacks.onPlaying(true);
       }
-      if (final && consumed === samples) {
-        finish();
-        callbacks.onEnd();
-      }
+      if (final && consumed === samples) complete();
+      else waitForDrain();
     },
     stop: finish,
     getStats: () => ({

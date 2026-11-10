@@ -32,6 +32,12 @@ export function useOmniComposer(omni: ReturnType<typeof useOmni>) {
     );
   };
   const pressOrb = () => {
+    // The hero fades while typing; tapping its area should dismiss the keyboard,
+    // not activate the otherwise invisible voice button underneath it.
+    if (Keyboard.isVisible()) {
+      Keyboard.dismiss();
+      return;
+    }
     if (!ready || omni.recordingStarting || omni.model.deleting || photo.picking) return;
     if (omni.busy || omni.playing || omni.bufferingSpeech) omni.stop();
     else {

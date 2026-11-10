@@ -86,6 +86,17 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     },
     [stop]
   );
+  const finalize = useCallback(
+    (id: number, audio: Float32Array) => {
+      const current = operation.current;
+      if (current?.id !== id || !current.queue) return;
+      // Generation's result is authoritative even if its scheduled RN stream
+      // callbacks are still pending. Supply only the missing PCM suffix, then
+      // close input; later duplicate callbacks are ignored by the final queue.
+      enqueue(id, audio.subarray(current.queue.getStats().samples), true);
+    },
+    [enqueue]
+  );
   const replay = useCallback(
     async (id: number, samples: Float32Array) => {
       if (await begin(id)) enqueue(id, samples, true);
@@ -100,6 +111,7 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     level,
     begin,
     enqueue,
+    finalize,
     replay,
     stop,
   };

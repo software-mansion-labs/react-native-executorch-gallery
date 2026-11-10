@@ -267,7 +267,10 @@ export function generateOmniTurn(
     };
     const flushAudio = (final: boolean) => {
       'worklet';
-      if (!frames.length) return;
+      if (!frames.length) {
+        if (final && onAudioChunk) scheduleOnRN(onAudioChunk, new Float32Array(0), true);
+        return;
+      }
       const decoded = decodeOmniAudioWindow(
         model,
         frames,
@@ -285,8 +288,10 @@ export function generateOmniTurn(
       if (decoded.samples.length) {
         speech.chunks.push(decoded.samples);
         if (speech.firstAudioMs < 0) speech.firstAudioMs = Date.now() - turnStarted;
-        if (onAudioChunk) scheduleOnRN(onAudioChunk, decoded.samples, final);
       }
+      // End-of-stream is independent of whether the final codec call emitted PCM.
+      if (onAudioChunk && (decoded.samples.length || final))
+        scheduleOnRN(onAudioChunk, decoded.samples, final);
     };
 
     let mode = input.mode;

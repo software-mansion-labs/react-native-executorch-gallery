@@ -1,5 +1,5 @@
 import { memo, useRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { BottomSheet } from '@/components/BottomSheet';
@@ -40,7 +40,11 @@ export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> })
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
         {ready && (
-          <Animated.View style={[styles.scroll, heroStyle]}>
+          <AnimatedPressable
+            style={[styles.scroll, heroStyle]}
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
             <OmniVoiceStage
               recording={omni.isRecording}
               starting={omni.recordingStarting}
@@ -50,7 +54,7 @@ export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> })
               paused={historyVisible}
               onPress={pressOrb}
             />
-          </Animated.View>
+          </AnimatedPressable>
         )}
         {ready && (
           <Animated.View entering={entrance}>
@@ -211,6 +215,7 @@ const SpeechTurn = memo(function SpeechTurn({
   );
 });
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const entrance = FadeIn.duration(tokens.motion.chatDisclosureFadeDuration).reduceMotion(
   ReduceMotion.System
 );
