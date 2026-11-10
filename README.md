@@ -6,6 +6,8 @@
 
 ### Generative AI
 
+- [Omni conversation](<src/app/(screens)/lfm3-omni.tsx>)
+
 - [Local chat](<src/app/(screens)/llm-chat.tsx>)
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
 - [Media stories](<src/app/(screens)/media-stories.tsx>)
@@ -124,3 +126,21 @@ Library guides and API references: **[docs.swmansion.com/react-native-executorch
 Since 2012, [Software Mansion](https://swmansion.com) has been building mobile and web apps, contributing to open-source software, and working on React Native as Core React Native Contributors. We can help you build your next AI product — [Hire us](https://swmansion.com/contact?utm_source=react-native-executorch-gallery&utm_medium=readme).
 
 [![swm](https://logo.swmansion.com/logo?color=white&variant=desktop&width=150&tag=react-native-executorch-gallery-github 'Software Mansion')](https://swmansion.com)
+
+### LFM3 Omni local exports
+
+The experimental Omni demo uses the existing low-level model and tensor APIs.
+It supports one photo (resized to 512 × 512), up to 29 seconds of 16 kHz mono
+audio, and text input. Outputs can be text, speech, or interleaved text and speech.
+Each request starts fresh; the demo uses a 4096-token context, at most 512 generated
+slots, and at most 256 speech frames (20.48 seconds). Video and live streaming are
+not part of this screen. MLX requires a physical iOS device; use CPU on the simulator.
+
+Weights are not published by this change. Export `lfm3_omni` in export-recipes,
+then serve the output directories locally with `python3 -m http.server 8765 --directory <outputs>`.
+Place the default XNNPACK output in `xnnpack/`, MLX int4 in `mlx/`, and optional
+MLX int8 in `mlx-int8/`. The tokenizer is read from `xnnpack/tokenizer.json`.
+The simulator uses `http://127.0.0.1:8765` by default. For a physical device, set
+`EXPO_PUBLIC_LFM3_OMNI_BASE_URL` to an accessible HTTPS endpoint before bundling.
+Model download happens only after pressing Download. Once cached, inference is local.
+The released weights retain the upstream LFM Open License v1.0.
