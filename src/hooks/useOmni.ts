@@ -1,78 +1,87 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
-import { AudioContext } from 'react-native-audio-api';
-import { useSharedValue } from 'react-native-reanimated';
-import { loadModel, useResourceDownload, wrapAsync } from 'react-native-executorch';
+import { useModel, useResourceDownload } from 'react-native-executorch';
 import * as Device from 'expo-device';
 
 import { useModelControls } from '@/hooks/useModelControls';
 import { useAudioRecorder } from '@/hooks/audio/useAudioRecorder';
-import { runOmni, type OmniInput, type OmniResult } from '@/lib/omni/inference';
+import type { OmniInput, OmniResult } from '@/lib/omni/inference';
+import { createOmniRunner } from '@/lib/omni/runner';
+import { useTaskState } from '@/hooks/useTaskState';
+import { useOmniPlayback } from '@/hooks/omniPlayback';
+import { useSpeechLevel } from '@/hooks/speech-to-text/useSpeechLevel';
 
-const BASE = (process.env.EXPO_PUBLIC_LFM3_OMNI_BASE_URL ?? 'http://127.0.0.1:8765').replace(
-  /\/$/,
-  ''
-);
-export type OmniBackend = 'xnnpack' | 'mlx-int4' | 'mlx-int8';
+const LOCAL_BASE = process.env.EXPO_PUBLIC_LFM3_OMNI_BASE_URL;
+const BASE = (
+  LOCAL_BASE ?? 'https://huggingface.co/software-mansion/LFM3-ExecuTorch/resolve/v1.0.0/omni_2b'
+).replace(/\/$/, '');
+export type OmniBackend = 'xnnpack' | 'mlx-int4';
+const DEFAULT_BACKEND: OmniBackend =
+  Platform.OS === 'ios' && Device.isDevice ? 'mlx-int4' : 'xnnpack';
 const FILES = {
   'xnnpack': 'xnnpack/lfm_3_omni_2b_xnnpack_8da4w.pte',
   'mlx-int4': 'mlx/lfm_3_omni_2b_mlx_int4.pte',
-  'mlx-int8': 'mlx-int8/lfm_3_omni_2b_mlx_int8.pte',
 };
-const prepare = wrapAsync((path: string) => {
-  'worklet';
-  const model = loadModel(path, { eagerLoadMethods: false });
-  try {
-    for (const name of [
-      'vision_encoder',
-      'audio_encoder',
-      'text_decoder',
-      'depth_decoder',
-      'audio_embedding',
-      'audio_decoder',
-    ]) {
-      if (!model.schema[name]) throw new Error(`The selected model is missing ${name}.`);
-    }
-  } finally {
-    model.dispose();
-  }
-});
-const infer = wrapAsync(runOmni);
+export type OmniChatTurn = {
+  id: number;
+  question: string;
+  imageUri?: string;
+  result?: OmniResult;
+  preview?: string;
+  pending?: boolean;
+  error?: string;
+};
 
 /**
- * Owns explicit Omni asset setup, isolated inference, cancellation, 16 kHz capture,
- * and 24 kHz playback. Returns controls/status and the last independently generated turn.
- * The backend identifies the locally served export; opening the screen never downloads it.
+ * Owns explicit Omni setup, a persistent conversation runner, cancellation, 16 kHz capture,
+ * and 24 kHz playback. Returns committed turns, actual cache usage and new-chat controls.
+ * Defaults to MLX int4 on physical iOS and XNNPACK elsewhere. Opening never downloads assets.
  */
-export function useOmni(backend: OmniBackend) {
+export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
   const modelPath = `${BASE}/${FILES[backend]}`;
-  const tokenizerPath = `${BASE}/xnnpack/tokenizer.json`;
+  const tokenizerPath = `${BASE}/${LOCAL_BASE ? 'xnnpack/' : ''}tokenizer.json`;
   const sources = useMemo(() => [modelPath, tokenizerPath], [modelPath, tokenizerPath]);
-  const model = useModelControls(sources, { name: `LFM3 Omni 2B · ${backend}` });
+  const model = useModelControls(sources, {
+    name: 'LFM3 Omni 2B',
+    downloadBytes: { [tokenizerPath]: 17_908_634 },
+  });
   const download = useResourceDownload(
     { modelPath, tokenizerPath },
     { preventLoad: !model.loaded }
   );
-  const [ready, setReady] = useState(false);
-  const [preparationError, setPreparationError] = useState<string | null>(null);
+  const supported = backend === 'xnnpack' || (Platform.OS === 'ios' && Device.isDevice);
+  const { model: runner, error: runnerError } = useModel(
+    createOmniRunner,
+    model.loaded && !model.deleting && supported ? download.resource : undefined
+  );
+  const ready = !!runner;
+  const [conversation, setConversation] = useState(0);
+  const revision = model.revision + conversation;
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<OmniResult | null>(null);
-  const [audio, setAudio] = useState<Float32Array | undefined>();
+  const [turns, setTurns] = useTaskState<OmniChatTurn[]>([], revision);
   const chunks = useRef<Float32Array[]>([]);
+  const recordedAudio = useRef<Float32Array | undefined>(undefined);
   const sampleCount = useRef(0);
   const active = useRef(false);
   const generation = useRef(0);
-  const cancelled = useSharedValue(false);
-  const player = useRef<AudioContext | null>(null);
+  const sequence = useRef(0);
+  const stopped = useRef(false);
+  const playbackError = useCallback(
+    (message: string) => {
+      stopped.current = true;
+      runner?.stop();
+      setError(message);
+    },
+    [runner]
+  );
+  const playback = useOmniPlayback(revision, playbackError);
+  const stopPlayback = playback.stop;
   const stop = useCallback(() => {
-    cancelled.set(true);
-  }, [cancelled]);
-  const stopPlayback = useCallback(() => {
-    const context = player.current;
-    player.current = null;
-    if (context) void context.close();
-  }, []);
+    stopped.current = true;
+    runner?.stop();
+    stopPlayback();
+  }, [runner, stopPlayback]);
   const recorder = useAudioRecorder(() => {
     if (!sampleCount.current) return;
     const samples = new Float32Array(sampleCount.current);
@@ -83,38 +92,14 @@ export function useOmni(backend: OmniBackend) {
     });
     chunks.current = [];
     sampleCount.current = 0;
-    setAudio(samples);
+    recordedAudio.current = samples;
   }, setError);
+  const microphone = useSpeechLevel(recorder.isRecording);
   const invalidate = useCallback(() => {
     generation.current++;
     stop();
-  }, [stop]);
-  useEffect(() => {
-    const request = ++generation.current;
-    void Promise.resolve().then(async () => {
-      if (request !== generation.current) return;
-      setReady(false);
-      setPreparationError(null);
-      setAudio(undefined);
-      setResult(null);
-      setError(null);
-      if (!model.loaded || !download.resource || model.deleting) return;
-      if (backend !== 'xnnpack' && (Platform.OS !== 'ios' || !Device.isDevice)) {
-        setPreparationError(
-          'MLX requires a physical Apple device. Select XNNPACK for the simulator.'
-        );
-        return;
-      }
-      prepare(download.resource.modelPath)
-        .then(() => {
-          if (request === generation.current) setReady(true);
-        })
-        .catch((cause) => {
-          if (request === generation.current) setPreparationError(String(cause));
-        });
-    });
-    return invalidate;
-  }, [download.resource, model.loaded, model.deleting, backend, invalidate]);
+    stopPlayback();
+  }, [stop, stopPlayback]);
   useEffect(() => {
     const listener = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
@@ -128,79 +113,154 @@ export function useOmni(backend: OmniBackend) {
       listener.remove();
     };
   }, [stop, stopPlayback, invalidate]);
-  const run = async (input: Omit<OmniInput, 'audio'>) => {
+  const run = async (
+    input: Omit<OmniInput, 'mode'> & { imageUri?: string },
+    onAccepted?: () => void
+  ) => {
     if (
-      !ready ||
+      !runner ||
       !model.loaded ||
       model.deleting ||
       active.current ||
       !download.resource ||
-      recorder.isRecording
+      (recorder.isRecording && !input.audio?.length)
     )
       return;
-    const request = generation.current;
+    const inputAudio = input.audio;
+    const request = ++generation.current;
     active.current = true;
-    cancelled.set(false);
     setBusy(true);
+    stopped.current = false;
     setError(null);
-    setResult(null);
+    const question = {
+      id: ++sequence.current,
+      question:
+        input.prompt.trim() || (inputAudio?.length ? 'Voice message' : 'Tell me about this photo.'),
+      imageUri: input.imageUri,
+    };
+    setTurns((previous) => [...previous, { ...question, pending: true }]);
     stopPlayback();
     try {
-      const value = await infer(
-        download.resource.modelPath,
-        download.resource.tokenizerPath,
-        { ...input, audio },
-        cancelled
+      onAccepted?.();
+      if (!(await playback.begin(question.id)) || stopped.current) return;
+      const generated = await runner.generate(
+        { prompt: input.prompt, image: input.image, audio: inputAudio },
+        (samples, final) => {
+          if (request !== generation.current || stopped.current) return;
+          playback.enqueue(question.id, samples, final);
+        },
+        { audioChunkFrames: 12 },
+        (text) => {
+          if (request !== generation.current || stopped.current) return;
+          setTurns((previous) =>
+            previous.map((turn) => (turn.id === question.id ? { ...turn, preview: text } : turn))
+          );
+        }
       );
-      if (request === generation.current && !cancelled.get()) setResult(value);
+      if (request === generation.current) {
+        const value: OmniResult = {
+          text: generated.text,
+          audio: generated.audio,
+          limited: generated.limited,
+          finishReason: generated.finishReason,
+        };
+        if (!value.audio.length)
+          throw new Error('No speech was generated. Try a shorter question.');
+        setTurns((previous) =>
+          previous.map((turn) =>
+            turn.id === question.id ? { ...turn, result: value, pending: false } : turn
+          )
+        );
+        recordedAudio.current = undefined;
+        return value;
+      }
     } catch (cause) {
-      if (request === generation.current && !cancelled.get())
+      stopPlayback();
+      if (request === generation.current)
+        setTurns((previous) =>
+          previous.map((turn) =>
+            turn.id === question.id
+              ? {
+                  ...turn,
+                  pending: false,
+                  error:
+                    cause instanceof Error && cause.message === 'Generation stopped.'
+                      ? 'Reply interrupted.'
+                      : String(cause),
+                }
+              : turn
+          )
+        );
+      if (
+        request === generation.current &&
+        !(cause instanceof Error && cause.message === 'Generation stopped.')
+      )
         setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       active.current = false;
-      if (request === generation.current) setBusy(false);
+      if (request === generation.current) {
+        setTurns((previous) =>
+          previous.map((turn) =>
+            turn.id === question.id && turn.pending ? { ...turn, pending: false } : turn
+          )
+        );
+        setBusy(false);
+      }
     }
   };
-  const record = async () => {
+  const sendRecording = async (
+    input: Omit<OmniInput, 'mode' | 'audio'> & { imageUri?: string },
+    onAccepted?: () => void
+  ) => {
+    await recorder.stopRecording();
+    const samples = recordedAudio.current;
+    recordedAudio.current = undefined;
+    if (samples?.length) return run({ ...input, audio: samples }, onAccepted);
+  };
+  const record = async (
+    input: Omit<OmniInput, 'mode' | 'audio'> & { imageUri?: string } = { prompt: '' },
+    onAccepted?: () => void
+  ) => {
     if (busy || model.deleting || !ready) return;
     if (recorder.isRecording) {
-      await recorder.stopRecording();
-      return;
+      return sendRecording(input, onAccepted);
     }
     chunks.current = [];
     sampleCount.current = 0;
-    setAudio(undefined);
+    recordedAudio.current = undefined;
     stopPlayback();
     try {
       await recorder.startRecording(16000, (chunk) => {
-        const remaining = 29 * 16000 - sampleCount.current;
-        const samples = chunk.slice(0, remaining);
-        chunks.current.push(samples);
-        sampleCount.current += samples.length;
-        if (sampleCount.current >= 29 * 16000) void recorder.stopRecording();
+        microphone.updateLevel(chunk);
+        chunks.current.push(chunk);
+        sampleCount.current += chunk.length;
       });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     }
   };
-  const play = async () => {
-    if (!result?.audio.length || busy) return;
+  const replay = playback.replay;
+  const play = useCallback(
+    async (samples: Float32Array, id: number) => {
+      await replay(id, samples);
+    },
+    [replay]
+  );
+  const reset = async () => {
+    if (!runner || active.current || recorder.isRecording || recorder.starting) return;
+    const request = ++generation.current;
+    active.current = true;
     stopPlayback();
+    setBusy(true);
+    setError(null);
     try {
-      const context = new AudioContext({ sampleRate: 24000 });
-      player.current = context;
-      await context.resume();
-      if (player.current !== context) return;
-      const buffer = context.createBuffer(1, result.audio.length, 24000);
-      buffer.copyToChannel(new Float32Array(result.audio), 0);
-      const source = context.createBufferSource();
-      source.buffer = buffer;
-      source.connect(context.destination);
-      source.onEnded = stopPlayback;
-      source.start();
+      await runner.reset();
+      if (request === generation.current) setConversation((previous) => previous + 1);
     } catch (cause) {
-      stopPlayback();
-      setError(String(cause));
+      if (request === generation.current) setError(String(cause));
+    } finally {
+      active.current = false;
+      if (request === generation.current) setBusy(false);
     }
   };
   return {
@@ -209,18 +269,32 @@ export function useOmni(backend: OmniBackend) {
       isReady: ready,
       downloadProgress: download.downloadProgress,
       resource: download.resource,
-      error: download.downloadError || preparationError,
+      error:
+        download.downloadError ||
+        runnerError ||
+        (!supported && model.loaded
+          ? new Error('MLX requires a physical Apple device.')
+          : undefined),
     },
     busy,
+    playing: playback.playing,
+    speaking: playback.speaking,
+    bufferingSpeech: playback.buffering,
+    playingTurn: playback.activeId,
+    playbackLevel: playback.level,
+    microphoneLevel: microphone.level,
+    stopPlayback,
     error,
-    result,
+    result: turns.at(-1)?.result ?? null,
+    turns,
+    revision,
+    reset,
+    getKVCacheState: runner?.getKVCacheState,
     run,
     stop,
     record,
     play,
     isRecording: recorder.isRecording,
     recordingStarting: recorder.starting,
-    audioSeconds: audio ? audio.length / 16000 : 0,
-    clearAudio: () => setAudio(undefined),
   };
 }

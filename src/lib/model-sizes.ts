@@ -27,6 +27,8 @@ export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
   'lfm_3_vl_2b_mlx_int4.pte': 1_305_202_048,
   'lfm_3_vl_2b_mlx_int8.pte': 2_169_408_896,
   'lfm_3_vl_2b_xnnpack_8da4w.pte': 2_008_906_368,
+  'lfm_3_omni_2b_mlx_int4.pte': 1_951_495_808,
+  'lfm_3_omni_2b_xnnpack_8da4w.pte': 3_248_028_928,
   'lfm_3_1_7b_xnnpack_8da4w.pte': 1_253_817_088,
   'lfm_3_1_7b_mlx_int4.pte': 927_663_232,
   'lfm_3_1_7b_mlx_int8.pte': 1_791_870_080,

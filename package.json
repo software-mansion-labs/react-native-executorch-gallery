@@ -31,7 +31,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
-    "react-native-audio-api": "^0.13.1",
+    "react-native-audio-api": "1.0.0",
     "react-native-blob-util": "^0.24.10",
     "react-native-enriched-markdown": "^1.1.1",
     "react-native-executorch": "file:.local-packages/react-native-executorch-1.0.0-c17ff16f7d14.tgz",

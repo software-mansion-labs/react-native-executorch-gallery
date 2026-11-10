@@ -7,6 +7,8 @@ import { cachedModelBytes, formatModelSize, modelCachePath } from '@/lib/model-c
 
 export type ModelInfo = {
   name: string;
+  /** Sizes keyed by full source URL for assets with shared filenames, such as tokenizers. */
+  downloadBytes?: Readonly<Record<string, number>>;
 };
 
 /**
@@ -98,7 +100,8 @@ export function useModelControls(source: string | readonly string[], info: Model
 
   const missingSources = sources.filter((_, index) => !cache?.[index]);
   const sizes = missingSources.map(
-    (url) => MODEL_DOWNLOAD_BYTES[url.split('?')[0].split('/').pop() ?? '']
+    (url) =>
+      info.downloadBytes?.[url] ?? MODEL_DOWNLOAD_BYTES[url.split('?')[0].split('/').pop() ?? '']
   );
   const downloadBytes = sizes.every(Boolean) ? sizes.reduce((sum, bytes) => sum + bytes, 0) : 0;
   const loadLabel =

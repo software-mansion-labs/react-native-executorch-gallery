@@ -20,16 +20,16 @@ export const TASK_SECTIONS: TaskSection[] = [
     keywords: 'generation language',
     data: [
       {
-        id: 'lfm3-omni',
-        href: '/lfm3-omni',
-        title: 'Omni conversation',
-        keywords: 'Liquid LFM3 Omni multimodal audio speech image custom low-level',
-      },
-      {
         id: 'llm-chat',
         href: '/llm-chat',
         title: 'Local chat',
         keywords: 'LLM conversation assistant LFM',
+      },
+      {
+        id: 'lfm3-omni',
+        href: '/lfm3-omni',
+        title: 'Omni conversation',
+        keywords: 'chat Liquid LFM3 Omni multimodal audio speech image custom low-level',
       },
       {
         id: 'image-description',
