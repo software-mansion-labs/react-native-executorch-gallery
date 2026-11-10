@@ -3,20 +3,40 @@ export const OMNI_ORB_RADIUS = 0.665;
 /** Contains the largest harmonic deformation without making the whole canvas clickable. */
 export const OMNI_ORB_MAX_RADIUS = OMNI_ORB_RADIUS * 1.12;
 
-/** Matches the shader's rotated real spherical harmonics for precise touch testing. */
+/** Computes the audio-reactive harmonic coefficients once per animation frame. */
+export function omniOrbShape(time: number, energy: number, activity: number) {
+  'worklet';
+  const e = Math.max(0, Math.min(1, energy));
+  const w4 = 0.25 + Math.sin(time * 0.67 + e * 2) * 0.06;
+  const w5 = 0.45 + Math.sin(time * 0.91 + 1.7 - e) * 0.08;
+  const w7 = 0.3 + Math.sin(time * 1.13 + 4 + e) * 0.06;
+  const weight = w4 + w5 + w7;
+  const amplitude = 0.105 + activity * 0.025 + e * 0.025 + Math.sin(time * 1.1) * 0.008;
+  const a4 = (0.625836 * w4 * amplitude) / weight;
+  const a5 = (0.656382 * w5 * amplitude) / weight;
+  const a7 = (0.707163 * w7 * amplitude) / weight;
+  return {
+    // Area stays constant as individual bumps change their strength.
+    lobes: [a4, a5, a7, OMNI_ORB_RADIUS / Math.sqrt(1 + (a4 * a4 + a5 * a5 + a7 * a7) / 2)],
+    phases: [
+      time * 0.75 + Math.sin(time * 0.53) * 0.65 + e * 1.3,
+      -time * 0.57 + 1.1 + Math.sin(time * 0.41 + 2) * 0.85 - e * 1.7,
+      time * 0.91 + 2.2 + Math.sin(time * 0.73 + 0.9) * 0.55 + e * 0.9,
+      0,
+    ],
+  };
+}
+
+/** Uses the same harmonic coefficients as the shader for precise touch testing. */
 export function omniOrbRadius(angle: number, time: number, energy: number, activity: number) {
   'worklet';
-  const y44 = 0.625836 * Math.cos(4 * angle + time * 0.75);
-  const y55 = 0.656382 * Math.cos(5 * angle - time * 0.57 + 1.1);
-  const y77 = 0.707163 * Math.cos(7 * angle + time * 0.91 + 2.2);
-  const harmonic = y44 * 0.25 + y55 * 0.45 + y77 * 0.3;
-  const e = Math.max(0, Math.min(1, energy));
-  const amplitude = 0.105 + activity * 0.025 + e * 0.025 + Math.sin(time * 1.1) * 0.008;
-  // Different Fourier orders are orthogonal on the equator. This normalization
-  // holds projected area steady while the independent lobes merge and separate.
-  const meanSquare = ((0.625836 * 0.25) ** 2 + (0.656382 * 0.45) ** 2 + (0.707163 * 0.3) ** 2) / 2;
+  const { lobes, phases } = omniOrbShape(time, energy, activity);
   return (
-    (OMNI_ORB_RADIUS * (1 + harmonic * amplitude)) / Math.sqrt(1 + amplitude ** 2 * meanSquare)
+    lobes[3] *
+    (1 +
+      lobes[0] * Math.cos(4 * angle + phases[0]) +
+      lobes[1] * Math.cos(5 * angle + phases[1]) +
+      lobes[2] * Math.cos(7 * angle + phases[2]))
   );
 }
 
@@ -28,23 +48,17 @@ export const OMNI_ORB_SHADER = `
   uniform float activity;
   uniform float swirl;
   uniform float pulse;
+  uniform float4 lobes;
+  uniform float4 phases;
   uniform float4 deep;
   uniform float4 mist;
   uniform float4 cloud;
 
   float surfaceRadius(float angle) {
-    // Real sectoral Y(4,4), Y(5,5), Y(7,7) on the sphere's equator.
-    // Several shallow traveling lobes keep the outline approximately round.
-    float y44 = 0.625836 * cos(4.0 * angle + time * 0.75);
-    float y55 = 0.656382 * cos(5.0 * angle - time * 0.57 + 1.1);
-    float y77 = 0.707163 * cos(7.0 * angle + time * 0.91 + 2.2);
-    float harmonic = y44 * 0.25 + y55 * 0.45 + y77 * 0.3;
-    float e = clamp(energy, 0.0, 1.0);
-    float amplitude = 0.105 + activity * 0.025 + e * 0.025 + sin(time * 1.1) * 0.008;
-    float meanSquare = (pow(0.625836 * 0.25, 2.0) + pow(0.656382 * 0.45, 2.0)
-                      + pow(0.707163 * 0.3, 2.0)) * 0.5;
-    return ${OMNI_ORB_RADIUS} * (1.0 + harmonic * amplitude)
-         / sqrt(1.0 + amplitude * amplitude * meanSquare);
+    // Real sectoral harmonics with independent, audio-driven phases and weights.
+    return lobes.w * (1.0 + lobes.x * cos(4.0 * angle + phases.x)
+                         + lobes.y * cos(5.0 * angle + phases.y)
+                         + lobes.z * cos(7.0 * angle + phases.z));
   }
 
   float clouds(float2 p) {

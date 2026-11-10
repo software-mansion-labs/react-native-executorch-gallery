@@ -19,7 +19,7 @@ import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { TaskScreen } from '@/components/TaskScreen';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
-import { useOmni, type OmniChatTurn } from '@/hooks/useOmni';
+import { useOmni, type OmniChatTurn } from '@/hooks/omni/useOmni';
 import { usePhotoInput } from '@/hooks/usePhotoInput';
 import { tokens, useTheme } from '@/theme';
 
@@ -75,12 +75,12 @@ function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
               recording={omni.isRecording}
               starting={omni.recordingStarting}
               generating={omni.busy}
-              playing={omni.speaking}
+              playing={omni.playing}
               buffering={omni.bufferingSpeech}
               paused={historyVisible}
               level={omni.isRecording ? omni.microphoneLevel : omni.playbackLevel}
               onPress={() => {
-                if (omni.busy || omni.playing) omni.stop();
+                if (omni.busy || omni.playing || omni.bufferingSpeech) omni.stop();
                 else {
                   Keyboard.dismiss();
                   void omni.record(
@@ -127,14 +127,15 @@ function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> }) {
                       onChoose={photo.choose}
                       picking={photo.picking}
                       disabled={blocked}
-                    />
-                    <PhotoActionButton
-                      size="small"
-                      iconName="chatbubbles-outline"
-                      label="Conversation history"
-                      disabled={false}
-                      onPress={() => setHistoryVisible(true)}
-                    />
+                    >
+                      <PhotoActionButton
+                        size="small"
+                        iconName="chatbubbles-outline"
+                        label="Conversation history"
+                        disabled={false}
+                        onPress={() => setHistoryVisible(true)}
+                      />
+                    </ChatImageInput>
                   </View>
                 </View>
               }

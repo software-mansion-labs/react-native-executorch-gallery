@@ -12,7 +12,6 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
   const errorHandler = useRef(onError);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const level = useSharedValue(0);
   useEffect(() => {
@@ -24,7 +23,6 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     current?.queue?.stop();
     setActiveId(null);
     setPlaying(false);
-    setSpeaking(false);
     setBuffering(false);
     level.set(withTiming(0, { duration: tokens.motion.speechLevelDuration }));
   }, [level]);
@@ -40,17 +38,17 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
           onPlaying: (value) => {
             if (operation.current === current) {
               setPlaying(value);
-              if (value) {
-                setSpeaking(true);
-                setBuffering(false);
-              }
+              setBuffering(!value && !current.queue?.getStats().closed);
             }
           },
           onLevel: (value) => {
             if (operation.current === current)
               level.set(
                 withTiming(Math.min(1, value * tokens.layout.speechLevelGain), {
-                  duration: tokens.motion.speechLevelDuration,
+                  duration:
+                    value * tokens.layout.speechLevelGain > level.get()
+                      ? tokens.motion.speechLevelAttackDuration
+                      : tokens.motion.speechLevelReleaseDuration,
                 })
               );
           },
@@ -97,7 +95,7 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
   return {
     activeId,
     playing,
-    speaking,
+    speaking: playing,
     buffering,
     level,
     begin,

@@ -210,6 +210,8 @@ export const tokens = {
   },
   motion: {
     speechLevelDuration: 220,
+    speechLevelAttackDuration: 60,
+    speechLevelReleaseDuration: 160,
     widgetExpandedScale: 1.04,
     themeTransitionDuration: 240,
     chatDisclosureDuration: 240,

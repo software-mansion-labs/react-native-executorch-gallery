@@ -8,7 +8,7 @@ import { useAudioRecorder } from '@/hooks/audio/useAudioRecorder';
 import type { OmniInput, OmniResult } from '@/lib/omni/inference';
 import { createOmniRunner } from '@/lib/omni/runner';
 import { useTaskState } from '@/hooks/useTaskState';
-import { useOmniPlayback } from '@/hooks/omniPlayback';
+import { useOmniPlayback } from '@/hooks/omni/useOmniPlayback';
 import { useSpeechLevel } from '@/hooks/speech-to-text/useSpeechLevel';
 
 const LOCAL_BASE = process.env.EXPO_PUBLIC_LFM3_OMNI_BASE_URL;
@@ -142,7 +142,11 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
     stopPlayback();
     try {
       onAccepted?.();
-      if (!(await playback.begin(question.id)) || stopped.current) return;
+      if (!(await playback.begin(question.id)) || stopped.current) {
+        if (request === generation.current)
+          setTurns((previous) => previous.filter((turn) => turn.id !== question.id));
+        return;
+      }
       const generated = await runner.generate(
         { prompt: input.prompt, image: input.image, audio: inputAudio },
         (samples, final) => {
@@ -176,25 +180,17 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
       }
     } catch (cause) {
       stopPlayback();
+      const cancelled =
+        stopped.current || (cause instanceof Error && cause.message === 'Generation stopped.');
       if (request === generation.current)
         setTurns((previous) =>
-          previous.map((turn) =>
-            turn.id === question.id
-              ? {
-                  ...turn,
-                  pending: false,
-                  error:
-                    cause instanceof Error && cause.message === 'Generation stopped.'
-                      ? 'Reply interrupted.'
-                      : String(cause),
-                }
-              : turn
-          )
+          cancelled
+            ? previous.filter((turn) => turn.id !== question.id)
+            : previous.map((turn) =>
+                turn.id === question.id ? { ...turn, pending: false, error: String(cause) } : turn
+              )
         );
-      if (
-        request === generation.current &&
-        !(cause instanceof Error && cause.message === 'Generation stopped.')
-      )
+      if (request === generation.current && !cancelled)
         setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
       active.current = false;

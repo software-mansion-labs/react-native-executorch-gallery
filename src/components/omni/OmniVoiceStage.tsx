@@ -12,9 +12,15 @@ import Animated, {
 
 import { TaskHero } from '@/components/TaskHero';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
+import { useFadingVisibility } from '@/hooks/useFadingVisibility';
 import { tokens, useTheme } from '@/theme';
 
-import { OMNI_ORB_MAX_RADIUS, OMNI_ORB_SHADER, omniOrbRadius } from '@/lib/omni/orbShader';
+import {
+  OMNI_ORB_MAX_RADIUS,
+  OMNI_ORB_SHADER,
+  omniOrbRadius,
+  omniOrbShape,
+} from '@/lib/omni/orbShader';
 
 const effect = Skia.RuntimeEffect.Make(OMNI_ORB_SHADER);
 
@@ -40,6 +46,7 @@ export function OmniVoiceStage({
 }) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
+  const { mounted: orbMounted, style: orbStyle } = useFadingVisibility(!paused);
   const press = useCircularButtonPressAnimation(starting);
   const touchingOrb = useRef(false);
   const insideOrb = (event: GestureResponderEvent) => {
@@ -69,7 +76,7 @@ export function OmniVoiceStage({
     }
   }, [recording, playing, generating, reducedMotion, activity, swirl, pulse]);
   useFrameCallback((frame) => {
-    if (!reducedMotion && !paused) {
+    if (!reducedMotion && orbMounted) {
       const elapsed = frameElapsed.get() + Math.min(frame.timeSincePreviousFrame ?? 16, 50);
       // Preserve motion speed while leaving more rendering time for inference.
       if (elapsed < (generating ? 1000 / 30 : 1000 / 60)) {
@@ -90,6 +97,7 @@ export function OmniVoiceStage({
     activity: activity.get(),
     swirl: swirl.get(),
     pulse: pulse.get(),
+    ...omniOrbShape(time.get(), reducedMotion ? 0 : level.get(), activity.get()),
     deep,
     mist,
     cloud,
@@ -101,15 +109,17 @@ export function OmniVoiceStage({
       : playing
         ? 'Speaking…'
         : buffering
-          ? 'Preparing speech…'
+          ? 'Thinking…'
           : generating
-            ? 'Preparing reply…'
+            ? 'Thinking…'
             : 'Talk to me';
   const label = recording
     ? 'Send voice question'
-    : generating || playing
+    : playing
       ? 'Stop speaking'
-      : 'Start talking';
+      : generating || buffering
+        ? 'Cancel response'
+        : 'Start talking';
   return (
     <View style={styles.stage} pointerEvents="box-none">
       <View style={styles.orbArea} pointerEvents="box-none">
@@ -132,14 +142,21 @@ export function OmniVoiceStage({
           }}
           style={[styles.orbButton, press.animatedStyle]}
         >
-          {!paused && (
-            <Canvas style={styles.orbCanvas} pointerEvents="none" accessible={false}>
-              {effect && (
-                <Fill>
-                  <Shader source={effect} uniforms={uniforms} />
-                </Fill>
-              )}
-            </Canvas>
+          {orbMounted && (
+            <Animated.View
+              style={[styles.orbCanvas, orbStyle]}
+              collapsable={false}
+              pointerEvents="none"
+              accessible={false}
+            >
+              <Canvas style={StyleSheet.absoluteFill}>
+                {effect && (
+                  <Fill>
+                    <Shader source={effect} uniforms={uniforms} />
+                  </Fill>
+                )}
+              </Canvas>
+            </Animated.View>
           )}
         </AnimatedPressable>
       </View>
