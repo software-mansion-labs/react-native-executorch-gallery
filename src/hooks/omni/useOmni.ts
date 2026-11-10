@@ -142,9 +142,10 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
     try {
       const acceptedAt = performance.now();
       onAccepted?.();
-      // Let React commit the cleared composer and pending turn before native
-      // AudioContext construction or worklet argument serialization begins.
-      await new Promise<void>((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
+      // Yield the event handler so React can commit the cleared composer.
+      // Do not wait for a native animation frame: during keyboard/layout work
+      // that callback can arrive over a second later and delay inference too.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
       if (request !== generation.current || stopped.current) {
         if (request === generation.current)
           setTurns((previous) => previous.filter((turn) => turn.id !== question.id));
