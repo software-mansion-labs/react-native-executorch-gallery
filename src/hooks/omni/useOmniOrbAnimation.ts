@@ -6,7 +6,6 @@ import {
   useReducedMotion,
   useSharedValue,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
 
 import { omniOrbRadius, omniOrbShape } from '@/lib/omni/orbShader';
@@ -18,13 +17,11 @@ export function useOmniOrbAnimation({
   generating,
   playing,
   mounted,
-  level,
 }: {
   recording: boolean;
   generating: boolean;
   playing: boolean;
   mounted: boolean;
-  level: SharedValue<number>;
 }) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
@@ -40,7 +37,7 @@ export function useOmniOrbAnimation({
     if (!reducedMotion && mounted) {
       // Advance on every display frame, without discarding fractional intervals.
       const seconds = (frame.timeSincePreviousFrame ?? 0) / 1000;
-      time.set(time.get() + seconds * (1 + activity.get() * 0.35));
+      time.set(time.get() + seconds * (1.25 + activity.get()));
     }
   });
   const palette = useMemo(
@@ -54,20 +51,12 @@ export function useOmniOrbAnimation({
   const uniforms = useDerivedValue(() => ({
     size: tokens.layout.voiceOrbSize,
     time: time.get(),
-    energy: reducedMotion ? 0 : level.get(),
-    activity: activity.get(),
     swirl: swirl.get(),
-    pulse: 0,
-    ...omniOrbShape(time.get(), reducedMotion ? 0 : level.get(), activity.get()),
+    ...omniOrbShape(time.get(), activity.get()),
     ...palette,
   }));
   const contains = (x: number, y: number) => {
-    const radius = omniOrbRadius(
-      Math.atan2(y, x),
-      time.get(),
-      reducedMotion ? 0 : level.get(),
-      activity.get()
-    );
+    const radius = omniOrbRadius(Math.atan2(y, x), time.get(), activity.get());
     return x * x + y * y <= radius * radius;
   };
   return { uniforms, contains };

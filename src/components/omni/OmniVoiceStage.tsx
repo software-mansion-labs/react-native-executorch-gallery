@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Canvas, Fill, Shader, Skia } from '@shopify/react-native-skia';
 import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
-import Animated, { type SharedValue } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { TaskHero } from '@/components/TaskHero';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
@@ -13,7 +13,7 @@ import { OMNI_ORB_MAX_RADIUS, OMNI_ORB_SHADER } from '@/lib/omni/orbShader';
 
 const effect = Skia.RuntimeEffect.Make(OMNI_ORB_SHADER);
 
-/** Harmonic cloud orb whose outline responds to microphone and playback energy. */
+/** Regularly drifting harmonic orb with voice controls and a fading modal transition. */
 export function OmniVoiceStage({
   recording,
   starting,
@@ -21,7 +21,6 @@ export function OmniVoiceStage({
   playing,
   buffering,
   paused = false,
-  level,
   onPress,
 }: {
   recording: boolean;
@@ -30,7 +29,6 @@ export function OmniVoiceStage({
   playing: boolean;
   buffering: boolean;
   paused?: boolean;
-  level: SharedValue<number>;
   onPress: () => void;
 }) {
   const { mounted: orbMounted, style: orbStyle } = useFadingVisibility(!paused);
@@ -40,7 +38,6 @@ export function OmniVoiceStage({
     generating,
     playing,
     mounted: orbMounted,
-    level,
   });
   const touchingOrb = useRef(false);
   const insideOrb = (event: GestureResponderEvent) => {

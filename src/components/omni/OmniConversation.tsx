@@ -48,7 +48,6 @@ export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> })
               playing={omni.playing}
               buffering={omni.bufferingSpeech}
               paused={historyVisible}
-              level={omni.isRecording ? omni.microphoneLevel : omni.playbackLevel}
               onPress={pressOrb}
             />
           </Animated.View>
@@ -164,7 +163,7 @@ const SpeechTurn = memo(function SpeechTurn({
         style={[
           styles.question,
           turn.imageUri && styles.imageQuestion,
-          { backgroundColor: colors.surface },
+          { backgroundColor: colors.background },
         ]}
       >
         {turn.imageUri && <ChatPhoto uri={turn.imageUri} />}
@@ -173,7 +172,7 @@ const SpeechTurn = memo(function SpeechTurn({
       {(text || result || turn.error) && (
         <Animated.View
           entering={entrance}
-          style={[styles.answer, { backgroundColor: colors.surface }]}
+          style={[styles.answer, { backgroundColor: colors.background }]}
         >
           {!!text && <ChatText>{text}</ChatText>}
           {result && (
