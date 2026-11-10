@@ -28,10 +28,11 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     level.set(withTiming(0, { duration: tokens.motion.speechLevelDuration }));
   }, [level]);
   useEffect(() => {
-    recordings.current.clear();
+    const saved = recordings.current;
+    saved.clear();
     return () => {
       stop();
-      recordings.current.clear();
+      saved.clear();
     };
   }, [revision, stop]);
   const begin = useCallback(
