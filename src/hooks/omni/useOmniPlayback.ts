@@ -9,6 +9,7 @@ type Playback = { id: number; queue?: Awaited<ReturnType<typeof createOmniPlayba
 /** Owns buffered streaming/replay, meters native PCM playback and drops cancelled or stale chunks. */
 export function useOmniPlayback(revision: number, onError: (message: string) => void) {
   const operation = useRef<Playback | null>(null);
+  const recordings = useRef(new Map<number, Float32Array>());
   const errorHandler = useRef(onError);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -26,7 +27,13 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     setBuffering(false);
     level.set(withTiming(0, { duration: tokens.motion.speechLevelDuration }));
   }, [level]);
-  useEffect(() => () => stop(), [revision, stop]);
+  useEffect(() => {
+    recordings.current.clear();
+    return () => {
+      stop();
+      recordings.current.clear();
+    };
+  }, [revision, stop]);
   const begin = useCallback(
     async (id: number) => {
       stop();
@@ -88,6 +95,8 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
   );
   const finalize = useCallback(
     (id: number, audio: Float32Array) => {
+      // Like the TTS hook, retain replay PCM privately, never in public state/props.
+      recordings.current.set(id, audio);
       const current = operation.current;
       if (current?.id !== id || !current.queue) return;
       // Generation's result is authoritative even if its scheduled RN stream
@@ -98,7 +107,9 @@ export function useOmniPlayback(revision: number, onError: (message: string) => 
     [enqueue]
   );
   const replay = useCallback(
-    async (id: number, samples: Float32Array) => {
+    async (id: number) => {
+      const samples = recordings.current.get(id);
+      if (!samples?.length) return;
       if (await begin(id)) enqueue(id, samples, true);
     },
     [begin, enqueue]

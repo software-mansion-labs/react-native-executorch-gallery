@@ -22,11 +22,12 @@ const FILES = {
   'xnnpack': 'xnnpack/lfm_3_omni_2b_xnnpack_8da4w.pte',
   'mlx-int4': 'mlx/lfm_3_omni_2b_mlx_int4.pte',
 };
+type OmniChatResult = Omit<OmniResult, 'audio'> & { audioSeconds: number };
 export type OmniChatTurn = {
   id: number;
   question: string;
   imageUri?: string;
-  result?: OmniResult;
+  result?: OmniChatResult;
   preview?: string;
   pending?: boolean;
   error?: string;
@@ -178,13 +179,13 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
       );
       if (request === generation.current) {
         playback.finalize(question.id, generated.audio);
-        const value: OmniResult = {
+        const value: OmniChatResult = {
           text: generated.text,
-          audio: generated.audio,
+          audioSeconds: generated.audio.length / 24000,
           limited: generated.limited,
           finishReason: generated.finishReason,
         };
-        if (!value.audio.length)
+        if (!generated.audio.length)
           throw new Error('No speech was generated. Try a shorter question.');
         setTurns((previous) =>
           previous.map((turn) =>
@@ -251,13 +252,7 @@ export function useOmni(backend: OmniBackend = DEFAULT_BACKEND) {
       setError(cause instanceof Error ? cause.message : String(cause));
     }
   };
-  const replay = playback.replay;
-  const play = useCallback(
-    async (samples: Float32Array, id: number) => {
-      await replay(id, samples);
-    },
-    [replay]
-  );
+  const play = playback.replay;
   const reset = async () => {
     if (!runner || active.current || recorder.isRecording || recorder.starting) return;
     const request = ++generation.current;

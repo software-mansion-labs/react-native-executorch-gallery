@@ -78,7 +78,7 @@ export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> })
               leadingAccessory={
                 <View style={styles.contextActions}>
                   <ChatContext
-                    session={omni}
+                    session={{ getKVCacheState: omni.getKVCacheState }}
                     description="Messages, photos and speech share this space."
                     busy={blocked}
                     hasMessages={omni.turns.length > 0}
@@ -153,7 +153,7 @@ const SpeechTurn = memo(function SpeechTurn({
   turn: OmniChatTurn;
   playing: boolean;
   busy: boolean;
-  onPlay: (audio: Float32Array, id: number) => Promise<void>;
+  onPlay: (id: number) => Promise<void>;
   onStop: () => void;
 }) {
   const { colors } = useTheme();
@@ -186,14 +186,14 @@ const SpeechTurn = memo(function SpeechTurn({
                 disabled={busy}
                 onPress={() => {
                   if (playing) onStop();
-                  else void onPlay(result.audio, turn.id);
+                  else void onPlay(turn.id);
                 }}
               />
               <View style={styles.speechLabel}>
                 <AppText>Spoken reply</AppText>
                 <AppText variant="secondary" tone="muted">
                   {playing ? 'Playing · ' : ''}
-                  {(result.audio.length / 24000).toFixed(1)}s
+                  {result.audioSeconds.toFixed(1)}s
                 </AppText>
               </View>
             </View>
