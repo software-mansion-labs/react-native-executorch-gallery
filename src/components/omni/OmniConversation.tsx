@@ -40,21 +40,19 @@ export function OmniConversation({ omni }: { omni: ReturnType<typeof useOmni> })
     <Animated.View style={[styles.root, keyboardStyle]}>
       <View style={styles.content}>
         {ready && (
-          <AnimatedPressable
-            style={[styles.scroll, heroStyle]}
-            onPress={Keyboard.dismiss}
-            accessible={false}
-          >
-            <OmniVoiceStage
-              recording={omni.isRecording}
-              starting={omni.recordingStarting}
-              generating={omni.busy}
-              playing={omni.playing}
-              buffering={omni.bufferingSpeech}
-              paused={historyVisible}
-              onPress={pressOrb}
-            />
-          </AnimatedPressable>
+          <Pressable style={styles.scroll} onPress={Keyboard.dismiss} accessible={false}>
+            <Animated.View style={[styles.scroll, heroStyle]}>
+              <OmniVoiceStage
+                recording={omni.isRecording}
+                starting={omni.recordingStarting}
+                generating={omni.busy}
+                playing={omni.playing}
+                buffering={omni.bufferingSpeech}
+                paused={historyVisible}
+                onPress={pressOrb}
+              />
+            </Animated.View>
+          </Pressable>
         )}
         {ready && (
           <Animated.View entering={entrance}>
@@ -215,7 +213,6 @@ const SpeechTurn = memo(function SpeechTurn({
   );
 });
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const entrance = FadeIn.duration(tokens.motion.chatDisclosureFadeDuration).reduceMotion(
   ReduceMotion.System
 );
