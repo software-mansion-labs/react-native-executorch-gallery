@@ -11,6 +11,7 @@
 - [Media stories](<src/app/(screens)/media-stories.tsx>)
 - [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
 - [Shader chat](<src/app/(screens)/shader-chat.tsx>)
+- [Shader lab](<src/app/(screens)/shader-lab.tsx>) — experimental typed shader-expression generation
 - [Text to image](<src/app/(screens)/text-to-image.tsx>)
 
 ### Computer vision

@@ -9,6 +9,8 @@ import {
   type ShaderConfig,
 } from '@/lib/shader-chat/shader-config';
 import { SHADER_TEMPLATE } from '@/lib/shader-chat/shader-template';
+import { compileShaderGraph, type ShaderGraph } from '@/lib/shader-chat/shader-graph';
+import { compileShaderTree, type ShaderTree } from '@/lib/shader-chat/shader-tree';
 
 const Params = d.struct({
   resolution: d.vec2f,
@@ -23,12 +25,18 @@ const Params = d.struct({
 });
 
 /**
- * Owns a native TypeGPU surface and only updates trusted uniform values.
- * @param config Validated effect settings, never executable source.
+ * Owns a native TypeGPU surface for a preset or a graph compiled from trusted operator expansions.
+ * @param config Validated preset settings or a typed graph, never raw executable source.
  * @param paused Whether animation time should stay fixed; backgrounding also pauses it.
  * @returns Canvas ref, layout callback and renderer error. Unmount releases the GPU resources.
  */
-export function useShaderCanvas(config: ShaderConfig, paused: boolean) {
+export function useShaderCanvas(config: ShaderConfig | ShaderGraph | ShaderTree, paused: boolean) {
+  const source =
+    'color' in config
+      ? compileShaderTree(config)
+      : 'nodes' in config
+        ? compileShaderGraph(config)
+        : SHADER_TEMPLATE;
   const ref = useRef<CanvasRef>(null);
   const latest = useRef({ config, paused });
   useEffect(() => {
@@ -69,7 +77,7 @@ export function useShaderCanvas(config: ShaderConfig, paused: boolean) {
       context.canvas.width = width;
       context.canvas.height = height;
       context.configure({ device, format, alphaMode: 'opaque' });
-      const module = device.createShaderModule({ code: SHADER_TEMPLATE });
+      const module = device.createShaderModule({ code: source });
       const pipeline = await device.createRenderPipelineAsync({
         layout: 'auto',
         vertex: { module, entryPoint: 'vertex_main' },
@@ -92,17 +100,18 @@ export function useShaderCanvas(config: ShaderConfig, paused: boolean) {
         previous = timestamp;
         try {
           if (visible) {
-            const colors = SHADER_PALETTES[current.palette];
+            const preset = 'nodes' in current || 'color' in current ? undefined : current;
+            const colors = SHADER_PALETTES[preset?.palette ?? 'mono'];
             uniform.write({
               resolution: d.vec2f(width, height),
               time: elapsed,
-              effect: EFFECT_CHOICES.effect.indexOf(current.effect),
+              effect: preset ? EFFECT_CHOICES.effect.indexOf(preset.effect) : 0,
               colorA: d.vec4f(colors[0][0], colors[0][1], colors[0][2], 1),
               colorB: d.vec4f(colors[1][0], colors[1][1], colors[1][2], 1),
-              scale: current.scale,
-              speed: current.speed,
-              intensity: current.intensity,
-              rotation: current.rotation,
+              scale: preset?.scale ?? 1,
+              speed: preset?.speed ?? 1,
+              intensity: preset?.intensity ?? 1,
+              rotation: preset?.rotation ?? 0,
             });
             const encoder = device.createCommandEncoder();
             const pass = encoder.beginRenderPass({
@@ -137,6 +146,6 @@ export function useShaderCanvas(config: ShaderConfig, paused: boolean) {
       cancelAnimationFrame(frame);
       cleanup?.();
     };
-  }, [size.width, size.height]);
+  }, [size.width, size.height, source]);
   return { ref, onLayout, error };
 }

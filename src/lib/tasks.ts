@@ -51,6 +51,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'LLM constrained JSON grammar TypeGPU WebGPU effects patterns animation shader',
       },
       {
+        id: 'shader-lab',
+        href: '/shader-lab',
+        title: 'Shader lab',
+        keywords: 'experimental LLM typed shader graph program composition noise masks TypeGPU',
+      },
+      {
         id: 'text-to-image',
         href: '/text-to-image',
         title: 'Text to image',
