@@ -16,6 +16,10 @@ Keep task screens thin and reuse shared components and hooks.
 For task screen work, read `.agents/skills/gallery-task-screen/SKILL.md`.
 Use `src/app/(screens)/image-classification.tsx` as a current small example.
 
+For ExecuTorch setup, model selection, custom `.pte` integration or inference
+pipelines, read `.agents/skills/react-native-executorch/SKILL.md` and its relevant
+references. Check exact APIs against this app's pinned library version.
+
 ## Setup
 
 Use Node 24 (`nvm use`), npm and Corepack (`corepack enable`). On a fresh checkout,
