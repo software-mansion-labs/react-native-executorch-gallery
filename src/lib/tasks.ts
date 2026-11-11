@@ -45,6 +45,12 @@ export const TASK_SECTIONS: TaskSection[] = [
           'chat LLM constrained decoding generation JSON grammar UI interface interactive forms',
       },
       {
+        id: 'shader-chat',
+        href: '/shader-chat',
+        title: 'Shader chat',
+        keywords: 'LLM constrained JSON grammar TypeGPU WebGPU effects patterns animation shader',
+      },
+      {
         id: 'text-to-image',
         href: '/text-to-image',
         title: 'Text to image',

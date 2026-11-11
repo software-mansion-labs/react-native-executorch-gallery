@@ -45,10 +45,13 @@
     "react-native-vision-camera-resizer": "^5.2.3",
     "react-native-vision-camera-worklets": "^5.2.3",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.1"
+    "react-native-webgpu": "0.21.3",
+    "react-native-worklets": "0.10.1",
+    "typegpu": "0.12.10"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "@webgpu/types": "0.1.74",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
     "lefthook": "2.2.2",

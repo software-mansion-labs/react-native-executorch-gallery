@@ -57,7 +57,8 @@
           }
         }
       ],
-      "expo-video"
+      "expo-video",
+      "react-native-webgpu"
     ],
     "experiments": {
       "typedRoutes": true,

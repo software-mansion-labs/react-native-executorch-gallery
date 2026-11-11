@@ -44,6 +44,7 @@ export function ChatView({
   canSend = true,
   composerAccessory,
   contextAccessory,
+  renderAnswerAccessory,
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
@@ -60,6 +61,8 @@ export function ChatView({
   canSend?: boolean;
   composerAccessory?: ReactNode;
   contextAccessory?: ReactNode;
+  /** Adds a native preview after a turn's Markdown answer. */
+  renderAnswerAccessory?: (turn: ChatTurn, index: number) => ReactNode;
 }) {
   const { colors } = useTheme();
   const { keyboardStyle, heroStyle } = useChatKeyboard();
@@ -142,6 +145,7 @@ export function ChatView({
                       <ChatText>{turn.answer}</ChatText>
                     </Animated.View>
                   )}
+                  {renderAnswerAccessory?.(turns[turnIndex], turnIndex)}
                   {turn.error && (
                     <Animated.View entering={answerEntrance}>
                       <ChatResponseError

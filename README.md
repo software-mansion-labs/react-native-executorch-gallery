@@ -10,6 +10,7 @@
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
 - [Media stories](<src/app/(screens)/media-stories.tsx>)
 - [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
+- [Shader chat](<src/app/(screens)/shader-chat.tsx>)
 - [Text to image](<src/app/(screens)/text-to-image.tsx>)
 
 ### Computer vision
