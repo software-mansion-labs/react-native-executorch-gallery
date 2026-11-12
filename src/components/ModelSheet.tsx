@@ -40,9 +40,15 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
           ? 'Checking model…'
           : model.storedBytes
             ? model.loadLabel === 'Download model'
-              ? 'Partially downloaded'
-              : 'Downloaded'
-            : 'Not downloaded';
+              ? model.info.hasLocalAssets
+                ? 'Some assets missing'
+                : 'Partially downloaded'
+              : model.info.hasLocalAssets
+                ? 'Available on device'
+                : 'Downloaded'
+            : model.info.hasLocalAssets
+              ? 'Not prepared'
+              : 'Not downloaded';
 
   return (
     <BottomSheet title="Model" visible={visible} onClose={onClose}>
@@ -82,7 +88,9 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
           ) : (
             <IconButton
               icon="trash-outline"
-              accessibilityLabel="Delete downloaded model"
+              accessibilityLabel={
+                model.info.hasLocalAssets ? 'Delete model assets' : 'Delete downloaded model'
+              }
               onPress={() => model.remove(busy || loading)}
               disabled={!model.storedBytes || busy || loading}
               tone="danger"

@@ -8,16 +8,15 @@ import { useAudioRecorder } from '@/hooks/audio/useAudioRecorder';
 import { useModelControls } from '@/hooks/useModelControls';
 import {
   createMeetingPipeline,
-  DIARIZATION_CONFIG,
   MEETING_CONFIG,
   type TranscriptTurn,
 } from '@/lib/diarization/meeting';
-import { CHUNK_SAMPLES, SAMPLE_RATE, SORTFORMER_URL } from '@/lib/diarization/sortformer';
+import { CHUNK_SAMPLES, SAMPLE_RATE, NEMOTRON_PATH } from '@/lib/diarization/nemotron';
+import { useImportedDiarizer } from './useImportedDiarizer';
 import { PcmQueue } from '@/lib/diarization/pcmQueue';
 
-const DIARIZATION_PATHS = [SORTFORMER_URL];
 const MEETING_PATHS = [
-  SORTFORMER_URL,
+  NEMOTRON_PATH,
   LFM_AUDIO.modelPath,
   LFM_AUDIO.tokenizerPath,
   LFM_AUDIO.tokenizerConfigPath,
@@ -25,20 +24,27 @@ const MEETING_PATHS = [
 ];
 
 /** Loads explicitly requested local models and manages a bounded, memory-only microphone session.
- * `transcribe` adds LFM3 Audio per speaker turn. Returns shared model controls, capture actions and text results.
+ * Uses LFM3 Audio per speaker turn. Returns model controls, capture actions and text results.
  * Stop drains the last buffer; background, navigation, errors and Clear discard all pending audio.
  */
-export function useMeetingSession(transcribe: boolean) {
-  const model = useModelControls(transcribe ? MEETING_PATHS : DIARIZATION_PATHS, {
-    name: transcribe ? 'Sortformer · LFM3 Audio' : 'Streaming Sortformer · 4 speakers',
+export function useMeetingSession() {
+  const model = useModelControls(MEETING_PATHS, {
+    hasLocalAssets: true,
+    name: 'LFM3 Audio · Nemotron 3',
   });
-  const download = useResourceDownload(transcribe ? MEETING_CONFIG : DIARIZATION_CONFIG, {
+  const download = useResourceDownload(MEETING_CONFIG, {
     preventLoad: !model.loaded,
   });
   const loaded = useModel(createMeetingPipeline, download.resource);
   const pipeline = loaded.model;
   const [turns, setTurns] = useTaskState<TranscriptTurn[]>([], model.revision);
   const [error, setError] = useTaskState<string | null>(null, model.revision);
+  const localModel = useImportedDiarizer(
+    model.revision,
+    model.deleting,
+    model.refreshCache,
+    setError
+  );
   const [processing, setProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
   const queue = useRef(new PcmQueue(CHUNK_SAMPLES * 2));
@@ -176,6 +182,7 @@ export function useMeetingSession(transcribe: boolean) {
   };
   return {
     model,
+    localModel,
     status: { ...download, isReady: !!pipeline, error: download.downloadError || loaded.error },
     turns,
     error,

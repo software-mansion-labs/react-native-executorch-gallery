@@ -5,7 +5,6 @@ export const MODEL_DOWNLOAD_BYTES: Record<string, number> = {
   [`${LFM3_AUDIO_ASSETS}/tokenizer.json`]: 17_908_634,
   [`${LFM3_AUDIO_ASSETS}/tokenizer_config.json`]: 9_843,
   'lfm_3_audio_2b_xnnpack_8da4w.pte': 1_716_453_120,
-  'sortformer.pte': 492_384_528,
   'fsmn_vad_xnnpack_fp32.pte': 1_827_808,
   'whisper_tiny_en_xnnpack_int8.pte': 183_194_496,
   'whisper_tiny_en_coreml_fp16.pte': 76_477_024,

@@ -1,95 +1,141 @@
 # Meeting transcription PoC
 
-Two task screens use a custom TypeScript Sortformer pipeline through the existing
-React Native ExecuTorch low-level `Model` / `Tensor` API:
+The **Meeting transcript** screen combines Nemotron 3 activity for up to eight
+anonymous speaker tracks with LFM3 Audio English transcription. Continuous speech
+stays in one crop across brief overlaps and is labelled as mixed speech.
+Unassigned speech recovered by ASR keeps an unassigned label.
 
-- **Speaker diarization:** anonymous speaker activity, including overlap.
-- **Meeting transcript:** the same activity plus LFM3 Audio transcription
-  of each continuous turn. Brief overlaps stay in that crop and are labelled as mixed
-  speech. If both tracks remain active throughout, both speaker labels are shown.
+The eight-speaker limit belongs to the trained diarizer, not LFM3 or React Native.
+Speaker numbers identify tracks in this session, not known people. Labels and
+words can be wrong; short turns and overlapping voices remain challenging.
 
-Models load only after the user requests them. There is no cloud inference or
-summarization. Up to four speaker tracks are available; numbers identify tracks
-within a session, not real identities. All participants should know transcription
-is active. Speaker labels and words may be wrong, especially for short turns,
-noise, overlap and changes near a batch boundary.
+## Prepare the models
+
+The diarizer is exported locally using the companion
+[Nemotron 3 recipe](https://github.com/software-mansion-labs/executorch-export-recipes/tree/%40bh/meeting-transcript/exporter_models/nemotron3_diarization).
+From that repository:
+
+```sh
+uv run --locked --project exporter_models/nemotron3_diarization \
+  exporter export nemotron3_diarization --backend xnnpack \
+  --output-dir /absolute/local/output
+```
+
+Choose **Import model** in Gallery and select
+`nemotron3_diarization_xnnpack_fp32.pte` from Files. The app checks the actual
+exported methods, shapes, dtypes and constants before installing it in its private
+model directory. Failed picks and temporary picker copies are cleaned up.
+Then explicitly load the model; the meeting task also downloads LFM3 Audio assets
+if needed. Opening the screen starts no download or microphone capture.
+No hosted diarization artifact is required and no model weights are in Git.
+Deleting model assets resets the session and offers import/preparation again.
 
 ## Audio lifetime
 
-`useAudioRecorder` uses AudioRecorder's PCM callback. It never enables file output.
-The Audio API's native recorder defaults `fileOutputEnabled_` and
-`fileOutputConfigured_` to false. No meeting recording is written to storage.
+`useAudioRecorder` uses AudioRecorder's mono 16 kHz PCM callback. It never enables
+file output; the native recorder's file-output flags default to false. Everyone
+should know the microphone/transcription is active.
 
-Capture produces mono 16 kHz float PCM. A bounded queue holds at most 20 seconds,
-with at most one additional 10-second inference batch active. Temporary native and
-worklet copies exist during processing. Consumed application buffers are zeroed;
-this is not a secure-memory-erasure guarantee for OS/runtime-owned copies.
-The speaker cache contains bounded latent embeddings (188 cache + 124 FIFO frames),
-not recordings. It resets between sessions and is never persisted.
+The transient queue holds at most 20 seconds, with at most one additional
+10-second batch active. Native/worklet copies exist during processing. Consumed
+application buffers are zeroed; this is not a secure-memory-erasure guarantee
+for runtime or OS copies. The bounded speaker cache contains latent embeddings
+and probabilities, not a saved recording, and is never persisted.
 
-Stop processes the remaining buffered audio. Clear, background, navigation and
-errors discard queued audio and invalidate in-flight results. Native models are
-released after active inference finishes. Overflow stops capture visibly instead
-of silently dropping words. No audio playback, upload or audio export exists.
-Only explicit **Copy transcript** writes session text to the system clipboard.
-Transcripts otherwise remain in session memory and disappear when leaving the task.
+Stop drains the last buffer. Clear, backgrounding, navigation and errors discard
+queued audio and invalidate late results. Overflow visibly stops capture instead
+of silently losing speech. Models are disposed after active inference completes.
+LFM3 has no retained audio chat history: each crop gets a fresh ASR prompt and KV
+position, with disposable media tensors.
+
+There is no audio playback, audio export, cloud inference or summarization.
+Transcripts stay in session memory; explicit **Copy transcript** writes only text
+to the system clipboard. The model picker imports model assets, not recordings.
 
 ## Model provenance and contract
 
-Diarizer: [younghan-meta/Sortformer-ExecuTorch-XNNPACK](https://huggingface.co/younghan-meta/Sortformer-ExecuTorch-XNNPACK),
-revision `4a157759fdc2128fe686073e8eecd391df445fad`. The community export
-repository declares Apache-2.0; the underlying
-[NVIDIA `diar_streaming_sortformer_4spk-v2` weights](https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2)
-are CC-BY-4.0. This PoC consumes the published export without changing its weights.
-`sortformer.pte`: 492,384,528 bytes, SHA256
-`e763fae031bc8675252f2d8de0e84ff71992db4eb04257e4a50b43c9b31a77c1`.
+Diarizer: [NVIDIA Nemotron-3-Diarization](https://huggingface.co/nvidia/Nemotron-3-Diarization),
+checkpoint `52a432672732425e4c19765b9fec9b5810e6f4ba`, OpenMDW 1.1 weight terms.
+The FP32 XNNPACK export is 397,708,832 bytes. The recipe pins Python 3.10,
+PyTorch 2.14.0, ExecuTorch 1.4.1 and Transformers 5.20.0. Its adapted preprocessing
+and cache-policy code retain the upstream Apache 2.0 notices.
 
-The cache selection follows the algorithm in the
-[upstream ExecuTorch Sortformer runner](https://github.com/pytorch/executorch/tree/a2cd31227a32985ce8421954f72ff9c67d00b781/examples/models/sortformer).
-See [BSD attribution](sortformer-NOTICE.txt). Its top-confidence cache compression is a simplification of NeMo's streaming cache
-policy. This app does not claim full NeMo streaming equivalence or measured DER.
+Methods:
 
-The export has three methods: `preprocessor`, `pre_encode`, `encode`.
-Its metadata reports maximum tensor shapes without the RNE companion dynamic
-schema. The pipeline validates these fixed input shapes and pads to them, while
-passing true lengths for masking. Audio is padded to 1,920,000 samples, mel features
-to `[1,4000,128]`, and cache/FIFO/chunk embeddings to `[1,1000,512]`.
-Outputs are `[1,128,12001]`, `[1,500,512]` and `[1,1000,4]` respectively.
-Speaker activity uses a 0.5 threshold at 80 ms/frame. For transcription, adjacent
-spans sharing a continuously active track become one crop; overlapping voices
-remain explicitly flagged. This avoids cutting a sentence at every brief overlap. Speech recovered by ASR below the diarization
-threshold appears as Unassigned speaker. Turns shorter than 320 ms are skipped. Per-batch normalization and
-independent turn crops can affect quality; sentences may split between batches.
+| Method       | Inputs                                                        | Outputs                                                          |
+| ------------ | ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `preprocess` | mono float32 `[160000]`, true int64 length `[1]`              | mel `[1,1001,128]`                                               |
+| `embed`      | mel `[1,8*N,128]`, `N=1..126`                                 | embeddings `[1,N,512]`                                           |
+| `encode`     | embeddings `[1,T,512]`, int64 mask `[1,T]`, `T=2..800`        | probabilities `[1,8*T,8]`, masked pooled probabilities `[1,T,8]` |
+| `compress`   | embeddings `[1,T,512]`, probabilities `[1,T,8]`, `T=265..800` | cache `[1,264,512]`, probabilities `[1,264,8]`                   |
 
-LFM3 Audio uses the pinned library registry's `LFM3_AUDIO_2B.XNNPACK_8DA4W`,
-with assets pinned to official `software-mansion/LFM3-ExecuTorch` revision
-`bd5858beef1c88eac49686af7173a8b3624a0d91`. Its model is 1,716,453,120 bytes,
-SHA256 `48a4db000935fa2e6401783b6857c3e64bd6ebc9cf9f94db3e711068fc11d91f`,
-under the upstream LFM license. The matching tokenizer/config and FSMN VAD are
-required. Each crop uses `Perform ASR in English.`, greedy decoding and a 256-token
-limit. It uses the public LLM runner and chat preprocessor without retaining a chat
-history. Media tensors are cleared after each call and the KV position is reset.
-Both models run on CPU, including on the simulator. No library source modifications
-are required. Whisper Tiny remains an optional comparison configuration in the
-pipeline; the meeting screen loads LFM3 Audio.
+A companion RNE schema preserves dynamic bounds and matching input lengths.
+The encoder computes the actual sequence, without padding every call to its
+maximum. Cache compression retains the original HF policy, including learned
+silence embeddings, per-speaker ordering, score boosts and the 222-frame update
+period. The app only sequences bounded FIFO/cache state. Feature extraction is
+per buffered chunk with true-length masking and no feature normalization; this
+is a supported custom buffering profile, not a claim of equivalence to every
+published streaming latency profile.
+
+ASR: `LFM3_AUDIO_2B.XNNPACK_8DA4W`, official
+`software-mansion/LFM3-ExecuTorch` revision
+`bd5858beef1c88eac49686af7173a8b3624a0d91`, under upstream LFM terms. The model is
+1,716,453,120 bytes, SHA256
+`48a4db000935fa2e6401783b6857c3e64bd6ebc9cf9f94db3e711068fc11d91f`.
+Matching tokenizer/config and FSMN VAD are required. Each crop uses
+`Perform ASR in English.`, greedy decoding and a 256-token limit. Both models
+use the CPU path. No RNE source modifications are required.
 
 ## Validation scope
 
-See the campaign evidence for native build/inference results and unavailable checks.
-Host comparison on AMI IB4001 first 10 seconds (M1 Pro, ET 1.4.1): padded vs dynamic
-preprocessing matched exactly; max encoder probability difference was 5.66e-7.
-Padding increases computation significantly: 5.86 s for the padded encoder versus
-0.31 s for the 125-frame input in that host run. These are host observations,
-not physical-phone measurements. This PoC needs device validation before making
-real-time or meeting-quality claims.
+The recipe compares every loaded method with the original HF eager model,
+including min/intermediate/max shapes, silence/saturated cache inputs, repeated
+streaming chunks and cache overflow. All predeclared floating-point tolerances
+passed on AMI IB4001 210–270 s: maximum streaming probability difference 2.3e-6.
+NVIDIA's separate synthetic eight-voice sample (97.6 s) also passed, with a
+maximum difference of 3.7e-5 and activity on all eight channels. This verifies
+export fidelity; it is not a speaker identity or DER benchmark.
 
-Native simulator validation (iPhone 17 Pro simulator, iOS 26.5, M1 Pro Mac):
-LFM3 Audio + Sortformer processed AMI IB4001 210–270 s in 52.665 s, excluding
-model loading and fixture reading. The run produced 18 grouped turns, including
-mixed-speech warnings and three anonymous speaker tracks. Approximate normalized
-text WER was 18.1% (32 edits / 177 reference words). This is one selected excerpt,
-not a meeting-quality benchmark; reference overlap ordering, fillers and number
-formatting affect the score. Speaker DER and NeMo/PyTorch parity were not measured.
-The earlier Whisper Tiny baseline scored 27.7%, but used different crops, so this
-is not a controlled comparison of the two models. These are simulator observations,
-not phone performance or physical microphone validation.
+### Native real-meeting check
+
+An unsigned Release build ran the actual CPU models on an iPhone 17 Pro simulator
+(iOS 26.5, M1 Pro host). Public AMI IB4001 mixed-headset audio was fed as 10-second
+PCM buffers through the production pipeline, without microphone capture.
+
+| Excerpt           | Processing time | Approximate WER               | Output turns |
+| ----------------- | --------------- | ----------------------------- | ------------ |
+| 210–270 s (60 s)  | 14.415 s        | 18.1% (32 edits / 177 words)  | 26           |
+| 210–390 s (180 s) | 48.772 s        | 21.7% (108 edits / 497 words) | 76           |
+
+WER lowercases and strips punctuation, preserving number spellings and fillers;
+it uses reference words ordered by start time. Overlap ordering and `15` versus
+`fifteen` contribute errors. These are two overlapping excerpts from one meeting,
+not a representative accuracy benchmark or a controlled comparison with another
+model. The longer run exercises repeated cache compression.
+
+The main discussion is readable. Observed errors include `hall` → `hole`, missed
+short interjections, fragmented sentences at pauses and buffer boundaries, and
+occasional invented words on tiny uncertain crops. There is also a brief spurious
+Speaker 6 label in this four-participant meeting. Speaker identity accuracy and
+DER have not been measured. Treat the output as an editable draft, not a verbatim
+meeting record.
+
+The separate native 97.6-second synthetic eight-voice input completed in 5.304 s.
+This verifies native execution with eight tracks; it does not establish perfect
+speaker separation. Earlier four-speaker Sortformer results belong to a removed
+baseline implementation.
+
+Temporary fixture screens and recorder adapters are excluded from the final app.
+Physical microphone validation, phone performance and Android validation remain
+unavailable in this simulator-only check.
+
+The simplified meeting UI was checked in light/dark appearance. A fixture-fed
+Maestro run passed start, stop, copy and clear on the actual native pipeline.
+The local Files picker presented and listed the prepared model folder; automated
+folder selection did not complete reliably on this simulator. Native model loading
+and inference were verified by seeding the identical file into app-private storage,
+so picker selection/cancellation remains a separate manual verification gap.
+After the final build, injected audio JSON was removed. The app-container audit
+found no audio files; Apple's `monolithic_metal.pcm` (CPCH compiler-module magic)
+is a compiler cache, not recorded PCM.

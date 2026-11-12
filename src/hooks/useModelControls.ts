@@ -7,6 +7,7 @@ import { cachedModelBytes, formatModelSize, modelCachePath } from '@/lib/model-c
 
 export type ModelInfo = {
   name: string;
+  hasLocalAssets?: boolean;
 };
 
 /**
@@ -62,8 +63,8 @@ export function useModelControls(source: string | readonly string[], info: Model
   const remove = (disabled = false) => {
     if (disabled || removing.current || !storedBytes) return;
     Alert.alert(
-      'Delete downloaded model?',
-      `Remove ${formatModelSize(storedBytes)} from this device? You can download the model again.`,
+      info.hasLocalAssets ? 'Delete model assets?' : 'Delete downloaded model?',
+      `Remove ${formatModelSize(storedBytes)} from this device? ${info.hasLocalAssets ? 'You can import or download the assets again.' : 'You can download the model again.'}`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
