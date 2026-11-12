@@ -20,8 +20,11 @@ export function MicrophoneStage({
   starting,
   finishing = false,
   hasResult,
+  startLabel = 'Start recording',
+  stopLabel = 'Stop recording',
   onToggle,
   children,
+  setup,
 }: {
   model: ModelControls;
   status: ModelStatus;
@@ -31,8 +34,11 @@ export function MicrophoneStage({
   starting: boolean;
   finishing?: boolean;
   hasResult: boolean;
+  startLabel?: string;
+  stopLabel?: string;
   onToggle: () => Promise<void>;
   children: ReactNode;
+  setup?: ReactNode;
 }) {
   const ready = model.loaded && model.prepared && status.isReady && !model.deleting;
   return (
@@ -49,7 +55,9 @@ export function MicrophoneStage({
           <TaskHero
             title={title}
             description={description}
-            setup={!model.prepared ? <ModelSetup model={model} status={status} /> : undefined}
+            setup={
+              !model.prepared ? (setup ?? <ModelSetup model={model} status={status} />) : undefined
+            }
           />
         </TaskHeroStage>
       )}
@@ -57,7 +65,7 @@ export function MicrophoneStage({
         <Animated.View entering={entrance} style={styles.controls}>
           <PhotoActionButton
             iconName={active ? 'stop' : 'mic-outline'}
-            label={active ? 'Stop recording' : 'Start recording'}
+            label={active ? stopLabel : startLabel}
             primary
             disabled={starting || finishing}
             loading={starting || finishing}

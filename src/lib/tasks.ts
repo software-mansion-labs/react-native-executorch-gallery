@@ -141,6 +141,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'transcription recognition Whisper',
       },
       {
+        id: 'meeting-transcript',
+        href: '/meeting-transcript',
+        title: 'Meeting transcript',
+        keywords: 'LFM3 Audio Nemotron speakers meeting transcription privacy local',
+      },
+      {
         id: 'voice-activity-detection',
         href: '/voice-activity-detection',
         title: 'Voice activity detection',

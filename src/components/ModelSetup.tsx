@@ -15,10 +15,12 @@ type ModelSetupProps = {
   model: ModelControls;
   status: ModelStatus;
   disabled?: boolean;
+  label?: string;
+  onPress?: () => void;
 };
 
 /** A compact setup action with separate download progress and preparation status. */
-export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
+export function ModelSetup({ model, status, disabled, label, onPress }: ModelSetupProps) {
   const { colors } = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
   const { preparing, loading, ready, onExit } = useModelSetup(model, status);
@@ -67,15 +69,16 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
     <View style={styles.area}>
       <Animated.View exiting={buttonExit}>
         <AnimatedPressable
-          onPress={model.load}
+          onPress={onPress ?? model.load}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           disabled={blocked}
           accessibilityRole="button"
           accessibilityLabel={
-            model.downloadSizeLabel
+            label ??
+            (model.downloadSizeLabel
               ? `Download model, approximately ${model.downloadSizeLabel}`
-              : model.loadLabel
+              : model.loadLabel)
           }
           accessibilityState={{ disabled: !!blocked }}
           style={[
@@ -86,9 +89,9 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
           ]}
         >
           <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
-            {model.storedBytes === null ? 'Download' : model.loadLabel}
+            {label ?? (model.storedBytes === null ? 'Download' : model.loadLabel)}
           </AppText>
-          {model.downloadSizeLabel && (
+          {!label && model.downloadSizeLabel && (
             <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
               {model.downloadSizeLabel}
             </AppText>

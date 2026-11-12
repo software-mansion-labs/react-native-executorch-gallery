@@ -32,6 +32,7 @@
 
 - [Text to speech](<src/app/(screens)/text-to-speech.tsx>)
 - [Speech to text](<src/app/(screens)/speech-to-text.tsx>)
+- [Meeting transcript](<src/app/(screens)/meeting-transcript.tsx>)
 - [Voice activity detection](<src/app/(screens)/voice-activity-detection.tsx>)
 
 ### Embeddings & search
