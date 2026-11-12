@@ -20,6 +20,8 @@ export function MicrophoneStage({
   starting,
   finishing = false,
   hasResult,
+  startLabel = 'Start recording',
+  stopLabel = 'Stop recording',
   onToggle,
   children,
 }: {
@@ -31,6 +33,8 @@ export function MicrophoneStage({
   starting: boolean;
   finishing?: boolean;
   hasResult: boolean;
+  startLabel?: string;
+  stopLabel?: string;
   onToggle: () => Promise<void>;
   children: ReactNode;
 }) {
@@ -57,7 +61,7 @@ export function MicrophoneStage({
         <Animated.View entering={entrance} style={styles.controls}>
           <PhotoActionButton
             iconName={active ? 'stop' : 'mic-outline'}
-            label={active ? 'Stop recording' : 'Start recording'}
+            label={active ? stopLabel : startLabel}
             primary
             disabled={starting || finishing}
             loading={starting || finishing}

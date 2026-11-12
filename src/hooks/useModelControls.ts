@@ -98,7 +98,9 @@ export function useModelControls(source: string | readonly string[], info: Model
 
   const missingSources = sources.filter((_, index) => !cache?.[index]);
   const sizes = missingSources.map(
-    (url) => MODEL_DOWNLOAD_BYTES[url.split('?')[0].split('/').pop() ?? '']
+    (url) =>
+      MODEL_DOWNLOAD_BYTES[url.split('?')[0]] ??
+      MODEL_DOWNLOAD_BYTES[url.split('?')[0].split('/').pop() ?? '']
   );
   const downloadBytes = sizes.every(Boolean) ? sizes.reduce((sum, bytes) => sum + bytes, 0) : 0;
   const loadLabel =

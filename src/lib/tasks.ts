@@ -141,6 +141,18 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'transcription recognition Whisper',
       },
       {
+        id: 'speaker-diarization',
+        href: '/speaker-diarization',
+        title: 'Speaker diarization',
+        keywords: 'Sortformer microphone speakers timeline overlap privacy',
+      },
+      {
+        id: 'meeting-transcript',
+        href: '/meeting-transcript',
+        title: 'Meeting transcript',
+        keywords: 'LFM3 Audio Sortformer speakers meeting transcription privacy local',
+      },
+      {
         id: 'voice-activity-detection',
         href: '/voice-activity-detection',
         title: 'Voice activity detection',
