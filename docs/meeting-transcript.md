@@ -37,8 +37,10 @@ Transcripts otherwise remain in session memory and disappear when leaving the ta
 ## Model provenance and contract
 
 Diarizer: [younghan-meta/Sortformer-ExecuTorch-XNNPACK](https://huggingface.co/younghan-meta/Sortformer-ExecuTorch-XNNPACK),
-revision `4a157759fdc2128fe686073e8eecd391df445fad`, Apache-2.0,
-based on NVIDIA `diar_streaming_sortformer_4spk-v2`.
+revision `4a157759fdc2128fe686073e8eecd391df445fad`. The community export
+repository declares Apache-2.0; the underlying
+[NVIDIA `diar_streaming_sortformer_4spk-v2` weights](https://huggingface.co/nvidia/diar_streaming_sortformer_4spk-v2)
+are CC-BY-4.0. This PoC consumes the published export without changing its weights.
 `sortformer.pte`: 492,384,528 bytes, SHA256
 `e763fae031bc8675252f2d8de0e84ff71992db4eb04257e4a50b43c9b31a77c1`.
 
