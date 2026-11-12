@@ -1,12 +1,11 @@
-import { createLfmAudioTranscriber, LFM_AUDIO, type LfmAudioConfig } from './lfmAudio';
-import { emptySpeakerMemory, transcriptionSpans } from './speakerMemory';
-import { createWhisperSpeechToText, models, type Model } from 'react-native-executorch';
-import { disposeSortformer, inferSpeakers, loadSortformer, SORTFORMER_URL } from './sortformer';
+import { createLfmAudioTranscriber, LFM_AUDIO } from './lfmAudio';
+import { transcriptionSpans } from './speakerMemory';
+import type { Model } from 'react-native-executorch';
+import { disposeNemotron, inferNemotron, loadNemotron, NEMOTRON_PATH } from './nemotron';
+import { emptyNemotronMemory } from './nemotronMemory';
 
-export const WHISPER = models.speechToText.WHISPER.EN.TINY.XNNPACK_INT8;
-export const DIARIZATION_CONFIG = { diarizer: SORTFORMER_URL };
-export const MEETING_CONFIG = { diarizer: SORTFORMER_URL, lfm: LFM_AUDIO };
-export type MeetingConfig = { diarizer: string; whisper?: typeof WHISPER; lfm?: LfmAudioConfig };
+export const MEETING_CONFIG = { diarizer: NEMOTRON_PATH, lfm: LFM_AUDIO };
+export type MeetingConfig = typeof MEETING_CONFIG;
 export type TranscriptTurn = {
   start: number;
   end: number;
@@ -26,15 +25,14 @@ export async function createMeetingPipeline(config: MeetingConfig) {
       }
     | undefined;
   try {
-    diarizer = await loadSortformer(config.diarizer);
-    if (config.lfm) asr = await createLfmAudioTranscriber(config.lfm);
-    else if (config.whisper) asr = await createWhisperSpeechToText(config.whisper);
+    diarizer = await loadNemotron(config.diarizer);
+    asr = await createLfmAudioTranscriber(config.lfm);
   } catch (cause) {
-    if (diarizer) await disposeSortformer(diarizer);
+    if (diarizer) await disposeNemotron(diarizer);
     throw cause;
   }
   const model = diarizer;
-  let memory = emptySpeakerMemory();
+  let memory = emptyNemotronMemory();
   let epoch = 0;
   let disposed = false;
   let pending: Promise<unknown> = Promise.resolve();
@@ -42,7 +40,8 @@ export async function createMeetingPipeline(config: MeetingConfig) {
     epoch++;
     memory.cache.fill(0);
     memory.fifo.fill(0);
-    memory = emptySpeakerMemory();
+    memory.cacheProbabilities.fill(0);
+    memory = emptyNemotronMemory();
     asr?.transcribeStop();
   };
   return {
@@ -52,20 +51,22 @@ export async function createMeetingPipeline(config: MeetingConfig) {
       const result = pending
         .then(async () => {
           if (disposed || request !== epoch) return [];
-          const output = await inferSpeakers(model, new Float32Array(audio), memory);
+          const output = await inferNemotron(model, new Float32Array(audio), memory);
           if (disposed || request !== epoch) {
             output.memory.cache.fill(0);
             output.memory.fifo.fill(0);
+            output.memory.cacheProbabilities.fill(0);
             return [];
           }
           memory.cache.fill(0);
           memory.fifo.fill(0);
+          memory.cacheProbabilities.fill(0);
           memory = output.memory;
           const turns: TranscriptTurn[] = [];
-          for (const span of asr ? transcriptionSpans(output.spans) : output.spans) {
+          for (const span of transcriptionSpans(output.spans)) {
             if (disposed || request !== epoch) return [];
             // VAD can recover speech below the diarization threshold as unassigned.
-            if ((!asr && !span.speakers.length) || span.end - span.start < 0.32) continue;
+            if (span.end - span.start < 0.32) continue;
             let text: string | undefined;
             if (asr) {
               const crop = audio.slice(Math.floor(span.start * 16000), Math.ceil(span.end * 16000));
@@ -96,7 +97,7 @@ export async function createMeetingPipeline(config: MeetingConfig) {
       reset();
       void pending.finally(async () => {
         asr?.dispose();
-        await disposeSortformer(model);
+        await disposeNemotron(model);
       });
     },
   };

@@ -4,7 +4,7 @@ import { MeetingTask } from '@/components/meeting/MeetingTask';
 export default function MeetingTranscriptScreen() {
   return (
     <ScreenWrapper unmountOnBlur>
-      <MeetingTask transcribe />
+      <MeetingTask />
     </ScreenWrapper>
   );
 }

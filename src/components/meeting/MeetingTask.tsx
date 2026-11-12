@@ -1,106 +1,94 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ModelSetup } from '@/components/ModelSetup';
+import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { MicrophoneStage } from '@/components/audio/MicrophoneStage';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { TaskScreen } from '@/components/TaskScreen';
-import { formatTime, speakerLabel, useMeetingSession } from '@/hooks/meeting/useMeetingSession';
-import { tokens, useTheme } from '@/theme';
+import { MeetingTranscript } from './MeetingTranscript';
+import { useMeetingSession } from '@/hooks/meeting/useMeetingSession';
+import { tokens } from '@/theme';
 
-/** Shared presentation for speaker activity and speaker-labelled meeting text. */
-export function MeetingTask({ transcribe }: { transcribe: boolean }) {
-  const session = useMeetingSession(transcribe);
-  const { colors } = useTheme();
+/** Private meeting transcription using Gallery's shared microphone and model controls. */
+export function MeetingTask() {
+  const session = useMeetingSession();
   const { recorder, model, status, turns } = session;
-  const busy = recorder.isRecording || recorder.starting || session.processing;
+  const busy =
+    recorder.isRecording || recorder.starting || session.processing || session.localModel.importing;
   return (
     <TaskScreen
-      title={transcribe ? 'Meeting transcript' : 'Speaker diarization'}
+      title="Meeting transcript"
       model={model}
       status={status}
       error={session.error}
       busy={busy}
       scrollable={false}
     >
-      <AppText variant="secondary" tone="muted">
-        Audio is processed on device and discarded. No audio files are saved. Everyone should know
-        the microphone is active.
-      </AppText>
       <MicrophoneStage
         model={model}
         status={status}
-        title={transcribe ? 'Keep the words, skip the recording' : 'See who spoke when'}
-        description={
-          transcribe
-            ? 'Local English transcription with up to four anonymous speaker labels. Updates arrive in roughly 10-second batches.'
-            : 'Track up to four speakers locally. Speaker numbers belong to this session, not to known people.'
+        setup={
+          session.localModel.missing !== false ? (
+            <ModelSetup
+              model={model}
+              status={status}
+              disabled={session.localModel.importing || session.localModel.missing === undefined}
+              label={session.localModel.importing ? 'Importing…' : 'Import model'}
+              onPress={() => void session.localModel.importModel()}
+            />
+          ) : undefined
         }
-        startLabel={transcribe ? 'Start transcription' : 'Start speaker detection'}
-        stopLabel={transcribe ? 'Stop transcription' : 'Stop speaker detection'}
+        title="Keep the conversation"
+        description={
+          session.localModel.missing
+            ? 'Import the Nemotron 3 model to prepare private meeting transcription.'
+            : 'Words and speaker labels, processed on your device. Audio is discarded as you go.'
+        }
+        startLabel="Start transcription"
+        stopLabel="Stop transcription"
         active={recorder.isRecording}
         starting={recorder.starting}
         finishing={session.processing && !recorder.isRecording}
         hasResult={turns.length > 0}
         onToggle={session.toggle}
       >
-        <ScrollView contentContainerStyle={styles.turns}>
-          <AppText variant="secondary" tone="muted" accessibilityLiveRegion="polite">
-            {session.processing
-              ? 'Processing on device…'
-              : recorder.isRecording
-                ? 'Listening…'
-                : 'Session stopped'}
-          </AppText>
-          {turns.map((turn, i) => (
-            <View key={i} style={[styles.turn, { backgroundColor: colors.surface }]}>
-              <AppText variant="secondary" tone="accent">
-                {formatTime(turn.start)}–{formatTime(turn.end)} ·{' '}
-                {speakerLabel(turn.speakers, turn.overlap)}
-              </AppText>
-              {transcribe && <AppText selectable>{turn.text}</AppText>}
-            </View>
-          ))}
-          <AppText variant="secondary" tone="muted">
-            Speaker labels and words can be wrong. Overlapping voices share one transcript; short or
-            uncertain turns may be missed. Sentences can split between batches.
-          </AppText>
-        </ScrollView>
+        <MeetingTranscript
+          turns={turns}
+          listening={recorder.isRecording}
+          processing={session.processing}
+        />
       </MicrophoneStage>
-      {!!turns.length && (
-        <View style={styles.actions}>
-          {transcribe && (
+      <View style={styles.footer}>
+        {!!turns.length && (
+          <View style={styles.actions}>
             <PhotoActionButton
-              iconName="copy-outline"
+              iconName={session.copied ? 'checkmark' : 'copy-outline'}
               label={session.copied ? 'Transcript copied' : 'Copy transcript'}
               disabled={busy}
               onPress={() => void session.copy()}
               size="small"
             />
-          )}
-          <PhotoActionButton
-            iconName="trash-outline"
-            label="Clear session"
-            disabled={false}
-            onPress={session.clear}
-            size="small"
-          />
-          <AppText variant="secondary" tone="muted">
-            {session.copied
-              ? 'Copied to clipboard'
-              : 'Only text can leave this session when you copy it.'}
-          </AppText>
-        </View>
-      )}
+            <PhotoActionButton
+              iconName="trash-outline"
+              label="Clear session"
+              disabled={false}
+              onPress={session.clear}
+              size="small"
+            />
+          </View>
+        )}
+        <AppText variant="caption" tone="muted" style={styles.note}>
+          {session.copied
+            ? 'Text copied to clipboard'
+            : recorder.isRecording || turns.length
+              ? 'No audio saved · Labels and words may be imperfect'
+              : 'No audio saved · Let everyone know before starting'}
+        </AppText>
+      </View>
     </TaskScreen>
   );
 }
 const styles = StyleSheet.create({
-  turns: { gap: tokens.spacing.md, paddingVertical: tokens.spacing.lg },
-  turn: { gap: tokens.spacing.sm, padding: tokens.spacing.lg, borderRadius: tokens.radius.card },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.spacing.md,
-    paddingTop: tokens.spacing.md,
-    flexWrap: 'wrap',
-  },
+  footer: { alignItems: 'center', gap: tokens.spacing.md, paddingTop: tokens.spacing.lg },
+  actions: { flexDirection: 'row', gap: tokens.spacing.md },
+  note: { textAlign: 'center' },
 });

@@ -24,6 +24,7 @@ export function MicrophoneStage({
   stopLabel = 'Stop recording',
   onToggle,
   children,
+  setup,
 }: {
   model: ModelControls;
   status: ModelStatus;
@@ -37,6 +38,7 @@ export function MicrophoneStage({
   stopLabel?: string;
   onToggle: () => Promise<void>;
   children: ReactNode;
+  setup?: ReactNode;
 }) {
   const ready = model.loaded && model.prepared && status.isReady && !model.deleting;
   return (
@@ -53,7 +55,9 @@ export function MicrophoneStage({
           <TaskHero
             title={title}
             description={description}
-            setup={!model.prepared ? <ModelSetup model={model} status={status} /> : undefined}
+            setup={
+              !model.prepared ? (setup ?? <ModelSetup model={model} status={status} />) : undefined
+            }
           />
         </TaskHeroStage>
       )}

@@ -14,6 +14,7 @@
     "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.15",
     "expo-device": "~57.0.1",
+    "expo-document-picker": "~57.0.3",
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.3",
