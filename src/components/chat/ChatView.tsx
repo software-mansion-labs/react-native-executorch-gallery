@@ -13,6 +13,7 @@ import { ChatToolDetails } from '@/components/chat/ChatToolDetails';
 import { ChatResponseError } from '@/components/chat/ChatResponseError';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
@@ -73,140 +74,150 @@ export function ChatView({
   const ready = model.prepared && model.loaded && session.isReady;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <View style={styles.content}>
-        <ScrollView
-          style={styles.scroll}
-          ref={scroll}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.messages}
-          scrollEventThrottle={16}
-          onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
-            if (readingDetails.current) return;
-            following.current =
-              contentSize.height - contentOffset.y - layoutMeasurement.height <
-              tokens.layout.chatScrollThreshold;
-          }}
-          onScrollBeginDrag={() => {
-            readingDetails.current = false;
-          }}
-          onContentSizeChange={() => {
-            if (following.current) scroll.current?.scrollToEnd({ animated: false });
-          }}
-          onLayout={() => {
-            if (following.current) scroll.current?.scrollToEnd({ animated: false });
-          }}
-        >
-          {turns.map(presentChatTurn).map((turn, turnIndex) => (
-            <View key={turnIndex} style={styles.turn}>
-              <View
-                style={[
-                  styles.question,
-                  turn.imageUri && styles.imageQuestion,
-                  { backgroundColor: colors.surface },
-                ]}
-              >
-                {turn.imageUri && <ChatPhoto uri={turn.imageUri} />}
-                <AppText selectable>{turn.question}</AppText>
-              </View>
-              {(turn.responses.some(Boolean) || turn.tools.length > 0 || !!turn.error) && (
-                <Animated.View
-                  entering={answerEntrance}
-                  style={[styles.answer, { backgroundColor: colors.surface }]}
-                >
-                  {(turn.thinking || (turn.pending && !turn.plainResponse)) && (
-                    <ChatThinking
-                      text={turn.thinking}
-                      active={turn.pending && turn.reasoning}
-                      onToggle={onDisclosureToggle}
-                    />
-                  )}
-                  {turn.tools.map((tool, index) => {
-                    return (
-                      <ChatDisclosure
-                        key={index}
-                        icon="tool"
-                        label={
-                          tool.detail.includes('"error"')
-                            ? `${tool.name} · Couldn’t complete`
-                            : tool.name
-                        }
-                        onToggle={onDisclosureToggle}
-                      >
-                        <ChatToolDetails tool={tool} />
-                      </ChatDisclosure>
-                    );
-                  })}
-                  {!!turn.answer && (
-                    <Animated.View entering={answerEntrance}>
-                      <ChatText>{turn.answer}</ChatText>
-                    </Animated.View>
-                  )}
-                  {turn.error && (
-                    <Animated.View entering={answerEntrance}>
-                      <ChatResponseError
-                        message={turn.error}
-                        disabled={busy}
-                        onEditPrompt={() => onDraftChange(turn.question)}
+      <PromptStage
+        footer={
+          ready ? (
+            <>
+              <Animated.View entering={composerEntrance}>
+                <PromptInput
+                  value={draft}
+                  onChangeText={onDraftChange}
+                  canSubmit={canSend && !!draft.trim() && !busy}
+                  isGenerating={busy}
+                  onStop={onStop}
+                  onSubmit={() => {
+                    following.current = true;
+                    readingDetails.current = false;
+                    void onSend();
+                  }}
+                  suggestions={!turns.length ? suggestions : undefined}
+                  reserveSuggestionSpace={!turns.length}
+                  attachment={composerAccessory}
+                  leadingAccessory={
+                    <View
+                      style={[
+                        styles.contextActions,
+                        !!contextAccessory &&
+                          (turns.length > 0 || suggestions.length === 0) &&
+                          styles.expandedActions,
+                      ]}
+                    >
+                      <ChatContext
+                        session={session}
+                        busy={busy}
+                        hasMessages={!!turns.length}
+                        onNewChat={() => {
+                          model.resetPreparation();
+                          onNewChat();
+                        }}
                       />
+                      {contextAccessory}
+                    </View>
+                  }
+                />
+              </Animated.View>
+            </>
+          ) : null
+        }
+      >
+        {(contentInset) => (
+          <>
+            <ScrollView
+              style={styles.scroll}
+              ref={scroll}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[styles.messages, contentInset]}
+              scrollEventThrottle={16}
+              onScroll={({ nativeEvent: { contentOffset, contentSize, layoutMeasurement } }) => {
+                if (readingDetails.current) return;
+                following.current =
+                  contentSize.height - contentOffset.y - layoutMeasurement.height <
+                  tokens.layout.chatScrollThreshold;
+              }}
+              onScrollBeginDrag={() => {
+                readingDetails.current = false;
+              }}
+              onContentSizeChange={() => {
+                if (following.current) scroll.current?.scrollToEnd({ animated: false });
+              }}
+              onLayout={() => {
+                if (following.current) scroll.current?.scrollToEnd({ animated: false });
+              }}
+            >
+              {turns.map(presentChatTurn).map((turn, turnIndex) => (
+                <View key={turnIndex} style={styles.turn}>
+                  <View
+                    style={[
+                      styles.question,
+                      turn.imageUri && styles.imageQuestion,
+                      { backgroundColor: colors.surface },
+                    ]}
+                  >
+                    {turn.imageUri && <ChatPhoto uri={turn.imageUri} />}
+                    <AppText selectable>{turn.question}</AppText>
+                  </View>
+                  {(turn.responses.some(Boolean) || turn.tools.length > 0 || !!turn.error) && (
+                    <Animated.View
+                      entering={answerEntrance}
+                      style={[styles.answer, { backgroundColor: colors.surface }]}
+                    >
+                      {(turn.thinking || (turn.pending && !turn.plainResponse)) && (
+                        <ChatThinking
+                          text={turn.thinking}
+                          active={turn.pending && turn.reasoning}
+                          onToggle={onDisclosureToggle}
+                        />
+                      )}
+                      {turn.tools.map((tool, index) => {
+                        return (
+                          <ChatDisclosure
+                            key={index}
+                            icon="tool"
+                            label={
+                              tool.detail.includes('"error"')
+                                ? `${tool.name} · Couldn’t complete`
+                                : tool.name
+                            }
+                            onToggle={onDisclosureToggle}
+                          >
+                            <ChatToolDetails tool={tool} />
+                          </ChatDisclosure>
+                        );
+                      })}
+                      {!!turn.answer && (
+                        <Animated.View entering={answerEntrance}>
+                          <ChatText>{turn.answer}</ChatText>
+                        </Animated.View>
+                      )}
+                      {turn.error && (
+                        <Animated.View entering={answerEntrance}>
+                          <ChatResponseError
+                            message={turn.error}
+                            disabled={busy}
+                            onEditPrompt={() => onDraftChange(turn.question)}
+                          />
+                        </Animated.View>
+                      )}
                     </Animated.View>
                   )}
-                </Animated.View>
-              )}
-              {turn.pending && <ThinkingIndicator />}
-            </View>
-          ))}
-        </ScrollView>
-        {ready && (
-          <Animated.View entering={composerEntrance}>
-            <PromptInput
-              value={draft}
-              onChangeText={onDraftChange}
-              canSubmit={canSend && !!draft.trim() && !busy}
-              isGenerating={busy}
-              onStop={onStop}
-              onSubmit={() => {
-                following.current = true;
-                readingDetails.current = false;
-                void onSend();
-              }}
-              suggestions={!turns.length ? suggestions : undefined}
-              reserveSuggestionSpace={!turns.length}
-              attachment={composerAccessory}
-              leadingAccessory={
-                <View
-                  style={[
-                    styles.contextActions,
-                    !!contextAccessory &&
-                      (turns.length > 0 || suggestions.length === 0) &&
-                      styles.expandedActions,
-                  ]}
-                >
-                  <ChatContext
-                    session={session}
-                    busy={busy}
-                    hasMessages={!!turns.length}
-                    onNewChat={() => {
-                      model.resetPreparation();
-                      onNewChat();
-                    }}
-                  />
-                  {contextAccessory}
+                  {turn.pending && <ThinkingIndicator />}
                 </View>
-              }
-            />
-          </Animated.View>
+              ))}
+            </ScrollView>
+
+            {!turns.length && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title={heroTitle}
+                  description={heroDescription}
+                  setup={<ModelSetup model={model} status={session} />}
+                />
+              </TaskHeroStage>
+            )}
+          </>
         )}
-        {!turns.length && (
-          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-            <TaskHero
-              title={heroTitle}
-              description={heroDescription}
-              setup={<ModelSetup model={model} status={session} />}
-            />
-          </TaskHeroStage>
-        )}
-      </View>
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -219,8 +230,7 @@ const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.sm },
+  root: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
   messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
   turn: { gap: spacing.md },

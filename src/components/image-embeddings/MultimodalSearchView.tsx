@@ -8,6 +8,7 @@ import { IconButton } from '@/components/IconButton';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { SearchPhotoGrid } from '@/components/image-embeddings/SearchPhotoGrid';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
@@ -83,29 +84,36 @@ export function MultimodalSearchView({
               />
             ) : null}
           </View>
-          <Animated.ScrollView
-            ref={scroll}
-            style={styles.scroll}
-            contentContainerStyle={styles.grid}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            showsVerticalScrollIndicator={false}
+          <PromptStage
+            footer={
+              <PromptInput
+                value={draft}
+                onChangeText={onDraftChange}
+                onSubmit={() => {
+                  Keyboard.dismiss();
+                  void onSearch();
+                }}
+                canSubmit={!!draft.trim() && !busy}
+                disabled={busy}
+                placeholder="Find a photo…"
+                submitLabel="Search photos"
+                suggestions={suggestions}
+              />
+            }
           >
-            <SearchPhotoGrid photos={photos} ranked={!!result} />
-          </Animated.ScrollView>
-          <PromptInput
-            value={draft}
-            onChangeText={onDraftChange}
-            onSubmit={() => {
-              Keyboard.dismiss();
-              void onSearch();
-            }}
-            canSubmit={!!draft.trim() && !busy}
-            disabled={busy}
-            placeholder="Find a photo…"
-            submitLabel="Search photos"
-            suggestions={suggestions}
-          />
+            {(contentInset) => (
+              <Animated.ScrollView
+                ref={scroll}
+                style={styles.scroll}
+                contentContainerStyle={[styles.grid, contentInset]}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                showsVerticalScrollIndicator={false}
+              >
+                <SearchPhotoGrid photos={photos} ranked={!!result} />
+              </Animated.ScrollView>
+            )}
+          </PromptStage>
         </Animated.View>
       )}
       {!ready && (
@@ -125,7 +133,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
+  root: { flex: 1 },
   collection: { flex: 1, gap: spacing.sm },
   header: {
     flexDirection: 'row',

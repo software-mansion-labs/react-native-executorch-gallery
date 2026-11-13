@@ -4,6 +4,7 @@ import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { SpeechReadAlong } from '@/components/text-to-speech/SpeechReadAlong';
 import { TaskHero } from '@/components/TaskHero';
@@ -55,80 +56,90 @@ export function TextToSpeechView({
   useKeyboardScroll(scroll);
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <View style={styles.content}>
-        <Animated.ScrollView
-          ref={scroll}
-          onLayout={onLayout}
-          style={styles.stage}
-          contentContainerStyle={styles.result}
-          keyboardDismissMode="interactive"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {!!text && (
-            <SpeechReadAlong
-              text={text}
-              words={playback.words}
-              activeWord={playback.activeWord}
-              onTextLayout={onTextLayout}
-            />
-          )}
-        </Animated.ScrollView>
-        {playback.busy && (
-          <View style={styles.activity}>
-            <Animated.View entering={entrance} style={styles.status}>
-              <ThinkingIndicator
-                accessibilityLabel={playback.playing ? 'Speaking' : 'Preparing speech'}
-              />
-            </Animated.View>
-          </View>
-        )}
-        {ready && (
-          <Animated.View entering={entrance}>
-            <PromptInput
-              value={input}
-              onChangeText={onInputChange}
-              onSubmit={() => {
-                Keyboard.dismiss();
-                void onRun();
-              }}
-              onStop={playback.stop}
-              canSubmit={!!input.trim() && !playback.busy}
-              isGenerating={playback.busy}
-              placeholder="Text to read…"
-              submitLabel="Speak text"
-              stopLabel="Stop speaking"
-              suggestions={suggestions}
-              reserveSuggestionSpace
-              leadingAccessory={
-                playback.canReplay ? (
-                  <Animated.View entering={entrance}>
-                    <PhotoActionButton
-                      iconName="refresh-outline"
-                      label="Replay speech"
-                      size="small"
-                      disabled={false}
-                      onPress={() => {
-                        Keyboard.dismiss();
-                        void onReplay();
-                      }}
+      <PromptStage
+        footer={
+          ready ? (
+            <>
+              {playback.busy && (
+                <View style={styles.activity}>
+                  <Animated.View entering={entrance} style={styles.status}>
+                    <ThinkingIndicator
+                      accessibilityLabel={playback.playing ? 'Speaking' : 'Preparing speech'}
                     />
                   </Animated.View>
-                ) : undefined
-              }
-            />
-          </Animated.View>
+                </View>
+              )}
+              <Animated.View entering={entrance}>
+                <PromptInput
+                  value={input}
+                  onChangeText={onInputChange}
+                  onSubmit={() => {
+                    Keyboard.dismiss();
+                    void onRun();
+                  }}
+                  onStop={playback.stop}
+                  canSubmit={!!input.trim() && !playback.busy}
+                  isGenerating={playback.busy}
+                  placeholder="Text to read…"
+                  submitLabel="Speak text"
+                  stopLabel="Stop speaking"
+                  suggestions={suggestions}
+                  reserveSuggestionSpace
+                  leadingAccessory={
+                    playback.canReplay ? (
+                      <Animated.View entering={entrance}>
+                        <PhotoActionButton
+                          iconName="refresh-outline"
+                          label="Replay speech"
+                          size="small"
+                          disabled={false}
+                          onPress={() => {
+                            Keyboard.dismiss();
+                            void onReplay();
+                          }}
+                        />
+                      </Animated.View>
+                    ) : undefined
+                  }
+                />
+              </Animated.View>
+            </>
+          ) : null
+        }
+      >
+        {(contentInset) => (
+          <>
+            <Animated.ScrollView
+              ref={scroll}
+              onLayout={onLayout}
+              style={styles.stage}
+              contentContainerStyle={[styles.result, contentInset]}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {!!text && (
+                <SpeechReadAlong
+                  text={text}
+                  words={playback.words}
+                  activeWord={playback.activeWord}
+                  onTextLayout={onTextLayout}
+                />
+              )}
+            </Animated.ScrollView>
+
+            {!text && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title="Give your words a voice"
+                  description="Hear natural speech and follow every word, right on your device."
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
+          </>
         )}
-        {!text && (
-          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-            <TaskHero
-              title="Give your words a voice"
-              description="Hear natural speech and follow every word, right on your device."
-              setup={<ModelSetup model={model} status={status} />}
-            />
-          </TaskHeroStage>
-        )}
-      </View>
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -138,8 +149,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration).reduceMotion
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.sm },
+  root: { flex: 1 },
   stage: { flex: 1, minHeight: 0 },
   result: {
     flexGrow: 1,

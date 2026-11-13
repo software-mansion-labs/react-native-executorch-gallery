@@ -8,6 +8,7 @@ import type { ModelStatus } from '@/components/ModelSheet';
 import { PrivacyFilterToggle } from '@/components/privacy-filter/PrivacyFilterToggle';
 import { PrivacyFilterResult } from '@/components/privacy-filter/PrivacyFilterResult';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
@@ -64,66 +65,76 @@ export function PrivacyFilterView({
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <View style={styles.content}>
-        <Animated.ScrollView
-          ref={scroll}
-          style={styles.stage}
-          contentContainerStyle={styles.results}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-        >
-          {result && (
-            <PrivacyFilterResult
-              key={`${result.text}:${result.latency}`}
-              result={result}
-              revealed={showOriginal}
-            />
-          )}
-        </Animated.ScrollView>
-        {busy && (
-          <View style={styles.activity}>
-            <Animated.View entering={entrance} style={styles.loading}>
-              <ThinkingIndicator accessibilityLabel="Filtering text" />
-            </Animated.View>
-          </View>
+      <PromptStage
+        footer={
+          ready ? (
+            <>
+              {busy && (
+                <View style={styles.activity}>
+                  <Animated.View entering={entrance} style={styles.loading}>
+                    <ThinkingIndicator accessibilityLabel="Filtering text" />
+                  </Animated.View>
+                </View>
+              )}
+              <Animated.View entering={entrance}>
+                <PromptInput
+                  value={input}
+                  onChangeText={onInputChange}
+                  onSubmit={() => {
+                    Keyboard.dismiss();
+                    void onRun();
+                  }}
+                  disabled={busy}
+                  canSubmit={!!input.trim() && !busy}
+                  placeholder="Paste text to filter…"
+                  submitLabel="Filter text"
+                  suggestions={suggestions}
+                  reserveSuggestionSpace
+                  leadingAccessory={
+                    result && result.entities.length > 0 ? (
+                      <PrivacyFilterToggle
+                        original={showOriginal}
+                        onChange={(original) => setComparison({ result, original })}
+                      />
+                    ) : undefined
+                  }
+                />
+              </Animated.View>
+            </>
+          ) : null
+        }
+      >
+        {(contentInset) => (
+          <>
+            <Animated.ScrollView
+              ref={scroll}
+              style={styles.stage}
+              contentContainerStyle={[styles.results, contentInset]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={false}
+            >
+              {result && (
+                <PrivacyFilterResult
+                  key={`${result.text}:${result.latency}`}
+                  result={result}
+                  revealed={showOriginal}
+                />
+              )}
+            </Animated.ScrollView>
+
+            {!result && !busy && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title="Keep the personal private"
+                  description="Find and hide sensitive details in your text, right on your device."
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
+          </>
         )}
-        {ready && (
-          <Animated.View entering={entrance}>
-            <PromptInput
-              value={input}
-              onChangeText={onInputChange}
-              onSubmit={() => {
-                Keyboard.dismiss();
-                void onRun();
-              }}
-              disabled={busy}
-              canSubmit={!!input.trim() && !busy}
-              placeholder="Paste text to filter…"
-              submitLabel="Filter text"
-              suggestions={suggestions}
-              reserveSuggestionSpace
-              leadingAccessory={
-                result && result.entities.length > 0 ? (
-                  <PrivacyFilterToggle
-                    original={showOriginal}
-                    onChange={(original) => setComparison({ result, original })}
-                  />
-                ) : undefined
-              }
-            />
-          </Animated.View>
-        )}
-        {!result && !busy && (
-          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-            <TaskHero
-              title="Keep the personal private"
-              description="Find and hide sensitive details in your text, right on your device."
-              setup={<ModelSetup model={model} status={status} />}
-            />
-          </TaskHeroStage>
-        )}
-      </View>
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -133,8 +144,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration).reduceMotion
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.sm },
+  root: { flex: 1 },
   stage: { flex: 1, minHeight: 0 },
   results: {
     flexGrow: 1,

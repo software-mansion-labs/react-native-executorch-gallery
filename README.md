@@ -1,10 +1,21 @@
-**React Native ExecuTorch Gallery** showcases on-device AI. Download models once, then run inference privately and fully offline on your device.
+<h1 align="center">React Native ExecuTorch Gallery</h1>
 
-<img src=".github/assets/showcase.webp" width="1200" alt="Three iPhone simulator recordings showing local chat, text to speech with word highlighting, and multimodal photo search">
+<p align="center">On-device AI. Private. Offline. In your pocket.</p>
+
+Explore on-device AI with React Native ExecuTorch. Download models once, then run inference privately and fully offline on your device.
+
+<p align="center">
+  <img src=".github/assets/chat.webp" width="240" alt="A local model explains the principle of least action with rendered LaTeX, then the conversation scrolls behind the frosted composer">
+  <img src=".github/assets/speech.webp" width="240" alt="On-device speech generation with word highlighting and replay">
+  <img src=".github/assets/search.webp" width="240" alt="An on-device search for somewhere peaceful ranks a forest photo first">
+</p>
 
 ## Demos
 
-### Generative AI
+Explore the categories below. Each demo links to its screen implementation.
+
+<details>
+<summary><strong>Generative AI</strong></summary>
 
 - [Local chat](<src/app/(screens)/llm-chat.tsx>)
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
@@ -12,7 +23,10 @@
 - [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
 - [Text to image](<src/app/(screens)/text-to-image.tsx>)
 
-### Computer vision
+</details>
+
+<details>
+<summary><strong>Computer vision</strong></summary>
 
 - [Depth estimation](<src/app/(screens)/depth-estimation.tsx>)
 - [Photo cleanup](<src/app/(screens)/inpainting.tsx>)
@@ -24,25 +38,39 @@
 - [Object detection](<src/app/(screens)/object-detection.tsx>)
 - [Image classification](<src/app/(screens)/image-classification.tsx>)
 
-### Real time
+</details>
+
+<details>
+<summary><strong>Real time</strong></summary>
 
 - [Live object detection](<src/app/(screens)/realtime-object-detection.tsx>)
 
-### Audio & speech
+</details>
+
+<details>
+<summary><strong>Audio & speech</strong></summary>
 
 - [Text to speech](<src/app/(screens)/text-to-speech.tsx>)
 - [Speech to text](<src/app/(screens)/speech-to-text.tsx>)
 - [Voice activity detection](<src/app/(screens)/voice-activity-detection.tsx>)
 
-### Embeddings & search
+</details>
+
+<details>
+<summary><strong>Embeddings & search</strong></summary>
 
 - [Multimodal search](<src/app/(screens)/image-embeddings.tsx>)
 - [ColBERT retrieval](<src/app/(screens)/colbert-retrieval.tsx>)
 
-### Natural language processing
+</details>
+
+<details>
+<summary><strong>Natural language processing</strong></summary>
 
 - [Privacy filter](<src/app/(screens)/privacy-filter.tsx>)
 - [Translation](<src/app/(screens)/translation.tsx>)
+
+</details>
 
 ## Getting started
 
