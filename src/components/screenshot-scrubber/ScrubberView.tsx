@@ -79,52 +79,45 @@ export function ScrubberView({ model, scrubber }: Props) {
                 </AppText>
               )}
             </View>
-            {result && (
-              <>
-                <View style={styles.actions}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={original ? 'Show redacted' : 'Show original'}
-                    accessibilityState={{ selected: original, disabled: busy }}
-                    disabled={busy}
-                    onPress={() => setComparison({ result, original: !original })}
-                    style={[styles.textButton, { backgroundColor: colors.surface }]}
-                  >
-                    <AppText variant="secondary" tone={original ? 'accent' : 'text'}>
-                      Show
-                    </AppText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={busy}
-                    accessibilityLabel="Review regions"
-                    onPress={() => setReviewing(true)}
-                    style={[styles.textButton, { backgroundColor: colors.surface }]}
-                  >
-                    <AppText variant="secondary">Review</AppText>
-                  </Pressable>
-                  {Platform.OS === 'ios' && (
-                    <PhotoActionButton
-                      iconName="share-outline"
-                      label="Share redacted PNG"
-                      size="small"
-                      disabled={busy || !hidden.length}
-                      onPress={() => void scrubber.share(colors.redaction)}
-                    />
-                  )}
-                </View>
-                {!result.regions.length && (
-                  <AppText variant="caption" tone="muted">
-                    No text was recognized.
-                  </AppText>
-                )}
-                {exported && (
-                  <AppText variant="caption" tone="accent">
-                    Redacted PNG created
-                  </AppText>
-                )}
-              </>
-            )}
+            <View style={styles.actions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={original ? 'Show redacted' : 'Show original'}
+                accessibilityState={{ selected: original, disabled: busy || !result }}
+                disabled={busy || !result}
+                onPress={() => setComparison({ result, original: !original })}
+                style={[styles.textButton, { backgroundColor: colors.surface }]}
+              >
+                <AppText variant="secondary" tone={original ? 'accent' : 'text'}>
+                  Show
+                </AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy || !result}
+                accessibilityLabel="Review regions"
+                onPress={() => setReviewing(true)}
+                style={[styles.textButton, { backgroundColor: colors.surface }]}
+              >
+                <AppText variant="secondary">Review</AppText>
+              </Pressable>
+              {Platform.OS === 'ios' && (
+                <PhotoActionButton
+                  iconName="share-outline"
+                  label="Share redacted PNG"
+                  size="small"
+                  disabled={busy || !hidden.length}
+                  onPress={() => void scrubber.share(colors.redaction)}
+                />
+              )}
+            </View>
+            <AppText variant="caption" tone={exported ? 'accent' : 'muted'}>
+              {result && !result.regions.length
+                ? 'No text was recognized.'
+                : exported
+                  ? 'Redacted PNG created'
+                  : ' '}
+            </AppText>
           </View>
         }
       />
