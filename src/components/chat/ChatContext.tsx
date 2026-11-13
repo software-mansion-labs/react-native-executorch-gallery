@@ -21,11 +21,13 @@ export function ChatContext({
   busy,
   hasMessages,
   onNewChat,
+  description = 'Messages, replies and tool instructions share this space.',
 }: {
-  session: ReturnType<typeof useLLMChatSession>;
+  session: Pick<ReturnType<typeof useLLMChatSession>, 'getKVCacheState'>;
   busy: boolean;
   hasMessages: boolean;
   onNewChat: () => void;
+  description?: string;
 }) {
   const { colors } = useTheme();
   const context = useChatContext(session, busy);
@@ -94,7 +96,7 @@ export function ChatContext({
               </AppText>
             </View>
             <AppText variant="secondary" tone="muted">
-              Messages, replies and tool instructions share this space.
+              {description}
             </AppText>
             <AnimatedPressable
               accessibilityRole="button"

@@ -16,6 +16,8 @@ Explore the categories below. Each demo links to its screen implementation.
 <summary><strong>Generative AI</strong></summary>
 
 - [Local chat](<src/app/(screens)/llm-chat.tsx>)
+
+- [Omni conversation](<src/app/(screens)/lfm3-omni.tsx>)
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
 - [Media stories](<src/app/(screens)/media-stories.tsx>)
 - [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
