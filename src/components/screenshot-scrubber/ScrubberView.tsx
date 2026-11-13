@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -8,6 +9,7 @@ import { IconToggle } from '@/components/IconToggle';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { PhotoPicker } from '@/components/PhotoPicker';
+import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
 import type { ModelControls } from '@/hooks/useModelControls';
 import type { useScreenshotScrubber } from '@/hooks/screenshot-scrubber/useScreenshotScrubber';
 import { regionRect } from '@/lib/screenshot-scrubber/regions';
@@ -19,9 +21,10 @@ type Props = { model: ModelControls; scrubber: ReturnType<typeof useScreenshotSc
 export function ScrubberView({ model, scrubber }: Props) {
   const { colors, iconSize } = useTheme();
   const [comparison, setComparison] = useState({ result: scrubber.result, original: false });
+  const comparePress = useCardPressAnimation();
   const [reviewing, setReviewing] = useState(false);
   const original = comparison.result === scrubber.result && comparison.original;
-  const { image, result, busy, status, phase, exported } = scrubber;
+  const { image, result, busy, status } = scrubber;
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   const hidden = result?.regions.filter((region) => region.hidden) ?? [];
   return (
@@ -74,55 +77,47 @@ export function ScrubberView({ model, scrubber }: Props) {
           )
         }
         resultsContent={
-          <View style={styles.results}>
-            <View style={styles.summary} accessibilityLiveRegion="polite">
-              <AppText variant="secondary">
-                {phase ??
-                  (result
-                    ? `${hidden.length} text regions hidden`
-                    : image
-                      ? 'Ready to find private text'
-                      : ready
-                        ? 'Choose a screenshot to begin'
-                        : ' ')}
-              </AppText>
-              {result && (
-                <AppText variant="caption" tone="muted">
-                  {(result.latency / 1000).toFixed(1)} s
-                </AppText>
-              )}
-            </View>
-            <View style={styles.actions}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={original ? 'Show redacted' : 'Show original'}
-                accessibilityState={{ selected: original, disabled: busy || !result }}
-                disabled={busy || !result}
-                onPress={() => setComparison({ result, original: !original })}
-                style={[
-                  styles.textButton,
-                  { backgroundColor: original ? colors.border : colors.surface },
-                ]}
-              >
-                <AppText variant="secondary">Show</AppText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={busy || !result}
-                accessibilityLabel="Review regions"
-                onPress={() => setReviewing(true)}
-                style={[styles.textButton, { backgroundColor: colors.surface }]}
-              >
-                <AppText variant="secondary">Review</AppText>
-              </Pressable>
-            </View>
-            <AppText variant="caption" tone={exported ? 'text' : 'muted'}>
-              {result && !result.regions.length
-                ? 'No text was recognized.'
-                : exported
-                  ? 'Redacted PNG created'
-                  : ' '}
-            </AppText>
+          <View style={styles.actions}>
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={original ? 'Showing original' : 'Hold to show original'}
+              accessibilityState={{ selected: original, disabled: busy || !result }}
+              disabled={busy || !result}
+              onPressIn={() => {
+                comparePress.onPressIn();
+                setComparison({ result, original: true });
+              }}
+              onPressOut={() => {
+                comparePress.onPressOut();
+                setComparison({ result, original: false });
+              }}
+              accessibilityActions={[
+                { name: 'showOriginal', label: 'Show original' },
+                { name: 'showRedacted', label: 'Show redacted photo' },
+              ]}
+              onAccessibilityAction={({ nativeEvent }) => {
+                if (nativeEvent.actionName === 'showOriginal')
+                  setComparison({ result, original: true });
+                if (nativeEvent.actionName === 'showRedacted')
+                  setComparison({ result, original: false });
+              }}
+              style={[
+                styles.textButton,
+                { backgroundColor: colors.surface },
+                comparePress.animatedStyle,
+              ]}
+            >
+              <AppText variant="secondary">Show</AppText>
+            </AnimatedPressable>
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy || !result}
+              accessibilityLabel="Review regions"
+              onPress={() => setReviewing(true)}
+              style={[styles.textButton, { backgroundColor: colors.surface }]}
+            >
+              <AppText variant="secondary">Review</AppText>
+            </Pressable>
           </View>
         }
       />
@@ -147,6 +142,7 @@ export function ScrubberView({ model, scrubber }: Props) {
               </AppText>
             </View>
             <IconToggle
+              selectionTone="background"
               label={`Hide region ${region.id + 1}: ${region.text}`}
               value={region.hidden}
               onChange={() => scrubber.toggle(region.id)}
@@ -167,10 +163,9 @@ export function ScrubberView({ model, scrubber }: Props) {
   );
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { spacing, radius, borderWidth, layout } = tokens;
 const styles = StyleSheet.create({
-  results: { gap: spacing.sm },
-  summary: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   share: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   textButton: {
