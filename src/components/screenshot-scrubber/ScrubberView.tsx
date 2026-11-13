@@ -1,8 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
+import { IconToggle } from '@/components/IconToggle';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { PhotoPicker } from '@/components/PhotoPicker';
@@ -15,7 +17,7 @@ type Props = { model: ModelControls; scrubber: ReturnType<typeof useScreenshotSc
 
 /** Shows source-resolution masks, an explicit original comparison, region review and PNG sharing. */
 export function ScrubberView({ model, scrubber }: Props) {
-  const { colors } = useTheme();
+  const { colors, iconSize } = useTheme();
   const [comparison, setComparison] = useState({ result: scrubber.result, original: false });
   const [reviewing, setReviewing] = useState(false);
   const original = comparison.result === scrubber.result && comparison.original;
@@ -146,12 +148,19 @@ export function ScrubberView({ model, scrubber }: Props) {
                   : 'Review manually'}
               </AppText>
             </View>
-            <Switch
-              accessibilityLabel={`Hide region ${region.id + 1}: ${region.text}`}
+            <IconToggle
+              label={`Hide region ${region.id + 1}: ${region.text}`}
               value={region.hidden}
-              onValueChange={() => scrubber.toggle(region.id)}
+              onChange={() => scrubber.toggle(region.id)}
               disabled={busy}
-              trackColor={{ true: colors.accent, false: colors.border }}
+              renderIcon={(hidden, color) => (
+                <Ionicons
+                  name={hidden ? 'eye-off-outline' : 'eye-outline'}
+                  size={iconSize.small}
+                  color={color}
+                  accessible={false}
+                />
+              )}
             />
           </View>
         ))}
