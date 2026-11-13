@@ -40,7 +40,7 @@ export function ScrubberView({ model, scrubber }: Props) {
         onPick={scrubber.pick}
         onRun={scrubber.run}
         canRun={ready && !!image}
-        running={busy}
+        running={busy && !scrubber.sharing}
         renderOverlay={(transform) =>
           !original &&
           image && (
@@ -70,6 +70,7 @@ export function ScrubberView({ model, scrubber }: Props) {
               <PhotoActionButton
                 iconName="share-outline"
                 label="Share redacted PNG"
+                loading={scrubber.sharing}
                 size="small"
                 disabled={busy || !hidden.length}
                 onPress={() => void scrubber.share(colors.redaction)}

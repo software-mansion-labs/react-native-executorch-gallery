@@ -106,6 +106,11 @@ export function useScreenshotScrubber(model: ModelControls) {
     setError(null);
     setPhase('Creating redacted PNG…');
     try {
+      // Let the sharing indicator paint before source-resolution PNG encoding blocks JS.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      if (!mounted.current) return;
       const uri = await exportScrubbedImage(image, result.regions, ink);
       if (!mounted.current) return;
       setExported(uri);
@@ -124,6 +129,7 @@ export function useScreenshotScrubber(model: ModelControls) {
     result,
     phase,
     busy: phase !== null,
+    sharing: phase === 'Creating redacted PNG…' || phase === 'Sharing redacted PNG…',
     error,
     exported,
     pick,
