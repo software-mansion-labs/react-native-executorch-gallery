@@ -4,10 +4,6 @@
 
 Explore on-device AI with React Native ExecuTorch. Download models once, then run inference privately and fully offline on your device.
 
-## In action
-
-Recorded in the iOS simulator with models already loaded. From left: local chat, text to speech, and photo search.
-
 <p align="center">
   <img src=".github/assets/chat.webp" width="240" alt="A local model explains Maxwell’s equations with rendered LaTeX, then the conversation scrolls behind the frosted composer">
   <img src=".github/assets/speech.webp" width="240" alt="On-device speech generation with word highlighting and replay">
