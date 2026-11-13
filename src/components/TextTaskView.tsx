@@ -47,6 +47,11 @@ export function TextTaskView({
         footer={
           ready ? (
             <>
+              {task.busy && (
+                <View style={styles.activity}>
+                  <ThinkingIndicator accessibilityLabel="Processing text" />
+                </View>
+              )}
               <PromptInput
                 value={task.input}
                 onChangeText={task.setInput}
@@ -83,11 +88,6 @@ export function TextTaskView({
                 </>
               )}
             </ScrollView>
-            {task.busy && (
-              <View style={styles.activity}>
-                <ThinkingIndicator accessibilityLabel="Processing text" />
-              </View>
-            )}
 
             {!task.result && !task.busy && (
               <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
