@@ -16,10 +16,12 @@ export function IconToggle({
   label,
   disabled = false,
   renderIcon,
+  selectionTone = 'surface',
 }: {
   value: boolean;
   label: string;
   disabled?: boolean;
+  selectionTone?: 'surface' | 'background';
   renderIcon: (selected: boolean, color: string) => ReactNode;
   onChange: (value: boolean) => void;
 }) {
@@ -47,7 +49,7 @@ export function IconToggle({
       <View style={[styles.control, { borderColor: colors.border }]} pointerEvents="none">
         <Animated.View
           pointerEvents="none"
-          style={[styles.selection, { backgroundColor: colors.surface }, selection]}
+          style={[styles.selection, { backgroundColor: colors[selectionTone] }, selection]}
         />
         {([false, true] as const).map((option) => (
           <View key={String(option)} style={styles.option}>
