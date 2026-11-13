@@ -8,6 +8,7 @@ import { CircularProgress } from '@/components/CircularProgress';
 import { GeneratedImageViewport } from '@/components/text-to-image/GeneratedImageViewport';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
@@ -49,73 +50,83 @@ export function ImageGenerationView({
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <View style={styles.content}>
-        <Animated.ScrollView
-          ref={scroll}
-          style={styles.stage}
-          contentContainerStyle={styles.previewContent}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-        >
-          {image && (
+      <PromptStage
+        footer={
+          ready ? (
             <>
-              <GeneratedImageViewport image={image} />
-              <View style={styles.result} accessibilityLiveRegion="polite">
-                <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
-                  Image generated
-                </AppText>
-                {latency !== null && (
-                  <AppText variant="caption" tone="muted" numberOfLines={1}>
-                    {latency} ms
-                  </AppText>
-                )}
-              </View>
+              <Animated.View entering={composerEntrance}>
+                <PromptInput
+                  value={prompt}
+                  onChangeText={onPromptChange}
+                  onSubmit={() => {
+                    Keyboard.dismiss();
+                    void onGenerate();
+                  }}
+                  disabled={busy}
+                  canSubmit={!!prompt.trim() && !busy}
+                  placeholder="Describe an image…"
+                  submitLabel="Generate image"
+                  suggestions={suggestions}
+                  reserveSuggestionSpace
+                />
+              </Animated.View>
             </>
-          )}
-          {busy && (
-            <View
-              style={styles.loading}
-              accessible
-              accessibilityRole="progressbar"
-              accessibilityLabel="Generating image"
-              accessibilityState={{ busy: true }}
+          ) : null
+        }
+      >
+        {(contentInset) => (
+          <>
+            <Animated.ScrollView
+              ref={scroll}
+              style={styles.stage}
+              contentContainerStyle={[styles.previewContent, contentInset]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={false}
             >
-              <CircularProgress progress={100} indeterminate />
-              <AppText variant="secondary" tone="muted">
-                Creating image…
-              </AppText>
-            </View>
-          )}
-        </Animated.ScrollView>
-        {ready && (
-          <Animated.View entering={composerEntrance}>
-            <PromptInput
-              value={prompt}
-              onChangeText={onPromptChange}
-              onSubmit={() => {
-                Keyboard.dismiss();
-                void onGenerate();
-              }}
-              disabled={busy}
-              canSubmit={!!prompt.trim() && !busy}
-              placeholder="Describe an image…"
-              submitLabel="Generate image"
-              suggestions={suggestions}
-              reserveSuggestionSpace
-            />
-          </Animated.View>
+              {image && (
+                <>
+                  <GeneratedImageViewport image={image} />
+                  <View style={styles.result} accessibilityLiveRegion="polite">
+                    <AppText variant="secondary" numberOfLines={1} style={styles.resultLabel}>
+                      Image generated
+                    </AppText>
+                    {latency !== null && (
+                      <AppText variant="caption" tone="muted" numberOfLines={1}>
+                        {latency} ms
+                      </AppText>
+                    )}
+                  </View>
+                </>
+              )}
+              {busy && (
+                <View
+                  style={styles.loading}
+                  accessible
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Generating image"
+                  accessibilityState={{ busy: true }}
+                >
+                  <CircularProgress progress={100} indeterminate />
+                  <AppText variant="secondary" tone="muted">
+                    Creating image…
+                  </AppText>
+                </View>
+              )}
+            </Animated.ScrollView>
+
+            {!image && !busy && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title="Imagine it. Create it"
+                  description="Turn a few words into a picture, right on your device."
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
+          </>
         )}
-        {!image && !busy && (
-          <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-            <TaskHero
-              title="Imagine it. Create it"
-              description="Turn a few words into a picture, right on your device."
-              setup={<ModelSetup model={model} status={status} />}
-            />
-          </TaskHeroStage>
-        )}
-      </View>
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -124,8 +135,7 @@ const composerEntrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.sm },
+  root: { flex: 1 },
   stage: { flex: 1, minHeight: 0 },
   previewContent: { flexGrow: 1, justifyContent: 'center', gap: spacing.md },
   loading: {

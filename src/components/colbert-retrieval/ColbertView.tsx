@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
@@ -45,94 +46,109 @@ export function ColbertView({
   const bestScore = result?.matches[0]?.score ?? 0;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <Animated.ScrollView
-        key={result?.query}
-        style={styles.scroll}
-        contentContainerStyle={styles.results}
-        keyboardDismissMode="interactive"
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+      <PromptStage
+        footer={
+          ready ? (
+            <>
+              {busy && (
+                <View style={styles.activity}>
+                  <ThinkingIndicator accessibilityLabel="Searching places" />
+                </View>
+              )}
+              <PromptInput
+                value={input}
+                onChangeText={onInputChange}
+                onSubmit={() => {
+                  Keyboard.dismiss();
+                  void onSearch();
+                }}
+                disabled={busy}
+                canSubmit={!!input.trim() && !busy}
+                placeholder="What are you looking for?"
+                submitLabel="Search places"
+                suggestions={suggestions}
+              />
+            </>
+          ) : null
+        }
       >
-        {result && (
-          <Animated.View entering={entrance} style={styles.results}>
-            <View style={styles.summary}>
-              <AppText variant="heading">{result.query}</AppText>
-              <AppText variant="caption" tone="muted">
-                {result.matches.length} places · {result.latency} ms
-              </AppText>
-            </View>
-            {result.matches.map(({ document, score }, index) => (
-              <View key={document.id} style={[styles.card, { backgroundColor: colors.surface }]}>
-                <View style={styles.cardHeading}>
-                  <AppText variant="title" style={styles.title}>
-                    {document.title}
-                  </AppText>
-                  {index === 0 && (
-                    <AppText variant="caption" tone="accent">
-                      Best match
+        {(contentInset) => (
+          <>
+            <Animated.ScrollView
+              key={result?.query}
+              style={styles.scroll}
+              contentContainerStyle={[styles.results, contentInset]}
+              keyboardDismissMode="interactive"
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {result && (
+                <Animated.View entering={entrance} style={styles.results}>
+                  <View style={styles.summary}>
+                    <AppText variant="heading">{result.query}</AppText>
+                    <AppText variant="caption" tone="muted">
+                      {result.matches.length} places · {result.latency} ms
                     </AppText>
-                  )}
-                </View>
-                <AppText variant="secondary" tone="muted">
-                  {document.text}
-                </AppText>
-                <View style={styles.relevance}>
-                  <View
-                    style={[styles.track, { backgroundColor: colors.border }]}
-                    accessible
-                    accessibilityLabel={`Relative relevance: ${Math.round(Math.max(0, Math.min(1, bestScore > 0 ? score / bestScore : 0)) * 100)} percent of the top result`}
-                  >
-                    <View
-                      style={[
-                        styles.fill,
-                        {
-                          backgroundColor: index === 0 ? colors.accent : colors.muted,
-                          width: `${Math.max(0, Math.min(1, bestScore > 0 ? score / bestScore : 0)) * 100}%`,
-                        },
-                      ]}
-                    />
                   </View>
-                  <AppText variant="caption" tone="muted">
-                    {score.toFixed(2)}
+                  {result.matches.map(({ document, score }, index) => (
+                    <View
+                      key={document.id}
+                      style={[styles.card, { backgroundColor: colors.surface }]}
+                    >
+                      <View style={styles.cardHeading}>
+                        <AppText variant="title" style={styles.title}>
+                          {document.title}
+                        </AppText>
+                        {index === 0 && (
+                          <AppText variant="caption" tone="accent">
+                            Best match
+                          </AppText>
+                        )}
+                      </View>
+                      <AppText variant="secondary" tone="muted">
+                        {document.text}
+                      </AppText>
+                      <View style={styles.relevance}>
+                        <View
+                          style={[styles.track, { backgroundColor: colors.border }]}
+                          accessible
+                          accessibilityLabel={`Relative relevance: ${Math.round(Math.max(0, Math.min(1, bestScore > 0 ? score / bestScore : 0)) * 100)} percent of the top result`}
+                        >
+                          <View
+                            style={[
+                              styles.fill,
+                              {
+                                backgroundColor: index === 0 ? colors.accent : colors.muted,
+                                width: `${Math.max(0, Math.min(1, bestScore > 0 ? score / bestScore : 0)) * 100}%`,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <AppText variant="caption" tone="muted">
+                          {score.toFixed(2)}
+                        </AppText>
+                      </View>
+                    </View>
+                  ))}
+                  <AppText variant="caption" tone="muted" style={styles.note}>
+                    Ranked by relevance to your search
                   </AppText>
-                </View>
-              </View>
-            ))}
-            <AppText variant="caption" tone="muted" style={styles.note}>
-              Ranked by relevance to your search
-            </AppText>
-          </Animated.View>
+                </Animated.View>
+              )}
+            </Animated.ScrollView>
+
+            {!result && !busy && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title="A place for every plan"
+                  description="A quiet walk, a good book, a coffee. Search a little city guide in your own words."
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
+          </>
         )}
-      </Animated.ScrollView>
-      {busy && (
-        <View style={styles.activity}>
-          <ThinkingIndicator accessibilityLabel="Searching places" />
-        </View>
-      )}
-      {ready && (
-        <PromptInput
-          value={input}
-          onChangeText={onInputChange}
-          onSubmit={() => {
-            Keyboard.dismiss();
-            void onSearch();
-          }}
-          disabled={busy}
-          canSubmit={!!input.trim() && !busy}
-          placeholder="What are you looking for?"
-          submitLabel="Search places"
-          suggestions={suggestions}
-        />
-      )}
-      {!result && !busy && (
-        <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-          <TaskHero
-            title="A place for every plan"
-            description="A quiet walk, a good book, a coffee. Search a little city guide in your own words."
-            setup={<ModelSetup model={model} status={status} />}
-          />
-        </TaskHeroStage>
-      )}
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -142,7 +158,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration).reduceMotion
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { flex: 1, gap: spacing.lg },
+  root: { flex: 1 },
   scroll: { flex: 1 },
   results: { gap: spacing.md, paddingBottom: spacing.sm },
   summary: { gap: spacing.sm, paddingTop: spacing.lg, paddingBottom: spacing.sm },

@@ -69,7 +69,7 @@ export function PromptInput({
                       styles.chip,
                       {
                         borderColor: colors.border,
-                        backgroundColor: pressed ? colors.surface : colors.background,
+                        backgroundColor: pressed ? colors.surface : colors.promptSurface,
                       },
                       pressed && styles.pressed,
                     ]}
@@ -89,7 +89,12 @@ export function PromptInput({
           )}
         </View>
       )}
-      <View style={[styles.composer, { backgroundColor: colors.surface }]}>
+      <View
+        style={[
+          styles.composer,
+          { backgroundColor: colors.promptSurface, borderColor: colors.promptBorder },
+        ]}
+      >
         <View style={styles.composerRow}>
           <View style={styles.inputSlot}>
             {attachment && <View style={styles.attachment}>{attachment}</View>}
@@ -176,6 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   composer: {
+    borderWidth: borderWidth.hairline,
     borderRadius: radius.sheet,
     padding: spacing.sm,
     gap: spacing.sm,

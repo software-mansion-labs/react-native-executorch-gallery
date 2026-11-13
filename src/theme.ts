@@ -8,6 +8,8 @@ const palette = {
   light: {
     background: '#FAFAFA',
     surface: '#F0F0F2',
+    promptSurface: 'rgba(240, 240, 242, 0.78)',
+    promptBorder: 'rgba(36, 37, 42, 0.10)',
     border: '#E1E1E6',
     text: '#24252A',
     thinkingIndicator: '#000000',
@@ -20,6 +22,8 @@ const palette = {
   dark: {
     background: '#101114',
     surface: '#1B1C20',
+    promptSurface: 'rgba(40, 41, 46, 0.72)',
+    promptBorder: 'rgba(242, 242, 243, 0.12)',
     border: '#2B2C31',
     text: '#F2F2F3',
     thinkingIndicator: '#FFFFFF',
@@ -33,6 +37,11 @@ const palette = {
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
+  prompt: {
+    blurIntensity: 60,
+    fadeMaskColors: ['transparent', '#000000', '#000000'] as const,
+    fadeMaskLocations: [0, 0.35, 1] as const,
+  },
   camera: { chromeBlurIntensity: 60 },
   media: {
     cardWidthRatio: 0.7,

@@ -8,6 +8,7 @@ import { IconButton } from '@/components/IconButton';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { useChatKeyboard } from '@/hooks/useChatKeyboard';
@@ -78,86 +79,100 @@ export function WidgetBuilderView({
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <View style={styles.content}>
-        {(widget || busy) && (
-          <View style={styles.previewActions}>
-            <IconButton
-              icon="code-slash-outline"
-              accessibilityLabel="View raw model output"
-              onPress={() => setShowSource(true)}
-              tone="muted"
-            />
-            <IconButton
-              icon="repeat-outline"
-              accessibilityLabel="Regenerate widget"
-              disabled={!canRegenerate || changing}
-              onPress={() => void regenerate()}
-              tone="muted"
-            />
-            <IconButton
-              icon={expanded ? 'close' : 'expand-outline'}
-              accessibilityLabel={expanded ? 'Exit full screen widget' : 'Full screen widget'}
-              disabled={changing || (busy && !expanded)}
-              onPress={() => void toggleExpanded()}
-              tone="muted"
-            />
-          </View>
-        )}
-        <Animated.ScrollView
-          ref={scroll}
-          style={styles.stage}
-          contentContainerStyle={[styles.results, expanded && styles.expandedResults]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
-        >
-          {(widget || busy) && (
+      <PromptStage
+        footer={
+          ready && !expanded ? (
             <>
-              <Animated.View style={[styles.preview, previewStyle]}>
-                <GeneratedWidget
-                  key={busy ? 'building' : source}
-                  widget={busy ? buildingWidget : widget!}
-                  building={busy}
-                  appearanceReady={!busy || buildingWidget.appearanceReady}
+              <Animated.View entering={entrance} exiting={exit}>
+                <PromptInput
+                  value={input}
+                  onChangeText={onInputChange}
+                  onSubmit={() => {
+                    Keyboard.dismiss();
+                    void onRun();
+                  }}
+                  onStop={onStop}
+                  isGenerating={busy}
+                  canSubmit={canRun && !!input.trim()}
+                  placeholder={widget ? 'Build something else…' : 'Describe a small widget…'}
+                  submitLabel="Build widget"
+                  suggestions={suggestions}
                 />
               </Animated.View>
             </>
-          )}
-        </Animated.ScrollView>
-        {ready && !expanded && (
-          <Animated.View entering={entrance} exiting={exit}>
-            <PromptInput
-              value={input}
-              onChangeText={onInputChange}
-              onSubmit={() => {
-                Keyboard.dismiss();
-                void onRun();
-              }}
-              onStop={onStop}
-              isGenerating={busy}
-              canSubmit={canRun && !!input.trim()}
-              placeholder={widget ? 'Build something else…' : 'Describe a small widget…'}
-              submitLabel="Build widget"
-              suggestions={suggestions}
+          ) : null
+        }
+      >
+        {(contentInset) => (
+          <>
+            {(widget || busy) && (
+              <View style={styles.previewActions}>
+                <IconButton
+                  icon="code-slash-outline"
+                  accessibilityLabel="View raw model output"
+                  onPress={() => setShowSource(true)}
+                  tone="muted"
+                />
+                <IconButton
+                  icon="repeat-outline"
+                  accessibilityLabel="Regenerate widget"
+                  disabled={!canRegenerate || changing}
+                  onPress={() => void regenerate()}
+                  tone="muted"
+                />
+                <IconButton
+                  icon={expanded ? 'close' : 'expand-outline'}
+                  accessibilityLabel={expanded ? 'Exit full screen widget' : 'Full screen widget'}
+                  disabled={changing || (busy && !expanded)}
+                  onPress={() => void toggleExpanded()}
+                  tone="muted"
+                />
+              </View>
+            )}
+            <Animated.ScrollView
+              ref={scroll}
+              style={styles.stage}
+              contentContainerStyle={[
+                styles.results,
+                contentInset,
+                expanded && styles.expandedResults,
+              ]}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              showsVerticalScrollIndicator={false}
+            >
+              {(widget || busy) && (
+                <>
+                  <Animated.View style={[styles.preview, previewStyle]}>
+                    <GeneratedWidget
+                      key={busy ? 'building' : source}
+                      widget={busy ? buildingWidget : widget!}
+                      building={busy}
+                      appearanceReady={!busy || buildingWidget.appearanceReady}
+                    />
+                  </Animated.View>
+                </>
+              )}
+            </Animated.ScrollView>
+
+            {!widget && !busy && (
+              <TaskHeroStage pointerEvents={ready ? 'none' : 'box-none'} style={heroStyle}>
+                <TaskHero
+                  title="An idea you can tap"
+                  description="Describe a tiny widget. Watch it become something you can actually use."
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
+            <WidgetGenerationSheet
+              visible={showSource}
+              busy={busy}
+              readOutput={readOutput}
+              onClose={() => setShowSource(false)}
             />
-          </Animated.View>
+          </>
         )}
-        {!widget && !busy && (
-          <TaskHeroStage pointerEvents={ready ? 'none' : 'box-none'} style={heroStyle}>
-            <TaskHero
-              title="An idea you can tap"
-              description="Describe a tiny widget. Watch it become something you can actually use."
-              setup={<ModelSetup model={model} status={status} />}
-            />
-          </TaskHeroStage>
-        )}
-        <WidgetGenerationSheet
-          visible={showSource}
-          busy={busy}
-          readOutput={readOutput}
-          onClose={() => setShowSource(false)}
-        />
-      </View>
+      </PromptStage>
     </Animated.View>
   );
 }
@@ -169,8 +184,7 @@ const exit = FadeOut.duration(tokens.motion.chatDisclosureFadeDuration).reduceMo
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { flex: 1, overflow: 'hidden' },
-  content: { flex: 1, gap: spacing.sm },
+  root: { flex: 1 },
   stage: { flex: 1, minHeight: 0 },
   results: { flexGrow: 1, paddingBottom: spacing.sm },
   expandedResults: { paddingBottom: spacing.xxxl },

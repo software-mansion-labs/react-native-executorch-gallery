@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
+import { PromptStage } from '@/components/PromptStage';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
 import { ThinkingIndicator } from '@/components/ThinkingIndicator';
@@ -42,59 +43,71 @@ export function TextTaskView({
   const ready = model.prepared && model.loaded && status.isReady && !model.deleting;
   return (
     <Animated.View style={[styles.root, keyboardStyle]}>
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.result}
-        keyboardDismissMode="interactive"
+      <PromptStage
+        footer={
+          ready ? (
+            <>
+              <PromptInput
+                value={task.input}
+                onChangeText={task.setInput}
+                onSubmit={() => {
+                  Keyboard.dismiss();
+                  void task.run();
+                }}
+                disabled={task.busy}
+                canSubmit={!!task.input.trim() && !task.busy}
+                placeholder={placeholder}
+                submitLabel="Run task"
+                suggestions={suggestions}
+              />
+            </>
+          ) : null
+        }
       >
-        {task.result && (
+        {(contentInset) => (
           <>
-            <AppText variant="secondary" tone="muted">
-              {task.result.input}
-            </AppText>
-            <AppText selectable>{task.result.text}</AppText>
-            <AppText variant="secondary" tone="muted">
-              {task.result.latency} ms · On device
-            </AppText>
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={[styles.result, contentInset]}
+              keyboardDismissMode="interactive"
+            >
+              {task.result && (
+                <>
+                  <AppText variant="secondary" tone="muted">
+                    {task.result.input}
+                  </AppText>
+                  <AppText selectable>{task.result.text}</AppText>
+                  <AppText variant="secondary" tone="muted">
+                    {task.result.latency} ms · On device
+                  </AppText>
+                </>
+              )}
+            </ScrollView>
+            {task.busy && (
+              <View style={styles.activity}>
+                <ThinkingIndicator accessibilityLabel="Processing text" />
+              </View>
+            )}
+
+            {!task.result && !task.busy && (
+              <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
+                <TaskHero
+                  title={title}
+                  description={description}
+                  setup={<ModelSetup model={model} status={status} />}
+                />
+              </TaskHeroStage>
+            )}
           </>
         )}
-      </ScrollView>
-      {task.busy && (
-        <View style={styles.activity}>
-          <ThinkingIndicator accessibilityLabel="Processing text" />
-        </View>
-      )}
-      {ready && (
-        <PromptInput
-          value={task.input}
-          onChangeText={task.setInput}
-          onSubmit={() => {
-            Keyboard.dismiss();
-            void task.run();
-          }}
-          disabled={task.busy}
-          canSubmit={!!task.input.trim() && !task.busy}
-          placeholder={placeholder}
-          submitLabel="Run task"
-          suggestions={suggestions}
-        />
-      )}
-      {!task.result && !task.busy && (
-        <TaskHeroStage style={heroStyle} pointerEvents={ready ? 'none' : 'box-none'}>
-          <TaskHero
-            title={title}
-            description={description}
-            setup={<ModelSetup model={model} status={status} />}
-          />
-        </TaskHeroStage>
-      )}
+      </PromptStage>
     </Animated.View>
   );
 }
 
 const { spacing } = tokens;
 const styles = StyleSheet.create({
-  root: { flex: 1, gap: spacing.lg },
+  root: { flex: 1 },
   content: { flex: 1 },
   result: { flexGrow: 1, justifyContent: 'center', gap: spacing.xl, paddingVertical: spacing.xl },
   activity: { alignItems: 'center' },
