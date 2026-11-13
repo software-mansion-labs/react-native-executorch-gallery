@@ -1,40 +1,23 @@
-# React Native ExecuTorch Gallery
-
-**React Native ExecuTorch Gallery** showcases on-device AI. Download models once, then run inference privately and fully offline on your device.
-
 <img src=".github/assets/banner.webp" width="1200" alt="Gallery home in dark mode, the demo catalogue in light mode, and an on-device photo search result in dark mode">
+
+Explore on-device AI with React Native ExecuTorch. Download models once, then run inference privately and fully offline on your device.
 
 ## In action
 
-Recorded in the iOS simulator with models already loaded.
+Recorded in the iOS simulator with models already loaded. From left: local chat, text to speech, and photo search.
 
-<details>
-<summary><strong>Photo search</strong> — find a photo with words</summary>
-
-<img src=".github/assets/search.webp" width="480" loading="lazy" alt="An on-device search for somewhere peaceful ranks a forest photo first">
-
-</details>
-
-<details>
-<summary><strong>Local chat</strong> — generate a response on your device</summary>
-
-<img src=".github/assets/chat.webp" width="480" loading="lazy" alt="A local language model suggests three names for a tiny robot">
-
-</details>
-
-<details>
-<summary><strong>Text to speech</strong> — follow the words as they are spoken</summary>
-
-<img src=".github/assets/speech.webp" width="480" loading="lazy" alt="On-device speech generation with word highlighting and replay">
-
-</details>
+<p align="center">
+  <img src=".github/assets/chat.webp" width="240" alt="A local model explains Maxwell’s equations with rendered LaTeX, then the conversation scrolls behind the frosted composer">
+  <img src=".github/assets/speech.webp" width="240" alt="On-device speech generation with word highlighting and replay">
+  <img src=".github/assets/search.webp" width="240" alt="An on-device search for somewhere peaceful ranks a forest photo first">
+</p>
 
 ## Demos
 
 Explore the categories below. Each demo links to its screen implementation.
 
 <details>
-<summary><strong>Generative AI</strong> · 5 demos</summary>
+<summary><strong>Generative AI</strong></summary>
 
 - [Local chat](<src/app/(screens)/llm-chat.tsx>)
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
@@ -45,7 +28,7 @@ Explore the categories below. Each demo links to its screen implementation.
 </details>
 
 <details>
-<summary><strong>Computer vision</strong> · 9 demos</summary>
+<summary><strong>Computer vision</strong></summary>
 
 - [Depth estimation](<src/app/(screens)/depth-estimation.tsx>)
 - [Photo cleanup](<src/app/(screens)/inpainting.tsx>)
@@ -60,14 +43,14 @@ Explore the categories below. Each demo links to its screen implementation.
 </details>
 
 <details>
-<summary><strong>Real time</strong> · 1 demo</summary>
+<summary><strong>Real time</strong></summary>
 
 - [Live object detection](<src/app/(screens)/realtime-object-detection.tsx>)
 
 </details>
 
 <details>
-<summary><strong>Audio & speech</strong> · 3 demos</summary>
+<summary><strong>Audio & speech</strong></summary>
 
 - [Text to speech](<src/app/(screens)/text-to-speech.tsx>)
 - [Speech to text](<src/app/(screens)/speech-to-text.tsx>)
@@ -76,7 +59,7 @@ Explore the categories below. Each demo links to its screen implementation.
 </details>
 
 <details>
-<summary><strong>Embeddings & search</strong> · 2 demos</summary>
+<summary><strong>Embeddings & search</strong></summary>
 
 - [Multimodal search](<src/app/(screens)/image-embeddings.tsx>)
 - [ColBERT retrieval](<src/app/(screens)/colbert-retrieval.tsx>)
@@ -84,7 +67,7 @@ Explore the categories below. Each demo links to its screen implementation.
 </details>
 
 <details>
-<summary><strong>Natural language processing</strong> · 2 demos</summary>
+<summary><strong>Natural language processing</strong></summary>
 
 - [Privacy filter](<src/app/(screens)/privacy-filter.tsx>)
 - [Translation](<src/app/(screens)/translation.tsx>)
