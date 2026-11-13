@@ -24,7 +24,7 @@ for (const demo of ['chat', 'speech', 'search']) {
         '-i',
         resolve(recordings, `${demo}.mp4`),
         '-vf',
-        `fps=${fps},scale=640:-2:flags=lanczos${demo === 'chat' ? ',tpad=stop_mode=clone:stop_duration=4' : ''}`,
+        `fps=${fps},scale=640:-2:flags=lanczos,tpad=stop_mode=clone:stop_duration=${demo === 'chat' ? 4 : 2}`,
         join(frames, 'frame-%04d.png'),
       ],
       { stdio: 'inherit' }

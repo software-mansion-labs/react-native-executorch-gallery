@@ -6,24 +6,26 @@
 
 ## In action
 
+Recorded in the iOS simulator with models already loaded.
+
 <details>
 <summary><strong>Photo search</strong> — find a photo with words</summary>
 
-<img src=".github/assets/search.webp" width="480" alt="An on-device search for somewhere peaceful ranks a forest photo first">
+<img src=".github/assets/search.webp" width="480" loading="lazy" alt="An on-device search for somewhere peaceful ranks a forest photo first">
 
 </details>
 
 <details>
 <summary><strong>Local chat</strong> — generate a response on your device</summary>
 
-<img src=".github/assets/chat.webp" width="480" alt="A local language model suggests three names for a tiny robot">
+<img src=".github/assets/chat.webp" width="480" loading="lazy" alt="A local language model suggests three names for a tiny robot">
 
 </details>
 
 <details>
 <summary><strong>Text to speech</strong> — follow the words as they are spoken</summary>
 
-<img src=".github/assets/speech.webp" width="480" alt="On-device speech generation with word highlighting and replay">
+<img src=".github/assets/speech.webp" width="480" loading="lazy" alt="On-device speech generation with word highlighting and replay">
 
 </details>
 
