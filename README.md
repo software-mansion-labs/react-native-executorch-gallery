@@ -1,4 +1,6 @@
-<img src=".github/assets/banner.webp" width="1200" alt="Gallery home in dark mode, the demo catalogue in light mode, and an on-device photo search result in dark mode">
+<h1 align="center">React Native ExecuTorch Gallery</h1>
+
+<p align="center">On-device AI. Private. Offline. In your pocket.</p>
 
 Explore on-device AI with React Native ExecuTorch. Download models once, then run inference privately and fully offline on your device.
 
@@ -140,10 +142,9 @@ npm run format:check
 Lefthook installs pre-commit checks with the dev dependencies. If hooks were skipped,
 run `npm run hooks:install`. Hooks check formatting without modifying staged files.
 
-To rebuild the README media from local captures (FFmpeg and img2webp are required):
+To rebuild the README media from local recordings (FFmpeg and img2webp are required):
 
 ```bash
-npm run media:banner     # .artifacts/showcase/screenshots/{home,tasks,search}.png
 npm run media:showcase   # .artifacts/showcase/recordings/{chat,speech,search}.mp4
 ```
 
