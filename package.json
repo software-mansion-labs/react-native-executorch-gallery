@@ -74,7 +74,8 @@
     "check": "npm test && npm run typecheck && npm run lint && npm run format:check",
     "hooks:install": "lefthook install",
     "native:android": "node scripts/build-native.mjs android",
-    "native:ios": "node scripts/build-native.mjs ios"
+    "native:ios": "node scripts/build-native.mjs ios",
+    "media:banner": "node scripts/build-banner.mjs"
   },
   "private": true,
   "enriched-markdown": {

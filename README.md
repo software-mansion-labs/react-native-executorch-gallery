@@ -1,10 +1,38 @@
+# React Native ExecuTorch Gallery
+
 **React Native ExecuTorch Gallery** showcases on-device AI. Download models once, then run inference privately and fully offline on your device.
 
-<img src=".github/assets/showcase.webp" width="1200" alt="Three iPhone simulator recordings showing local chat, text to speech with word highlighting, and multimodal photo search">
+<img src=".github/assets/banner.webp" width="1200" alt="Gallery home in dark mode, the demo catalogue in light mode, and an on-device photo search result in dark mode">
+
+## In action
+
+<details>
+<summary><strong>Photo search</strong> — find a photo with words</summary>
+
+<img src=".github/assets/search.webp" width="480" alt="An on-device search for somewhere peaceful ranks a forest photo first">
+
+</details>
+
+<details>
+<summary><strong>Local chat</strong> — generate a response on your device</summary>
+
+<img src=".github/assets/chat.webp" width="480" alt="A local language model suggests three names for a tiny robot">
+
+</details>
+
+<details>
+<summary><strong>Text to speech</strong> — follow the words as they are spoken</summary>
+
+<img src=".github/assets/speech.webp" width="480" alt="On-device speech generation with word highlighting and replay">
+
+</details>
 
 ## Demos
 
-### Generative AI
+Explore the categories below. Each demo links to its screen implementation.
+
+<details>
+<summary><strong>Generative AI</strong> · 5 demos</summary>
 
 - [Local chat](<src/app/(screens)/llm-chat.tsx>)
 - [Image descriptions](<src/app/(screens)/image-description.tsx>)
@@ -12,7 +40,10 @@
 - [Tiny widget builder](<src/app/(screens)/widget-builder.tsx>)
 - [Text to image](<src/app/(screens)/text-to-image.tsx>)
 
-### Computer vision
+</details>
+
+<details>
+<summary><strong>Computer vision</strong> · 9 demos</summary>
 
 - [Depth estimation](<src/app/(screens)/depth-estimation.tsx>)
 - [Photo cleanup](<src/app/(screens)/inpainting.tsx>)
@@ -24,25 +55,39 @@
 - [Object detection](<src/app/(screens)/object-detection.tsx>)
 - [Image classification](<src/app/(screens)/image-classification.tsx>)
 
-### Real time
+</details>
+
+<details>
+<summary><strong>Real time</strong> · 1 demo</summary>
 
 - [Live object detection](<src/app/(screens)/realtime-object-detection.tsx>)
 
-### Audio & speech
+</details>
+
+<details>
+<summary><strong>Audio & speech</strong> · 3 demos</summary>
 
 - [Text to speech](<src/app/(screens)/text-to-speech.tsx>)
 - [Speech to text](<src/app/(screens)/speech-to-text.tsx>)
 - [Voice activity detection](<src/app/(screens)/voice-activity-detection.tsx>)
 
-### Embeddings & search
+</details>
+
+<details>
+<summary><strong>Embeddings & search</strong> · 2 demos</summary>
 
 - [Multimodal search](<src/app/(screens)/image-embeddings.tsx>)
 - [ColBERT retrieval](<src/app/(screens)/colbert-retrieval.tsx>)
 
-### Natural language processing
+</details>
+
+<details>
+<summary><strong>Natural language processing</strong> · 2 demos</summary>
 
 - [Privacy filter](<src/app/(screens)/privacy-filter.tsx>)
 - [Translation](<src/app/(screens)/translation.tsx>)
+
+</details>
 
 ## Getting started
 
@@ -109,6 +154,13 @@ npm run format:check
 
 Lefthook installs pre-commit checks with the dev dependencies. If hooks were skipped,
 run `npm run hooks:install`. Hooks check formatting without modifying staged files.
+
+To rebuild the README media from local captures (FFmpeg and img2webp are required):
+
+```bash
+npm run media:banner     # .artifacts/showcase/screenshots/{home,tasks,search}.png
+npm run media:showcase   # .artifacts/showcase/recordings/{chat,speech,search}.mp4
+```
 
 For native release builds and model/device checks,
 see [Verification](.agents/skills/gallery-verification/SKILL.md). CI builds Android and iOS
