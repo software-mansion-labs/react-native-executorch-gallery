@@ -22,6 +22,7 @@ export function ScrubberView({ model, scrubber }: Props) {
   const { colors, iconSize } = useTheme();
   const [comparison, setComparison] = useState({ result: scrubber.result, original: false });
   const comparePress = useCardPressAnimation();
+  const reviewPress = useCardPressAnimation();
   const [reviewing, setReviewing] = useState(false);
   const original = comparison.result === scrubber.result && comparison.original;
   const { image, result, busy, status } = scrubber;
@@ -109,15 +110,21 @@ export function ScrubberView({ model, scrubber }: Props) {
             >
               <AppText variant="secondary">Show</AppText>
             </AnimatedPressable>
-            <Pressable
+            <AnimatedPressable
               accessibilityRole="button"
               disabled={busy || !result}
               accessibilityLabel="Review regions"
               onPress={() => setReviewing(true)}
-              style={[styles.textButton, { backgroundColor: colors.surface }]}
+              onPressIn={reviewPress.onPressIn}
+              onPressOut={reviewPress.onPressOut}
+              style={[
+                styles.textButton,
+                { backgroundColor: colors.surface },
+                reviewPress.animatedStyle,
+              ]}
             >
               <AppText variant="secondary">Review</AppText>
-            </Pressable>
+            </AnimatedPressable>
           </View>
         }
       />
