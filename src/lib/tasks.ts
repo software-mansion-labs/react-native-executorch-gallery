@@ -87,6 +87,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'keypoints body skeleton YOLO',
       },
       {
+        id: 'screenshot-scrubber',
+        href: '/screenshot-scrubber',
+        title: 'Screenshot scrubber',
+        keywords: 'redact privacy PII screenshot text OCR hide personal details',
+      },
+      {
         id: 'ocr',
         href: '/ocr',
         title: 'Text recognition',

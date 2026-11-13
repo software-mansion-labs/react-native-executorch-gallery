@@ -19,6 +19,7 @@
 - [Style transfer](<src/app/(screens)/style-transfer.tsx>)
 - [Instance segmentation](<src/app/(screens)/instance-segmentation.tsx>)
 - [Pose estimation](<src/app/(screens)/keypoint-detection.tsx>)
+- [Screenshot scrubber](<src/app/(screens)/screenshot-scrubber.tsx>)
 - [Text recognition](<src/app/(screens)/ocr.tsx>)
 - [Semantic segmentation](<src/app/(screens)/semantic-segmentation.tsx>)
 - [Object detection](<src/app/(screens)/object-detection.tsx>)
