@@ -60,10 +60,23 @@ export function ScrubberView({ model, scrubber }: Props) {
             </View>
           )
         }
+        renderInteraction={() =>
+          Platform.OS === 'ios' && (
+            <View style={styles.share}>
+              <PhotoActionButton
+                iconName="share-outline"
+                label="Share redacted PNG"
+                size="small"
+                disabled={busy || !hidden.length}
+                onPress={() => void scrubber.share(colors.redaction)}
+              />
+            </View>
+          )
+        }
         resultsContent={
           <View style={styles.results}>
             <View style={styles.summary} accessibilityLiveRegion="polite">
-              <AppText variant="secondary" tone="accent">
+              <AppText variant="secondary">
                 {phase ??
                   (result
                     ? `${hidden.length} text regions hidden`
@@ -86,11 +99,12 @@ export function ScrubberView({ model, scrubber }: Props) {
                 accessibilityState={{ selected: original, disabled: busy || !result }}
                 disabled={busy || !result}
                 onPress={() => setComparison({ result, original: !original })}
-                style={[styles.textButton, { backgroundColor: colors.surface }]}
+                style={[
+                  styles.textButton,
+                  { backgroundColor: original ? colors.border : colors.surface },
+                ]}
               >
-                <AppText variant="secondary" tone={original ? 'accent' : 'text'}>
-                  Show
-                </AppText>
+                <AppText variant="secondary">Show</AppText>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
@@ -101,17 +115,8 @@ export function ScrubberView({ model, scrubber }: Props) {
               >
                 <AppText variant="secondary">Review</AppText>
               </Pressable>
-              {Platform.OS === 'ios' && (
-                <PhotoActionButton
-                  iconName="share-outline"
-                  label="Share redacted PNG"
-                  size="small"
-                  disabled={busy || !hidden.length}
-                  onPress={() => void scrubber.share(colors.redaction)}
-                />
-              )}
             </View>
-            <AppText variant="caption" tone={exported ? 'accent' : 'muted'}>
+            <AppText variant="caption" tone={exported ? 'text' : 'muted'}>
               {result && !result.regions.length
                 ? 'No text was recognized.'
                 : exported
@@ -166,6 +171,7 @@ const { spacing, radius, borderWidth, layout } = tokens;
 const styles = StyleSheet.create({
   results: { gap: spacing.sm },
   summary: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+  share: { position: 'absolute', top: spacing.sm, right: spacing.sm },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   textButton: {
     flex: 1,
