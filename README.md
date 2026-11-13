@@ -138,12 +138,6 @@ npm run format:check
 Lefthook installs pre-commit checks with the dev dependencies. If hooks were skipped,
 run `npm run hooks:install`. Hooks check formatting without modifying staged files.
 
-To rebuild the README media from local recordings (FFmpeg and img2webp are required):
-
-```bash
-npm run media:showcase   # .artifacts/showcase/recordings/{chat,speech,search}.mp4
-```
-
 For native release builds and model/device checks,
 see [Verification](.agents/skills/gallery-verification/SKILL.md). CI builds Android and iOS
 release binaries on pull requests ready for review without signing credentials.

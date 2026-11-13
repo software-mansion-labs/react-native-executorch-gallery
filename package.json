@@ -70,7 +70,6 @@
     "deps:sync": "node scripts/select-executorch.mjs sync",
     "deps:status": "node scripts/select-executorch.mjs status",
     "test": "node --test scripts/*.test.mjs",
-    "media:showcase": "node scripts/build-showcase.mjs",
     "check": "npm test && npm run typecheck && npm run lint && npm run format:check",
     "hooks:install": "lefthook install",
     "native:android": "node scripts/build-native.mjs android",
