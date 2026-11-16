@@ -1,3 +1,4 @@
+import type { TimedWord } from './wordSpeakers';
 import RNBlobUtil from 'react-native-blob-util';
 import {
   createFsmnVoiceActivityDetector,
@@ -120,7 +121,7 @@ export async function loadFluidTokenizer(path: string) {
 }
 
 /** Stateless raw TDT inference. State and scratch tensors are scoped to one independent crop. */
-export const inferFluidTokens = wrapAsync((models: FluidModels, audio: Float32Array) => {
+const inferFluidAlignment = wrapAsync((models: FluidModels, audio: Float32Array) => {
   'worklet';
   const allocated: Tensor[] = [];
   const make = (
@@ -135,8 +136,8 @@ export const inferFluidTokens = wrapAsync((models: FluidModels, audio: Float32Ar
   };
   const floats = (value: Tensor) => value.getData(new Float32Array(value.numel));
   try {
-    if (audio.length < 2560 || audio.length > 160000)
-      throw new Error('Expected 0.16–10 seconds of mono 16 kHz audio.');
+    if (audio.length < 1600 || audio.length > 160000)
+      throw new Error('Expected 0.1–10 seconds of mono 16 kHz audio.');
     const effective = Math.max(16000, audio.length);
     const pcm = new Float32Array(160000);
     pcm.set(audio, Math.floor((effective - audio.length) / 2));
@@ -184,6 +185,7 @@ export const inferFluidTokens = wrapAsync((models: FluidModels, audio: Float32Ar
       joint = make('float32', [1, 1, 1, 8198]);
     const values = new Float32Array(1024);
     const tokens: number[] = [];
+    const times: number[] = [];
     let frame = 0,
       symbols = 0;
     while (frame < valid) {
@@ -198,6 +200,7 @@ export const inferFluidTokens = wrapAsync((models: FluidModels, audio: Float32Ar
       for (let i = 1; i < 5; i++) if (logits[8193 + i] > logits[8193 + duration]) duration = i;
       if (label !== 8192) {
         tokens.push(label);
+        times.push(Math.max(0, frame * 0.08 - (effective - audio.length) / 32000));
         [hidden, nextH] = [nextH, hidden];
         [cell, nextC] = [nextC, cell];
         predict(label);
@@ -211,14 +214,19 @@ export const inferFluidTokens = wrapAsync((models: FluidModels, audio: Float32Ar
       }
       if (tokens.length > 1024) throw new Error('Fluid transcription exceeded its token limit.');
     }
-    return tokens;
+    return { tokens, times };
   } finally {
     audio.fill(0);
     for (const value of allocated.reverse()) value.dispose();
   }
 });
 
-/** Creates serialized, cancellable per-crop Fluid ASR with FSMN VAD and no retained audio/state.
+/** Raw token IDs retained for fixture comparisons; meeting ASR additionally uses emission times. */
+export async function inferFluidTokens(models: FluidModels, audio: Float32Array) {
+  return (await inferFluidAlignment(models, audio)).tokens;
+}
+
+/** Creates serialized, cancellable full-chunk Fluid ASR with FSMN VAD and no retained audio/state.
  * Cancellation invalidates results immediately; an active native call finishes before resources release.
  */
 export async function createFluidSpeechTranscriber(config: FluidSpeechConfig) {
@@ -246,21 +254,43 @@ export async function createFluidSpeechTranscriber(config: FluidSpeechConfig) {
     disposed = false;
   let pending: Promise<unknown> = Promise.resolve();
   return {
-    transcribe(audio: Float32Array) {
+    transcribeWords(audio: Float32Array) {
       const request = epoch,
         copy = new Float32Array(audio);
       const result = pending
         .then(async () => {
-          if (disposed || request !== epoch) return '';
+          if (disposed || request !== epoch) return [] as TimedWord[];
           if (!(await activity.detectVoice(copy)).length || disposed || request !== epoch)
-            return '';
-          const ids = await inferFluidTokens(bundle, copy);
-          if (disposed || request !== epoch) return '';
-          const text = await wrapAsync((value: Tokenizer, ids: number[]) => {
-            'worklet';
-            return value.decode(new Int32Array(ids));
-          })(decoder, ids);
-          return disposed || request !== epoch ? '' : text;
+            return [] as TimedWord[];
+          const duration = copy.length / 16000;
+          const aligned = await inferFluidAlignment(bundle, copy);
+          if (disposed || request !== epoch) return [] as TimedWord[];
+          const words = await wrapAsync(
+            (value: Tokenizer, ids: number[], times: number[], duration: number): TimedWord[] => {
+              'worklet';
+              const words: TimedWord[] = [];
+              let group: number[] = [];
+              let start = 0;
+              let end = 0;
+              const flush = () => {
+                const text = value.decode(new Int32Array(group)).trim();
+                if (text) words.push({ text, start, end });
+              };
+              for (let i = 0; i < ids.length; i++) {
+                if (value.idToToken(ids[i]).startsWith('▁') && group.length) {
+                  flush();
+                  group = [];
+                }
+                const time = Math.min(duration, times[i]);
+                if (!group.length) start = time;
+                end = Math.min(duration, time + 0.08);
+                group.push(ids[i]);
+              }
+              if (group.length) flush();
+              return words;
+            }
+          )(decoder, aligned.tokens, aligned.times, duration);
+          return disposed || request !== epoch ? [] : words;
         })
         .finally(() => copy.fill(0));
       pending = result.catch(() => {});

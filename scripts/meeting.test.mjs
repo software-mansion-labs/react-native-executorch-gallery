@@ -113,3 +113,56 @@ test('Nemotron retains compressed cache scores but re-estimates chronological ca
     assert.equal(memory.cacheProbabilities[0], new Float32Array([0.1])[0]);
   }
 });
+
+// Speaker labeling must never gate recognition or discard words in uncertain frames.
+import { assignWordSpeakers } from '../src/lib/diarization/wordSpeakers.ts';
+
+test('word labeling preserves text/order through uncertainty, speaker switches and chunk offsets', () => {
+  const words = [
+    { text: 'Hello', start: 0, end: 0.2 },
+    { text: 'there.', start: 0.2, end: 0.4 },
+    { text: 'Still', start: 0.4, end: 0.6 },
+    { text: 'here.', start: 0.6, end: 0.8 },
+    { text: 'Yes.', start: 0.8, end: 1 },
+  ];
+  const turns = assignWordSpeakers(
+    words,
+    [
+      { start: 0, end: 0.4, speakers: [1] },
+      { start: 0.4, end: 0.8, speakers: [] },
+      { start: 0.8, end: 1, speakers: [2] },
+    ],
+    10
+  );
+  assert.deepEqual(
+    turns.map((turn) => turn.speakers),
+    [[1], [], [2]]
+  );
+  assert.equal(turns.map((turn) => turn.text).join(' '), words.map((word) => word.text).join(' '));
+  assert.equal(turns[0].start, 10);
+  assert.equal(turns.at(-1).end, 11);
+  assert.equal(words.length, 5);
+});
+
+test('word labeling aggregates frame votes and preserves overlapping speaker sets', () => {
+  const turns = assignWordSpeakers(
+    [{ text: 'Together.', start: 0, end: 1 }],
+    [
+      { start: 0, end: 0.3, speakers: [1] },
+      { start: 0.3, end: 0.6, speakers: [1, 2] },
+      { start: 0.6, end: 0.8, speakers: [2] },
+      { start: 0.8, end: 1, speakers: [1, 2] },
+    ],
+    0
+  );
+  assert.deepEqual(turns[0].speakers, [1, 2]);
+  assert.equal(turns[0].overlap, true);
+});
+
+test('words outside the diarization timeline survive as unassigned', () => {
+  const turns = assignWordSpeakers([{ text: 'Recovered.', start: 9.9, end: 10 }], [], 20);
+  assert.equal(turns[0].text, 'Recovered.');
+  assert.deepEqual(turns[0].speakers, []);
+  assert.equal(turns[0].start, 29.9);
+  assert.deepEqual(assignWordSpeakers([], [], 0), []);
+});

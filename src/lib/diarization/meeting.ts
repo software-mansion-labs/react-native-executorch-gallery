@@ -1,5 +1,5 @@
 import { createFluidSpeechTranscriber, FLUID_SPEECH } from './fluidSpeech';
-import { transcriptionSpans } from './speakerMemory';
+import { assignWordSpeakers, type TimedWord } from './wordSpeakers';
 import type { Model } from 'react-native-executorch';
 import { disposeNemotron, inferNemotron, loadNemotron, NEMOTRON_PATH } from './nemotron';
 import { emptyNemotronMemory } from './nemotronMemory';
@@ -19,7 +19,7 @@ export async function createMeetingPipeline(config: MeetingConfig) {
   let diarizer: Model | undefined;
   let asr:
     | {
-        transcribe: (audio: Float32Array) => Promise<string>;
+        transcribeWords: (audio: Float32Array) => Promise<TimedWord[]>;
         transcribeStop: () => void;
         dispose: () => Promise<unknown>;
       }
@@ -63,29 +63,9 @@ export async function createMeetingPipeline(config: MeetingConfig) {
           memory.fifo.fill(0);
           memory.cacheProbabilities.fill(0);
           memory = output.memory;
-          const turns: TranscriptTurn[] = [];
-          for (const span of transcriptionSpans(output.spans)) {
-            if (disposed || request !== epoch) return [];
-            // VAD can recover speech below the diarization threshold as unassigned.
-            if (span.end - span.start < 0.32) continue;
-            let text: string | undefined;
-            if (asr) {
-              const crop = audio.slice(Math.floor(span.start * 16000), Math.ceil(span.end * 16000));
-              try {
-                text = (await asr.transcribe(crop)).trim();
-              } finally {
-                crop.fill(0);
-              }
-              if (!text) continue;
-            }
-            turns.push({
-              start: offset + span.start,
-              end: offset + span.end,
-              speakers: span.speakers,
-              text,
-              overlap: 'overlap' in span ? span.overlap === true : undefined,
-            });
-          }
+          // ASR sees the complete chunk, independent of speaker switches/uncertainty.
+          const words = await asr!.transcribeWords(audio);
+          const turns = assignWordSpeakers(words, output.spans, offset);
           return disposed || request !== epoch ? [] : turns;
         })
         .finally(() => audio.fill(0));

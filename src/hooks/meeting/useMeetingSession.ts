@@ -27,7 +27,7 @@ const MEETING_PATHS = [
 ];
 
 /** Loads explicitly requested local models and manages microphone or selected-recording sessions.
- * Uses experimental Fluid Speech Pro per speaker turn. Returns model controls, capture actions and text results.
+ * Uses experimental Fluid Speech Pro per full chunk, then labels recognized words. Returns model controls, capture actions and text results.
  * Stop drains the microphone buffer; background, navigation, errors and Clear discard pending work.
  * Recording picker copies are deleted after sequential processing; returned actions never save captured PCM.
  */

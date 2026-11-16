@@ -68,12 +68,20 @@ invalidate late results. Overflow visibly stops capture. In-flight native calls
 finish before model disposal; cancellation invalidates their results immediately.
 Speaker cache embeddings/probabilities survive only within one session.
 
-Fluid's two-layer predictor state resets for every independent speaker crop.
+Fluid's two-layer predictor state resets once per independent ten-second ASR chunk.
+Speaker changes do not cut the ASR audio or restart its predictor.
 NeMo's short-input frontend is preserved: crops under one second receive symmetric
 zero padding to one second; meeting timestamps retain their original values.
 Raw TDT decoding uses blank/SOS 8192 and separate token/duration argmax heads,
 with bounded zero-duration runs and at most 1024 emitted tokens per crop.
-FSMN VAD filters silence before ASR. No clean-mode adapter is enabled.
+FSMN VAD filters completely silent chunks before ASR. Recognized words receive
+approximate start/end positions from TDT token-emission frames (80 ms stride),
+with short-input padding removed. SentencePiece pieces are grouped into whole
+words. Diarization labels each word by the speaker set with the most overlapping
+frame duration; uncertain or missing activity produces an unassigned label and
+never removes the word. These are decoder emission estimates, not forced
+alignment, and speaker identity/overlap can still be wrong. No clean-mode adapter
+is enabled.
 
 There is no audio export, cloud inference or summarization. Transcripts stay in
 session memory; **Copy transcript** explicitly writes text to the system clipboard.
@@ -144,7 +152,7 @@ The simulator shares its host network; no per-device network isolation was
 configured. These results establish a running local prototype, not production
 readiness or broad transcription accuracy.
 
-## Consecutive speakers and multilingual feasibility checks
+## Consecutive speakers and initial multilingual feasibility checks
 
 Consecutive turns with the same identified speaker (or speaker set) are joined
 in both the screen and copied transcript, including across ten-second chunks.
@@ -153,7 +161,8 @@ speaker change starts another message. Unassigned turns remain separate because
 their identity is unknown. The AMI fixture changes from 25 entries to 7 without
 changing any copied words.
 
-Additional fixed recordings were selected before inference and run through the
+Before separating ASR from speaker cropping, additional fixed recordings were
+selected before inference and run through the
 actual recording picker, native models and Copy transcript action on the same
 dedicated simulator. Results use Unicode-aware word normalization: lowercase,
 accents retained, punctuation/apostrophes split into word boundaries. Numbers
@@ -202,3 +211,50 @@ training-data exclusion or corpus-wide accuracy claim is established.
 Audio fixtures, reference annotations, SHA-256 manifests, copied outputs, edit
 counts and Maestro captures remain local under ignored campaign/artifact paths.
 No recordings or model assets are bundled into Git or publicly uploaded.
+
+## ASR separated from speaker cropping
+
+The current pipeline recognizes each complete ten-second chunk once. FSMN VAD
+is applied to the full chunk, rather than each speaker span. Recognition is then
+labeled using approximate decoder-emission word positions and the majority
+speaker-set duration within each word. No word is removed because its speaker
+is uncertain. This holds the original ten-second, non-overlapping windows fixed;
+it does not integrate the separate overlap experiment.
+
+Actual screen runs on the same simulator, same local WAVs and same normalization:
+
+| Recording  | Previous app WER | Current app WER | Current word edits |
+| ---------- | ---------------: | --------------: | -----------------: |
+| pl         |           15.75% |           5.51% |              7/127 |
+| de         |           12.12% |           9.09% |             12/132 |
+| fr         |           28.95% |          28.95% |             44/152 |
+| fr-meeting |           42.07% |          33.17% |            205/618 |
+
+The French meeting changes from 260 to 205 edits: 32 substitutions, 167 deletions
+and 6 insertions. This supports separating ASR segmentation from speaker labels,
+although the comparison also changes VAD from per-speaker crops to full chunks.
+It is not an isolated VAD ablation or evidence that all errors came from cropping.
+
+Word recovery improves, but speaker attribution becomes more fragmented: the
+French meeting has 122 displayed runs and eight assigned IDs for four actual
+participants, versus 49 runs and seven IDs previously. Many short unassigned
+words split known-speaker messages. Word positions are approximate emissions,
+not verified word boundaries; no DER or word-level speaker accuracy is claimed.
+The retained experiment improves text accuracy while exposing a separate timing/
+speaker-continuity problem. It is not ready for reliable meeting minutes.
+
+Twenty tests and the typecheck/lint/format checks pass. New regression tests
+verify that uncertain/no-speaker activity never deletes recognized words, offset
+handling and overlap voting. The Release app with updated JavaScript was used
+for the actual recording-import/copy runs; native dependencies did not change.
+In-flight cancellation, background/resume, navigation/model reload and light/dark
+appearance were checked on the dedicated simulator. Physical microphone,
+Android, phone performance and network-isolated checks remain unavailable.
+
+The original 60-second AMI English app fixture was also rerun after navigation
+and explicit model reload. With the original English scoring normalization it
+changes from 29/177 to 28/177 edits (16.38% to 15.82% WER). There are 53 label
+runs after word assignment, versus 7 after the earlier display-only grouping.
+This reinforces that text accuracy and readable/stable attribution are separate
+issues. These are single fixed-clip comparisons, not statistically established
+language-wide improvements.
