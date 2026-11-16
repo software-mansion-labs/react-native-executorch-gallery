@@ -123,7 +123,7 @@ iOS 26.5, using an actual native Release build:
 - Thirteen fixed audio clips match host quantized token IDs exactly. The full
   pipeline passes reset, in-flight cancellation and disposal checks.
 - The actual screen processes AMI IB4001 audio from 210–270 seconds, copied as a
-  local 16 kHz WAV. Its copied transcript has 25 nonempty turns and 29/177 word
+  local 16 kHz WAV. Before display grouping, its copied transcript has 25 nonempty turns and 29/177 word
   edits (16.38% WER), matching the prior matched-crop score. The pipeline probe
   takes about 6.4 seconds, excluding loading/decoding, with uncontrolled desktop
   conditions and no claim about phone latency.
@@ -143,3 +143,62 @@ phone memory/thermal behavior and network-isolated execution were not verified.
 The simulator shares its host network; no per-device network isolation was
 configured. These results establish a running local prototype, not production
 readiness or broad transcription accuracy.
+
+## Consecutive speakers and multilingual feasibility checks
+
+Consecutive turns with the same identified speaker (or speaker set) are joined
+in both the screen and copied transcript, including across ten-second chunks.
+The first start time, final end time and any overlap warning are retained. A
+speaker change starts another message. Unassigned turns remain separate because
+their identity is unknown. The AMI fixture changes from 25 entries to 7 without
+changing any copied words.
+
+Additional fixed recordings were selected before inference and run through the
+actual recording picker, native models and Copy transcript action on the same
+dedicated simulator. Results use Unicode-aware word normalization: lowercase,
+accents retained, punctuation/apostrophes split into word boundaries. Numbers
+remain as written and spoken fillers count. Corpus non-speech annotation symbols
+are removed. WER is substitutions + deletions + insertions / reference words.
+
+| Recording                           | Duration | Reference words | App word edits | App WER | INT8 ASR alone | FP32 ASR alone |
+| ----------------------------------- | -------: | --------------: | -------------: | ------: | -------------: | -------------: |
+| Polish parliamentary excerpts       |  71.66 s |             127 |             20 |  15.75% |          6.30% |          6.30% |
+| German parliamentary excerpts       |  62.44 s |             132 |             16 |  12.12% |          9.09% |          9.09% |
+| French parliamentary excerpts       |  57.64 s |             152 |             44 |  28.95% |         29.61% |         28.95% |
+| French four-person planning meeting |    180 s |             618 |            260 |  42.07% |         33.98% |         33.17% |
+
+The parliamentary recordings concatenate the first six test utterances in each
+language from [VoxPopuli](https://huggingface.co/datasets/facebook/voxpopuli),
+revision `42f01879c780b4a2e90ec0b4f616c2ece526e4f1`, with 0.4-second gaps. All
+six references per language are marked gold. These are formal speech excerpts,
+not continuous meetings or overlapping conversation. VoxPopuli data is CC0;
+see the corpus's raw European Parliament audio notice.
+
+The real meeting is `004c_PAPH`, seconds 0–180, from
+[SUMM-RE](https://huggingface.co/datasets/linagora/SUMM-RE), revision
+`47cb4ec3437ef5497b6092b8c6d1e0b5b1d86dc0` (CC BY-SA 4.0; Hunter et al.,
+2024). All four synchronized individual tracks are resampled to 16 kHz and
+averaged. The example subset's retained segments were verified to match the
+original manually transcribed development annotations. Reference words are
+ordered by their annotated start time; overlap can make linear WER ambiguous.
+This mix of close microphones is not a room-microphone test.
+
+ASR-alone columns are host diagnostics using the respective PTEs on the same
+recordings in plain ten-second chunks, without diarization or VAD. They isolate
+some pipeline effects but are not another simulator run or a latency benchmark.
+The meeting app makes 207 deletions, 47 substitutions and 6 insertions. It also
+uses seven assigned speaker IDs plus unassigned rows for four participants;
+this is observed fragmentation, not a measured diarization error rate.
+
+These small fixed checks expose missing words, occasional wrong-language output
+on short crops and unstable speaker identity. The pipeline adds errors for
+Polish, German and the French meeting. INT8/FP32 ASR-only differences here are
+small; that does not resolve the strict encoder parity failure. French speech
+accuracy needs attention even without diarization. Before treating this as
+reliable meeting transcription, investigate crop boundaries, ASR context and
+speaker continuity and evaluate a larger held-out conversational set. No model
+training-data exclusion or corpus-wide accuracy claim is established.
+
+Audio fixtures, reference annotations, SHA-256 manifests, copied outputs, edit
+counts and Maestro captures remain local under ignored campaign/artifact paths.
+No recordings or model assets are bundled into Git or publicly uploaded.

@@ -19,6 +19,7 @@ import {
 import { CHUNK_SAMPLES, SAMPLE_RATE } from '@/lib/diarization/nemotron';
 import { useImportedMeetingModels } from './useImportedMeetingModels';
 import { PcmQueue } from '@/lib/diarization/pcmQueue';
+import { appendTranscriptTurns } from '@/lib/diarization/transcript';
 
 const MEETING_PATHS = [
   ...MEETING_ASSETS.map((asset) => asset.path),
@@ -116,7 +117,7 @@ export function useMeetingSession() {
         }
         const results = await pipeline.process(audio, offset);
         if (mounted.current && request === generation.current)
-          setTurns((previous) => [...previous, ...results]);
+          setTurns((previous) => appendTranscriptTurns(previous, results));
       }
     } catch (cause) {
       if (mounted.current && request === generation.current)
@@ -225,7 +226,7 @@ export function useMeetingSession() {
         }
         const results = await pipeline.process(crop, start / SAMPLE_RATE);
         if (request === generation.current && mounted.current)
-          setTurns((previous) => [...previous, ...results]);
+          setTurns((previous) => appendTranscriptTurns(previous, results));
       }
     } catch (cause) {
       if (mounted.current && request === generation.current)
