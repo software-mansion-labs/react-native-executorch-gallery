@@ -3,6 +3,7 @@ import { assignWordSpeakers, type TimedWord } from './wordSpeakers';
 import type { Model } from 'react-native-executorch';
 import { disposeNemotron, inferNemotron, loadNemotron, NEMOTRON_PATH } from './nemotron';
 import { emptyNemotronMemory } from './nemotronMemory';
+import { bridgeSpeakerGaps } from './speakerMemory';
 
 export const MEETING_CONFIG = { diarizer: NEMOTRON_PATH, fluid: FLUID_SPEECH };
 export type MeetingConfig = typeof MEETING_CONFIG;
@@ -65,7 +66,7 @@ export async function createMeetingPipeline(config: MeetingConfig) {
           memory = output.memory;
           // ASR sees the complete chunk, independent of speaker switches/uncertainty.
           const words = await asr!.transcribeWords(audio);
-          const turns = assignWordSpeakers(words, output.spans, offset);
+          const turns = assignWordSpeakers(words, bridgeSpeakerGaps(output.spans), offset);
           return disposed || request !== epoch ? [] : turns;
         })
         .finally(() => audio.fill(0));

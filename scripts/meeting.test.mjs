@@ -5,7 +5,11 @@ import {
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PcmQueue } from '../src/lib/diarization/pcmQueue.ts';
-import { speakerSpans, transcriptionSpans } from '../src/lib/diarization/speakerMemory.ts';
+import {
+  speakerSpans,
+  transcriptionSpans,
+  bridgeSpeakerGaps,
+} from '../src/lib/diarization/speakerMemory.ts';
 
 test('PCM queue spans callbacks, erases consumed source buffers and clears pending audio', () => {
   const queue = new PcmQueue(8);
@@ -165,4 +169,44 @@ test('words outside the diarization timeline survive as unassigned', () => {
   assert.deepEqual(turns[0].speakers, []);
   assert.equal(turns[0].start, 29.9);
   assert.deepEqual(assignWordSpeakers([], [], 0), []);
+});
+
+test('speaker gap bridging preserves input and fills only a short gap bounded by one speaker', () => {
+  const spans = [
+    { start: 0, end: 1, speakers: [2] },
+    { start: 1, end: 1.25, speakers: [] },
+    { start: 1.25, end: 2, speakers: [2] },
+  ];
+  const filled = bridgeSpeakerGaps(spans);
+  assert.deepEqual(filled[1].speakers, [2]);
+  assert.deepEqual(spans[1].speakers, []);
+  const words = [{ start: 1.05, end: 1.15, text: 'kept' }];
+  assert.equal(assignWordSpeakers(words, filled, 0)[0].text, 'kept');
+  assert.deepEqual(assignWordSpeakers(words, filled, 0)[0].speakers, [2]);
+});
+
+test('speaker gap bridging retains real switches, long silence, edges and missing timeline intervals', () => {
+  const span = (start, end, speakers) => ({ start, end, speakers });
+  const cases = [
+    [span(0, 1, [1]), span(1, 1.1, []), span(1.1, 2, [2])],
+    [span(0, 1, [1]), span(1, 1.3, []), span(1.3, 2, [1])],
+    [span(0, 0.1, []), span(0.1, 1, [1])],
+    [span(0, 1, [1]), span(1, 1.1, [])],
+    [span(0, 0.5, [1]), span(1, 1.1, []), span(1.1, 2, [1])],
+    [span(0, 1, [1]), span(1, 1.1, [2]), span(1.1, 2, [1])],
+  ];
+  for (const spans of cases) assert.deepEqual(bridgeSpeakerGaps(spans), spans);
+});
+
+test('speaker gap bridging preserves identical overlap sets and never invents a missing voice', () => {
+  const spans = [
+    { start: 0, end: 1, speakers: [1, 2] },
+    { start: 1, end: 1.1, speakers: [] },
+    { start: 1.1, end: 2, speakers: [1, 2] },
+  ];
+  assert.deepEqual(bridgeSpeakerGaps(spans)[1].speakers, [1, 2]);
+  assert.deepEqual(
+    bridgeSpeakerGaps([...spans.slice(0, 2), { ...spans[2], speakers: [1] }])[1].speakers,
+    []
+  );
 });

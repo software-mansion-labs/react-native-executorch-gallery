@@ -77,7 +77,9 @@ with bounded zero-duration runs and at most 1024 emitted tokens per crop.
 FSMN VAD filters completely silent chunks before ASR. Recognized words receive
 approximate start/end positions from TDT token-emission frames (80 ms stride),
 with short-input padding removed. SentencePiece pieces are grouped into whole
-words. Diarization labels each word by the speaker set with the most overlapping
+words. Before labeling, unassigned gaps up to 250 ms are filled only when the same
+identified speaker set directly bounds both sides. Longer gaps and known speaker
+changes are preserved. Diarization labels each word by the speaker set with the most overlapping
 frame duration; uncertain or missing activity produces an unassigned label and
 never removes the word. These are decoder emission estimates, not forced
 alignment, and speaker identity/overlap can still be wrong. No clean-mode adapter
@@ -258,3 +260,66 @@ runs after word assignment, versus 7 after the earlier display-only grouping.
 This reinforces that text accuracy and readable/stable attribution are separate
 issues. These are single fixed-clip comparisons, not statistically established
 language-wide improvements.
+
+## Speaker-attribution evaluation
+
+Raw native Nemotron spans and timed Fluid words were recorded for all five
+fixtures. Their word text exactly matches the previous app outputs. Speaker
+attribution was then evaluated with those words fixed, so smoothing could not
+improve WER by deleting or changing text.
+
+[pyannote.metrics](https://pyannote.github.io/pyannote-metrics/reference.html)
+4.2.0 computes diarization error rate (DER: missed speech + false alarm + speaker
+confusion / reference speaker time), with optimal one-to-one speaker mapping,
+overlap included and a 250 ms total collar around reference segment boundaries.
+The references are original AMI manual segments and SUMM-RE manual development
+segments for the same audio intervals. These are two fixed-clip diagnostics,
+not a corpus-wide diarization benchmark.
+
+| Timeline                              | French meeting DER | English DER | French matched-word attribution | English matched-word attribution |
+| ------------------------------------- | -----------------: | ----------: | ------------------------------: | -------------------------------: |
+| Original                              |             43.06% |      16.22% |                196/419 (46.78%) |                 133/156 (85.26%) |
+| Bridge short unassigned gaps          |             42.07% |      15.72% |                200/419 (47.73%) |                 134/156 (85.90%) |
+| Widen word voting by 120 ms each side |             43.06% |      16.22% |                192/419 (45.82%) |                 132/156 (84.62%) |
+| Both                                  |             42.07% |      15.72% |                201/419 (47.97%) |                 133/156 (85.26%) |
+
+Matched-word attribution scores only exact lexical matches in a fixed
+minimum-edit reference/hypothesis alignment; unmatched words are excluded and
+not counted as correct speakers. There are 419 matched tokens out of 618 French
+reference tokens and 156/182 English tokens with the Unicode normalization used
+for this diagnostic. A matched token counts as correctly attributed if its
+reference speaker belongs to the predicted speaker set under the global optimal
+mapping. This does not penalize extra voices in that set, so it is separate from
+DER and is not speaker-attributed WER. All candidates use identical recognized
+words, positions and matched-token pairs.
+
+Only the short-gap rule is enabled. It fills at most 250 ms of unassigned
+activity bounded contiguously by exactly the same nonempty speaker set. It does
+not merge known speaker IDs, erase real labeled switches, fill longer silence,
+or change the raw model output/cache. Both single-voice and overlap sets are
+preserved. The other timing policies gave mixed results and are not enabled.
+
+With no forgiveness collar, French DER changes from 48.62% to 47.71%, and English
+from 20.11% to 19.65%. The main gain is less missed speech; French speaker
+confusion is essentially unchanged. The French display shrinks only from 122
+to 119 runs, and English from 53 to 51. Speaker fragmentation remains substantial.
+
+Two reference-assisted diagnostics distinguish remaining causes:
+
+- Recomputing the best speaker mapping independently every 30 seconds reduces
+  French DER from 43.06% to 24.89%; English stays at 16.22%. The changing French
+  mappings indicate identity continuity problems. This uses reference identities
+  and is not an algorithm enabled in the app.
+- Keeping the same matched words but using reference word positions raises
+  correct attribution to 211/419 (50.36%) in French and 153/156 (98.08%) in
+  English. This is an oracle timing diagnostic, not forced alignment available
+  in the app. Accurate timing could help English substantially; it does not
+  resolve French speaker identity errors.
+
+Twenty-three tests and static checks pass, including gap limits, real switches,
+long silence, edge/missing timeline regions, overlap sets and input preservation.
+Word accuracy is unchanged by this label-only change; no ASR model/export/runtime
+change is included. The same fixed recordings were rerun through the dedicated
+simulator app. Physical capture/performance, Android and network isolation remain
+unverified. Before claiming stable meeting attribution, compare streaming-cache
+identity behavior with the original model reference and evaluate more meetings.

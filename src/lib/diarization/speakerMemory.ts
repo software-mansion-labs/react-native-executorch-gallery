@@ -40,3 +40,25 @@ export function transcriptionSpans(spans: SpeakerSpan[]): (SpeakerSpan & { overl
   }
   return result;
 }
+
+/** Fills only brief unassigned gaps bounded by the same identified speaker set.
+ * Known speaker changes and longer silence remain untouched; input spans are never mutated.
+ */
+export function bridgeSpeakerGaps(spans: SpeakerSpan[]): SpeakerSpan[] {
+  return spans.map((span, index) => {
+    const before = spans[index - 1];
+    const after = spans[index + 1];
+    if (
+      !span.speakers.length &&
+      span.end - span.start <= 0.25 + 1e-9 &&
+      before?.speakers.length &&
+      after &&
+      Math.abs(before.end - span.start) < 1e-9 &&
+      Math.abs(span.end - after.start) < 1e-9 &&
+      before.speakers.join(',') === after.speakers.join(',')
+    ) {
+      return { ...span, speakers: [...before.speakers] };
+    }
+    return span;
+  });
+}
