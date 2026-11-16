@@ -3,7 +3,7 @@
 <p align="center">On-device AI. Private. Offline. In your pocket.</p>
 
 <p align="center">
-  <img src=".github/assets/chat.webp" width="240" alt="A local model explains the principle of least action with rendered LaTeX, then the conversation scrolls behind the frosted composer">
+  <img src=".github/assets/chat.webp" width="240" alt="A local model explains the Schrödinger equation with rendered LaTeX, then the reply scrolls behind the floating composer">
   <img src=".github/assets/speech.webp" width="240" alt="On-device speech generation with word highlighting and replay">
   <img src=".github/assets/search.webp" width="240" alt="An on-device search for somewhere peaceful ranks a forest photo first">
 </p>
