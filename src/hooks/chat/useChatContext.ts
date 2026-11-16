@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import type { llm, useLLMChatSession } from 'react-native-executorch';
 
 /** Reads actual native KV capacity on readiness and while streaming, without estimating tokens. */
-export function useChatContext(session: ReturnType<typeof useLLMChatSession>, busy: boolean) {
+export function useChatContext(
+  session: Pick<ReturnType<typeof useLLMChatSession>, 'getKVCacheState'>,
+  busy: boolean
+) {
   const [context, setContext] = useState<llm.LLMKVCacheState | null>(null);
   const getState = session.getKVCacheState;
   useEffect(() => {

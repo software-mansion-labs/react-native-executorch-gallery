@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { CircularProgress } from '@/components/CircularProgress';
@@ -9,10 +10,12 @@ export function ChatImageInput({
   onChoose,
   disabled,
   picking,
+  children,
 }: {
   onChoose: (source: 'library' | 'camera') => Promise<void>;
   disabled: boolean;
   picking: boolean;
+  children?: ReactNode;
 }) {
   const { colors, iconSize } = useTheme();
   return (
@@ -31,6 +34,7 @@ export function ChatImageInput({
         disabled={disabled || picking}
         onPress={() => void onChoose('camera')}
       />
+      {children}
       {picking && (
         <CircularProgress
           progress={100}

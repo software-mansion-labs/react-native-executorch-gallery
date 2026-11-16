@@ -30,13 +30,17 @@ export function useAudioRecorder(onStop: () => void, onError: (error: string) =>
 
   useEffect(() => {
     mounted.current = true;
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'spokenAudio',
-      iosOptions: ['allowBluetoothHFP', 'defaultToSpeaker'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'spokenAudio',
+        options: ['allowBluetoothHFP', 'defaultToSpeaker'],
+      },
     });
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'background') void stopRecording();
+      // Permission UI can temporarily background the activity before a recorder
+      // exists. Only an actual recording/start operation needs stopping here.
+      if (state === 'background' && recorder.current) void stopRecording();
     });
     return () => {
       mounted.current = false;
@@ -54,16 +58,24 @@ export function useAudioRecorder(onStop: () => void, onError: (error: string) =>
     const request = ++generation.current;
     setStarting(true);
     try {
-      const permission = await AudioManager.requestRecordingPermissions();
+      const existingPermission = await AudioManager.checkRecordingPermissions();
+      const permission =
+        existingPermission === 'Granted'
+          ? existingPermission
+          : await AudioManager.requestRecordingPermissions();
       if (request !== generation.current || !mounted.current) return;
       if (permission !== 'Granted')
         throw new Error('Allow microphone access in Settings to record.');
+      if (AppState.currentState === 'background')
+        throw new Error('Return to the app to start recording.');
       const current = new AudioRecorder();
       recorder.current = current;
       current.onAudioReady({ sampleRate, bufferLength, channelCount: 1 }, (event) => {
         if (request !== generation.current) return;
         try {
-          onAudioChunk(new Float32Array(event.buffer.getChannelData(0)));
+          onAudioChunk(
+            new Float32Array(event.buffer.getChannelData(0).subarray(0, event.numFrames))
+          );
         } catch (cause) {
           callbacks.current.onError(cause instanceof Error ? cause.message : String(cause));
           void stopRecording();

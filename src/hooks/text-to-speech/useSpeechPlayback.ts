@@ -82,13 +82,13 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
       const finishIfDone = () => {
         if (streamDone && lastBufferId === endedBufferId) current.finish();
       };
-      source.onBufferEnded = (event) => {
+      source.onbufferended = (event) => {
         if (current.cancelled) return;
         endedBufferId = event.bufferId ?? null;
         finishIfDone();
       };
-      source.onPositionChangedInterval = 50;
-      source.onPositionChanged = ({ value }) => {
+      source.onpositionchangedInterval = 50;
+      source.onpositionchanged = ({ value }) => {
         if (current.cancelled) return;
         const index = timedWords.findIndex((word) => value >= word.start && value < word.end);
         setActiveWord((previous) => (previous === index ? previous : index));
@@ -122,6 +122,10 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
     } finally {
       // Keep the run gate closed until the cancelled generator has also unwound.
       current.cancelled = true;
+      if (current.source) {
+        current.source.onbufferended = null;
+        current.source.onpositionchanged = null;
+      }
       current.source?.clearBuffers();
       current.source?.stop();
       if (context) await context.close().catch(() => {});
