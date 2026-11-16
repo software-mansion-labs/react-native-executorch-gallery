@@ -158,14 +158,11 @@ export function ChatView({
                     <AppText selectable>{turn.question}</AppText>
                   </View>
                   {(turn.responses.some(Boolean) || turn.tools.length > 0 || !!turn.error) && (
-                    <Animated.View
-                      entering={answerEntrance}
-                      style={[styles.answer, { backgroundColor: colors.surface }]}
-                    >
-                      {(turn.thinking || (turn.pending && !turn.plainResponse)) && (
+                    <Animated.View entering={answerEntrance} style={styles.answer}>
+                      {(turn.thinking || turn.activity === 'thinking') && (
                         <ChatThinking
                           text={turn.thinking}
-                          active={turn.pending && turn.reasoning}
+                          active={turn.activity === 'thinking'}
                           onToggle={onDisclosureToggle}
                         />
                       )}
@@ -174,10 +171,13 @@ export function ChatView({
                           <ChatDisclosure
                             key={index}
                             icon="tool"
+                            active={tool.pending}
                             label={
-                              tool.detail.includes('"error"')
-                                ? `${tool.name} · Couldn’t complete`
-                                : tool.name
+                              tool.pending
+                                ? `Running ${tool.name}…`
+                                : tool.detail.includes('"error"')
+                                  ? `${tool.name} · Couldn’t complete`
+                                  : tool.name
                             }
                             onToggle={onDisclosureToggle}
                           >
@@ -186,7 +186,7 @@ export function ChatView({
                         );
                       })}
                       {!!turn.answer && (
-                        <Animated.View entering={answerEntrance}>
+                        <Animated.View entering={answerEntrance} style={styles.reply}>
                           <ChatText>{turn.answer}</ChatText>
                         </Animated.View>
                       )}
@@ -201,7 +201,7 @@ export function ChatView({
                       )}
                     </Animated.View>
                   )}
-                  {turn.pending && <ThinkingIndicator />}
+                  {turn.activity === 'waiting' && <ThinkingIndicator />}
                 </View>
               ))}
             </ScrollView>
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   scroll: { flex: 1, minHeight: 0 },
   messages: { flexGrow: 1, gap: spacing.xxl, paddingTop: spacing.xl, paddingBottom: spacing.sm },
-  turn: { gap: spacing.md },
+  turn: { gap: spacing.xl },
   question: {
     alignSelf: 'flex-end',
     maxWidth: '90%',
@@ -243,13 +243,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   answer: {
-    alignSelf: 'flex-start',
-    width: '95%',
-    borderRadius: radius.card,
-    borderBottomLeftRadius: radius.annotation,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    alignSelf: 'stretch',
+    paddingVertical: spacing.xs,
   },
+  reply: { paddingTop: spacing.sm },
   imageQuestion: { width: '90%', gap: spacing.md },
   contextActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
   expandedActions: { flex: 1, justifyContent: 'space-between' },

@@ -6,6 +6,7 @@ import RNBlobUtil from 'react-native-blob-util';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { useActivityPulse } from '@/hooks/useActivityPulse';
 import { useChatDisclosure } from '@/hooks/chat/useChatDisclosure';
 import { tokens, useTheme } from '@/theme';
 import icons from '@/assets/icons/chat-icons.json';
@@ -27,6 +28,7 @@ export function ChatDisclosure({
   const { colors, iconSize } = useTheme();
   const [expanded, setExpanded] = useState(false);
   const animation = useChatDisclosure(expanded);
+  const pulse = useActivityPulse(active);
   return (
     <Animated.View entering={entrance}>
       <Pressable
@@ -49,9 +51,11 @@ export function ChatDisclosure({
             accessible={false}
           />
         )}
-        <AppText variant="secondary" tone="muted" style={styles.label}>
-          {label}
-        </AppText>
+        <Animated.View style={[styles.label, pulse]}>
+          <AppText variant="secondary" tone="muted">
+            {label}
+          </AppText>
+        </Animated.View>
         <Animated.View style={animation.chevronStyle}>
           <Ionicons name="chevron-down" color={colors.muted} size={iconSize.small} />
         </Animated.View>

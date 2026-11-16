@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { models, useLLMChatSession } from 'react-native-executorch';
 
 import { ChatThinkingToggle } from '@/components/chat/ChatThinkingToggle';
@@ -6,13 +6,8 @@ import { ChatView } from '@/components/chat/ChatView';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
-import {
-  CHAT_GENERATION,
-  CHAT_MESSAGES,
-  createChatTools,
-  parseLfmToolCalls,
-  splitLfmResponse,
-} from '@/lib/chat/chat-tools';
+import { CHAT_GENERATION, CHAT_MESSAGES, splitLfmResponse } from '@/lib/chat/chat-tools';
+import { useChatTools } from '@/hooks/chat/useChatTools';
 import { updateLastTurn, type ChatTurn } from '@/lib/chat/chat-presentation';
 
 const MODEL = models.llm.LFM3_1_7B.DEFAULT;
@@ -31,22 +26,7 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
     };
   }, []);
 
-  const toolOpts = useMemo(() => {
-    const tools = createChatTools((name, detail, args) => {
-      setTurns((items) =>
-        updateLastTurn(items, (turn) => ({
-          ...turn,
-          responses: turn.responses.at(-1) ? [...turn.responses, ''] : turn.responses,
-          tools: [...turn.tools, { name, detail, arguments: args }],
-        }))
-      );
-    });
-    return {
-      tools,
-      parseToolCalls: (text: string) => parseLfmToolCalls(text, tools, false),
-      maxToolTurns: 4,
-    };
-  }, []);
+  const toolOpts = useChatTools(setTurns, active, mounted);
 
   const session = useLLMChatSession(MODEL, {
     preventLoad: !model.loaded,

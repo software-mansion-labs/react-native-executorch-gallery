@@ -29,7 +29,7 @@ export function ChatToolDetails({ tool }: { tool: ChatTurn['tools'][number] }) {
           Result
         </AppText>
         <AppText variant="secondary" tone="muted" selectable>
-          {formatResult(tool.detail)}
+          {tool.pending ? 'Waiting for tool output…' : formatResult(tool.detail)}
         </AppText>
       </View>
     </View>

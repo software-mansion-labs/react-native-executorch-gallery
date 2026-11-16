@@ -11,12 +11,13 @@ import {
 
 import { tokens } from '@/theme';
 
-/** Returns a repeating UI-thread phase for staggered activity dots and the Reduce Motion preference. */
-export function useGeneratingPulse() {
+/** Returns a repeating UI-thread phase for activity indicators and the Reduce Motion preference. */
+export function useGeneratingPulse(enabled = true) {
   const phase = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   useEffect(() => {
-    if (reducedMotion) return;
+    if (reducedMotion || !enabled) return;
+    phase.set(0);
     phase.set(
       withRepeat(
         withTiming(1, {
@@ -31,6 +32,6 @@ export function useGeneratingPulse() {
       )
     );
     return () => cancelAnimation(phase);
-  }, [reducedMotion, phase]);
+  }, [enabled, reducedMotion, phase]);
   return { phase, reducedMotion };
 }

@@ -60,7 +60,12 @@ export function ChatContext({
         onPressOut={pill.onPressOut}
         style={[styles.button, pill.animatedStyle]}
       >
-        <View style={[styles.pill, { borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: colors.promptSurface, borderColor: colors.promptBorder },
+          ]}
+        >
           {context && <ContextGauge used={progress} />}
           <AppText variant="secondary" style={styles.number}>
             {context ? `${Math.round((1 - used) * 100)}%` : '—'}
@@ -134,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: radius.pill,
-    borderWidth: borderWidth.thin,
+    borderWidth: borderWidth.hairline,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     minHeight: layout.promptSuggestionHeight,

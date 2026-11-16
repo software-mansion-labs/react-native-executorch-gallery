@@ -23,7 +23,9 @@ export function ChatText({ children, muted = false }: { children: string; muted?
       flavor="github"
       selectable
       streamingAnimation
-      md4cFlags={{ latexMath: true, hardSoftBreaks: true }}
+      md4cFlags={{ latexMath: true }}
+      textBreakStrategy="simple"
+      lineBreakStrategyIOS="standard"
       onLinkPress={({ url }) => {
         if (/^https?:\/\//i.test(url)) void Linking.openURL(url).catch(() => {});
       }}
@@ -40,10 +42,14 @@ export function ChatText({ children, muted = false }: { children: string; muted?
         strong: { color },
         em: { color },
         blockquote: { ...body, borderColor: colors.border, borderWidth: borderWidth.thin },
-        code: { color, backgroundColor: colors.background, fontSize: body.fontSize },
+        code: {
+          color,
+          backgroundColor: muted ? colors.background : colors.surface,
+          fontSize: body.fontSize,
+        },
         codeBlock: {
           ...body,
-          backgroundColor: colors.background,
+          backgroundColor: muted ? colors.background : colors.surface,
           borderColor: colors.border,
           borderWidth: borderWidth.thin,
           borderRadius: radius.annotation,
