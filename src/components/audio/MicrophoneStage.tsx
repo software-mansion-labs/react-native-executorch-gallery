@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
@@ -20,8 +20,12 @@ export function MicrophoneStage({
   starting,
   finishing = false,
   hasResult,
+  startLabel = 'Start recording',
+  startIcon = 'mic-outline',
+  stopLabel = 'Stop recording',
   onToggle,
   children,
+  setup,
 }: {
   model: ModelControls;
   status: ModelStatus;
@@ -31,8 +35,12 @@ export function MicrophoneStage({
   starting: boolean;
   finishing?: boolean;
   hasResult: boolean;
+  startLabel?: string;
+  startIcon?: ComponentProps<typeof PhotoActionButton>['iconName'];
+  stopLabel?: string;
   onToggle: () => Promise<void>;
   children: ReactNode;
+  setup?: ReactNode;
 }) {
   const ready = model.loaded && model.prepared && status.isReady && !model.deleting;
   return (
@@ -49,15 +57,17 @@ export function MicrophoneStage({
           <TaskHero
             title={title}
             description={description}
-            setup={!model.prepared ? <ModelSetup model={model} status={status} /> : undefined}
+            setup={
+              !model.prepared ? (setup ?? <ModelSetup model={model} status={status} />) : undefined
+            }
           />
         </TaskHeroStage>
       )}
       {ready && (
         <Animated.View entering={entrance} style={styles.controls}>
           <PhotoActionButton
-            iconName={active ? 'stop' : 'mic-outline'}
-            label={active ? 'Stop recording' : 'Start recording'}
+            iconName={active ? 'stop' : startIcon}
+            label={active ? stopLabel : startLabel}
             primary
             disabled={starting || finishing}
             loading={starting || finishing}
