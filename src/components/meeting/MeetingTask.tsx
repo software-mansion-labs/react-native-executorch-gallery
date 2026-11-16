@@ -27,23 +27,26 @@ export function MeetingTask() {
         model={model}
         status={status}
         setup={
-          session.localModel.missing !== false ? (
+          session.localModel.missing !== 0 ? (
             <ModelSetup
               model={model}
               status={status}
               disabled={session.localModel.importing || session.localModel.missing === undefined}
-              label={session.localModel.importing ? 'Importing…' : 'Import model'}
-              onPress={() => void session.localModel.importModel()}
+              label={session.localModel.importing ? 'Importing…' : 'Import models'}
+              onPress={() => void session.localModel.importModels()}
             />
           ) : undefined
         }
         title="Keep the conversation"
         description={
           session.localModel.missing
-            ? 'Import the Nemotron 3 model to prepare private meeting transcription.'
-            : 'Words and speaker labels, processed on your device. Audio is discarded as you go.'
+            ? `Import the meeting models to begin (${session.localModel.missing} files remaining).`
+            : session.supportsMicrophone
+              ? 'Record a conversation or choose a recording up to five minutes. Words and speaker labels stay on your device.'
+              : 'Choose a recording up to five minutes. Words and speaker labels stay on your device.'
         }
-        startLabel="Start transcription"
+        startLabel={session.supportsMicrophone ? 'Start transcription' : 'Choose recording'}
+        startIcon={session.supportsMicrophone ? 'mic-outline' : 'document-outline'}
         stopLabel="Stop transcription"
         active={recorder.isRecording}
         starting={recorder.starting}
@@ -58,7 +61,19 @@ export function MeetingTask() {
         />
       </MicrophoneStage>
       <View style={styles.footer}>
-        {!!turns.length && (
+        {session.supportsMicrophone &&
+          model.prepared &&
+          status.isReady &&
+          !recorder.isRecording && (
+            <PhotoActionButton
+              iconName="document-outline"
+              label="Choose recording"
+              disabled={busy}
+              onPress={() => void session.importRecording()}
+              size="small"
+            />
+          )}
+        {(!!turns.length || session.processing) && (
           <View style={styles.actions}>
             <PhotoActionButton
               iconName={session.copied ? 'checkmark' : 'copy-outline'}
@@ -69,7 +84,7 @@ export function MeetingTask() {
             />
             <PhotoActionButton
               iconName="trash-outline"
-              label="Clear session"
+              label={session.processing ? 'Cancel transcription' : 'Clear session'}
               disabled={false}
               onPress={session.clear}
               size="small"
@@ -80,8 +95,12 @@ export function MeetingTask() {
           {session.copied
             ? 'Text copied to clipboard'
             : recorder.isRecording || turns.length
-              ? 'No audio saved · Labels and words may be imperfect'
-              : 'No audio saved · Let everyone know before starting'}
+              ? session.recordingName
+                ? `${session.recordingName} · Processed locally`
+                : 'No audio saved · Labels and words may be imperfect'
+              : session.supportsMicrophone
+                ? 'No audio saved · Let everyone know before starting'
+                : 'Recordings stay local'}
         </AppText>
       </View>
     </TaskScreen>

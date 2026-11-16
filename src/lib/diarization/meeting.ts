@@ -1,10 +1,10 @@
-import { createLfmAudioTranscriber, LFM_AUDIO } from './lfmAudio';
+import { createFluidSpeechTranscriber, FLUID_SPEECH } from './fluidSpeech';
 import { transcriptionSpans } from './speakerMemory';
 import type { Model } from 'react-native-executorch';
 import { disposeNemotron, inferNemotron, loadNemotron, NEMOTRON_PATH } from './nemotron';
 import { emptyNemotronMemory } from './nemotronMemory';
 
-export const MEETING_CONFIG = { diarizer: NEMOTRON_PATH, lfm: LFM_AUDIO };
+export const MEETING_CONFIG = { diarizer: NEMOTRON_PATH, fluid: FLUID_SPEECH };
 export type MeetingConfig = typeof MEETING_CONFIG;
 export type TranscriptTurn = {
   start: number;
@@ -19,14 +19,14 @@ export async function createMeetingPipeline(config: MeetingConfig) {
   let diarizer: Model | undefined;
   let asr:
     | {
-        transcribe: (audio: Float32Array, options: { language: 'en' }) => Promise<string>;
+        transcribe: (audio: Float32Array) => Promise<string>;
         transcribeStop: () => void;
-        dispose: () => void;
+        dispose: () => Promise<unknown>;
       }
     | undefined;
   try {
     diarizer = await loadNemotron(config.diarizer);
-    asr = await createLfmAudioTranscriber(config.lfm);
+    asr = await createFluidSpeechTranscriber(config.fluid);
   } catch (cause) {
     if (diarizer) await disposeNemotron(diarizer);
     throw cause;
@@ -36,6 +36,7 @@ export async function createMeetingPipeline(config: MeetingConfig) {
   let epoch = 0;
   let disposed = false;
   let pending: Promise<unknown> = Promise.resolve();
+  let disposal: Promise<void> | undefined;
   const reset = () => {
     epoch++;
     memory.cache.fill(0);
@@ -71,7 +72,7 @@ export async function createMeetingPipeline(config: MeetingConfig) {
             if (asr) {
               const crop = audio.slice(Math.floor(span.start * 16000), Math.ceil(span.end * 16000));
               try {
-                text = (await asr.transcribe(crop, { language: 'en' })).trim();
+                text = (await asr.transcribe(crop)).trim();
               } finally {
                 crop.fill(0);
               }
@@ -92,13 +93,17 @@ export async function createMeetingPipeline(config: MeetingConfig) {
       return result;
     },
     dispose() {
-      if (disposed) return;
+      if (disposal) return disposal;
       disposed = true;
       reset();
-      void pending.finally(async () => {
-        asr?.dispose();
-        await disposeNemotron(model);
+      disposal = pending.then(async () => {
+        try {
+          await asr?.dispose();
+        } finally {
+          await disposeNemotron(model);
+        }
       });
+      return disposal;
     },
   };
 }

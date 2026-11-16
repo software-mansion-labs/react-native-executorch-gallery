@@ -1,141 +1,145 @@
-# Meeting transcription PoC
+# Experimental meeting transcription
 
-The **Meeting transcript** screen combines Nemotron 3 activity for up to eight
-anonymous speaker tracks with LFM3 Audio English transcription. Continuous speech
-stays in one crop across brief overlaps and is labelled as mixed speech.
-Unassigned speech recovered by ASR keeps an unassigned label.
+The **Meeting transcript** screen combines Nemotron 3 speaker activity with raw
+Fluid Speech Pro transcription. It is a feasibility experiment, not a finished
+meeting recorder. It supports microphone input and explicitly selected recordings
+up to five minutes / 100 MB. Speaker tracks are anonymous, with a trained limit
+of eight. Overlap, short turns and speaker attribution can be wrong.
 
-The eight-speaker limit belongs to the trained diarizer, not LFM3 or React Native.
-Speaker numbers identify tracks in this session, not known people. Labels and
-words can be wrong; short turns and overlapping voices remain challenging.
+## Prepare and import the models
 
-## Prepare the models
-
-The diarizer is exported locally using the companion
-[Nemotron 3 recipe](https://github.com/software-mansion-labs/executorch-export-recipes/tree/%40bh/meeting-transcript/exporter_models/nemotron3_diarization).
-From that repository:
+No unpublished weights are downloaded automatically or bundled in the app.
+Export the diarizer using the companion
+[Nemotron recipe](https://github.com/software-mansion-labs/executorch-export-recipes/tree/%40bh/meeting-transcript/exporter_models/nemotron3_diarization).
+Export Fluid using [export-recipes PR #14](https://github.com/software-mansion-labs/executorch-export-recipes/pull/14):
 
 ```sh
 uv run --locked --project exporter_models/nemotron3_diarization \
   exporter export nemotron3_diarization --backend xnnpack \
-  --output-dir /absolute/local/output
+  --output-dir /absolute/nemotron-output
+
+uv run --locked --project exporter_models/fluid_speech_pro python \
+  exporter_models/fluid_speech_pro/quantize.py --output-dir /absolute/fluid-output
 ```
 
-Choose **Import model** in Gallery and select
-`nemotron3_diarization_xnnpack_fp32.pte` from Files. The app checks the actual
-exported methods, shapes, dtypes and constants before installing it in its private
-model directory. Failed picks and temporary picker copies are cleaned up.
-Then explicitly load the model; the meeting task also downloads LFM3 Audio assets
-if needed. Opening the screen starts no download or microphone capture.
-No hosted diarization artifact is required and no model weights are in Git.
-Deleting model assets resets the session and offers import/preparation again.
+The recipes currently live on separate export branches; use their respective
+branches/directories. Fetch `tokenizer.json` from
+[the pinned Fluid source](https://huggingface.co/FluidVoice-Labs/fluid-speech-pro/tree/46027a3bffc5817ce8f9b29add0a062610134a90).
+Use the full `.nemo` recipe; the publisher's Transformers weights omit an inserted
+block. Keep all source attribution/license notices with locally prepared assets.
 
-## Audio lifetime
+Choose **Import models** in Gallery and select these seven files from Files.
+They can be selected together or in several picks:
 
-`useAudioRecorder` uses AudioRecorder's mono 16 kHz PCM callback. It never enables
-file output; the native recorder's file-output flags default to false. Everyone
-should know the microphone/transcription is active.
+- `nemotron3_diarization_xnnpack_fp32.pte`
+- `fluid_speech_pro_preprocess_xnnpack_fp32.pte`
+- `fluid_speech_pro_subsample_xnnpack_fp32.pte`
+- `fluid_speech_pro_encoder_xnnpack_int8dyn.pte`
+- `fluid_speech_pro_predictor_xnnpack_fp32.pte`
+- `fluid_speech_pro_joint_xnnpack_fp32.pte`
+- `tokenizer.json`
 
-The transient queue holds at most 20 seconds, with at most one additional
-10-second batch active. Native/worklet copies exist during processing. Consumed
-application buffers are zeroed; this is not a secure-memory-erasure guarantee
-for runtime or OS copies. The bounded speaker cache contains latent embeddings
-and probabilities, not a saved recording, and is never persisted.
+Each imported component is opened by the shipping native runtime and its actual
+method shapes/dtypes/dynamic constraints are validated before installation. The
+tokenizer must have 8192 pieces plus the blank token at 8192. Picker cancellation,
+invalid files and temporary picker copies are handled locally. The model storage
+control includes all imported files and the downloaded FSMN VAD asset.
 
-Stop drains the last buffer. Clear, backgrounding, navigation and errors discard
-queued audio and invalidate late results. Overflow visibly stops capture instead
-of silently losing speech. Models are disposed after active inference completes.
-LFM3 has no retained audio chat history: each crop gets a fresh ASR prompt and KV
-position, with disposable media tensors.
+Then choose **Load model**, or **Download model** if the small VAD asset is not
+cached. Only that explicit action prepares models and resolves
+the small published VAD asset. Opening the screen starts no model download,
+inference or recording. No RNE source modifications are required.
 
-There is no audio playback, audio export, cloud inference or summarization.
-Transcripts stay in session memory; explicit **Copy transcript** writes only text
-to the system clipboard. The model picker imports model assets, not recordings.
+## Try a meeting
 
-## Model provenance and contract
+After loading, choose **Start transcription** for microphone input on a physical
+device, or **Choose recording** for a local audio file. Simulators use recording
+import as their primary action because their microphone engine is not a reliable
+capture target. Recordings are decoded to 16 kHz mono and
+processed in sequential ten-second chunks through the same diarization and ASR
+pipeline. The source file is never changed. The app's temporary picker copy is
+removed after completion, cancellation or error. The working PCM copy stays
+in memory and is cleared after processing; decoding is not a streaming
+file reader, hence the file/duration bounds.
 
-Diarizer: [NVIDIA Nemotron-3-Diarization](https://huggingface.co/nvidia/Nemotron-3-Diarization),
-checkpoint `52a432672732425e4c19765b9fec9b5810e6f4ba`, OpenMDW 1.1 weight terms.
-The FP32 XNNPACK export is 397,708,832 bytes. The recipe pins Python 3.10,
-PyTorch 2.14.0, ExecuTorch 1.4.1 and Transformers 5.20.0. Its adapted preprocessing
-and cache-policy code retain the upstream Apache 2.0 notices.
+Live PCM callbacks feed a bounded in-memory queue. Stop drains the last buffer.
+Clear/cancel, backgrounding, navigation and errors discard queued audio and
+invalidate late results. Overflow visibly stops capture. In-flight native calls
+finish before model disposal; cancellation invalidates their results immediately.
+Speaker cache embeddings/probabilities survive only within one session.
 
-Methods:
+Fluid's two-layer predictor state resets for every independent speaker crop.
+NeMo's short-input frontend is preserved: crops under one second receive symmetric
+zero padding to one second; meeting timestamps retain their original values.
+Raw TDT decoding uses blank/SOS 8192 and separate token/duration argmax heads,
+with bounded zero-duration runs and at most 1024 emitted tokens per crop.
+FSMN VAD filters silence before ASR. No clean-mode adapter is enabled.
 
-| Method       | Inputs                                                        | Outputs                                                          |
-| ------------ | ------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `preprocess` | mono float32 `[160000]`, true int64 length `[1]`              | mel `[1,1001,128]`                                               |
-| `embed`      | mel `[1,8*N,128]`, `N=1..126`                                 | embeddings `[1,N,512]`                                           |
-| `encode`     | embeddings `[1,T,512]`, int64 mask `[1,T]`, `T=2..800`        | probabilities `[1,8*T,8]`, masked pooled probabilities `[1,T,8]` |
-| `compress`   | embeddings `[1,T,512]`, probabilities `[1,T,8]`, `T=265..800` | cache `[1,264,512]`, probabilities `[1,264,8]`                   |
+There is no audio export, cloud inference or summarization. Transcripts stay in
+session memory; **Copy transcript** explicitly writes text to the system clipboard.
+Buffer clearing is best effort, not a guarantee of secure erasure of runtime/OS
+copies. Let everyone know before capturing a conversation.
 
-A companion RNE schema preserves dynamic bounds and matching input lengths.
-The encoder computes the actual sequence, without padding every call to its
-maximum. Cache compression retains the original HF policy, including learned
-silence embeddings, per-speaker ordering, score boosts and the 222-frame update
-period. The app only sequences bounded FIFO/cache state. Feature extraction is
-per buffered chunk with true-length masking and no feature normalization; this
-is a supported custom buffering profile, not a claim of equivalence to every
-published streaming latency profile.
+## Provenance and limitations
 
-ASR: `LFM3_AUDIO_2B.XNNPACK_8DA4W`, official
-`software-mansion/LFM3-ExecuTorch` revision
-`bd5858beef1c88eac49686af7173a8b3624a0d91`, under upstream LFM terms. The model is
-1,716,453,120 bytes, SHA256
-`48a4db000935fa2e6401783b6857c3e64bd6ebc9cf9f94db3e711068fc11d91f`.
-Matching tokenizer/config and FSMN VAD are required. Each crop uses
-`Perform ASR in English.`, greedy decoding and a 256-token limit. Both models
-use the CPU path. No RNE source modifications are required.
+- Diarizer: NVIDIA Nemotron-3-Diarization, revision
+  `52a432672732425e4c19765b9fec9b5810e6f4ba`, OpenMDW 1.1 weight terms.
+  The 397,708,832-byte FP32 export preserves the original HF cache-compression
+  policy. Encoder/cache limits and learned silence embeddings are not replaced
+  with an app heuristic.
+- Fluid: FluidVoice-Labs/fluid-speech-pro, revision
+  `46027a3bffc5817ce8f9b29add0a062610134a90`, CC BY 4.0. Mixed precision:
+  dynamic INT8 encoder linears, FP32 elsewhere, five PTEs totaling 974,770,088
+  bytes. Source NeMo code retains its Apache 2.0 notice in the export recipe.
+- Runtime: RNE source `4b7d6fd6fea10f9b3422121d6e439ccf88df93b2`,
+  ExecuTorch 1.4.1, XNNPACK CPU. Dynamic companion schemas are required for
+  Fluid's encoder and eight shared-weight subsampling methods.
 
-## Validation scope
+Fluid's original FP32 export passed 103 source/component/boundary checks. The
+experimental INT8 pipeline retained 16.38% / 18.91% WER on overlapping 60/180s
+excerpts from one AMI meeting, compared with historical LFM3's 18.08% / 21.73%.
+Only previously retained crops were scored. This is narrow evidence, not a general
+accuracy or diarization claim. Host/simulator timings are not phone benchmarks.
 
-The recipe compares every loaded method with the original HF eager model,
-including min/intermediate/max shapes, silence/saturated cache inputs, repeated
-streaming chunks and cache overflow. All predeclared floating-point tolerances
-passed on AMI IB4001 210–270 s: maximum streaming probability difference 2.3e-6.
-NVIDIA's separate synthetic eight-voice sample (97.6 s) also passed, with a
-maximum difference of 3.7e-5 and activity on all eight channels. This verifies
-export fidelity; it is not a speaker identity or DER benchmark.
+**The INT8 encoder still exceeds the strict converted-graph numeric budget.**
+PT2E global vs XNNPACK per-token activation scaling explains a one-linear
+reproducer, but a rowwise reference does not resolve all full-encoder drift.
+The recipe retains the failed checks without relaxing tolerances. This screen
+intentionally uses that candidate to explore feasibility; it is not presented as
+production-validated. See the export recipe's `NOTES.md` for commands, hashes,
+numeric errors, matched quality results and detailed model contracts.
 
-### Native real-meeting check
+Physical microphone capture and phone memory/thermal performance require a real
+device. Simulator validation uses fixed local recordings and the real native
+models; no inference mocks or microphone-performance claims are involved.
 
-An unsigned Release build ran the actual CPU models on an iPhone 17 Pro simulator
-(iOS 26.5, M1 Pro host). Public AMI IB4001 mixed-headset audio was fed as 10-second
-PCM buffers through the production pipeline, without microphone capture.
+## Integration checks (2026-11-16)
 
-| Excerpt           | Processing time | Approximate WER               | Output turns |
-| ----------------- | --------------- | ----------------------------- | ------------ |
-| 210–270 s (60 s)  | 14.415 s        | 18.1% (32 edits / 177 words)  | 26           |
-| 210–390 s (180 s) | 48.772 s        | 21.7% (108 edits / 497 words) | 76           |
+Validated on an M1 Pro / 16 GiB Mac with a dedicated iPhone 17 Pro simulator,
+iOS 26.5, using an actual native Release build:
 
-WER lowercases and strips punctuation, preserving number spellings and fillers;
-it uses reference words ordered by start time. Overlap ordering and `15` versus
-`fifteen` contribute errors. These are two overlapping excerpts from one meeting,
-not a representative accuracy benchmark or a controlled comparison with another
-model. The longer run exercises repeated cache compression.
+- `npm run check`: 17 tests, TypeScript, ESLint and formatting pass.
+- `npm run native:ios`: Release build passes, including the native document picker.
+- Thirteen fixed audio clips match host quantized token IDs exactly. The full
+  pipeline passes reset, in-flight cancellation and disposal checks.
+- The actual screen processes AMI IB4001 audio from 210–270 seconds, copied as a
+  local 16 kHz WAV. Its copied transcript has 25 nonempty turns and 29/177 word
+  edits (16.38% WER), matching the prior matched-crop score. The pipeline probe
+  takes about 6.4 seconds, excluding loading/decoding, with uncontrolled desktop
+  conditions and no claim about phone latency.
+- Opening without loading, model deletion/cancellation, missing-file counts,
+  seven-file native import, invalid-file rejection, picker cancellation, VAD
+  download, recording selection, text copying, interruption and light/dark
+  layout were exercised with Maestro. Temporary picker files were removed.
 
-The main discussion is readable. Observed errors include `hall` → `hole`, missed
-short interjections, fragmented sentences at pauses and buffer boundaries, and
-occasional invented words on tiny uncertain crops. There is also a brief spurious
-Speaker 6 label in this four-participant meeting. Speaker identity accuracy and
-DER have not been measured. Treat the output as an editable draft, not a verbatim
-meeting record.
+AMI audio and manual annotations are from the
+[AMI corpus](https://groups.inf.ed.ac.uk/ami/AMICorpusMirror/amicorpus/IB4001/audio/)
+(CC BY 4.0). Fixtures, model weights, build outputs and captures remain local.
 
-The separate native 97.6-second synthetic eight-voice input completed in 5.304 s.
-This verifies native execution with eight tracks; it does not establish perfect
-speaker separation. Earlier four-speaker Sortformer results belong to a removed
-baseline implementation.
-
-Temporary fixture screens and recorder adapters are excluded from the final app.
-Physical microphone validation, phone performance and Android validation remain
-unavailable in this simulator-only check.
-
-The simplified meeting UI was checked in light/dark appearance. A fixture-fed
-Maestro run passed start, stop, copy and clear on the actual native pipeline.
-The local Files picker presented and listed the prepared model folder; automated
-folder selection did not complete reliably on this simulator. Native model loading
-and inference were verified by seeding the identical file into app-private storage,
-so picker selection/cancellation remains a separate manual verification gap.
-After the final build, injected audio JSON was removed. The app-container audit
-found no audio files; Apple's `monolithic_metal.pcm` (CPCH compiler-module magic)
-is a compiler cache, not recorded PCM.
+A native microphone attempt on this simulator aborted in Apple's `AURemoteIO`
+RPC path. The meeting screen therefore offers recording import on simulators;
+microphone capture remains a physical-device path. Physical capture, Android,
+phone memory/thermal behavior and network-isolated execution were not verified.
+The simulator shares its host network; no per-device network isolation was
+configured. These results establish a running local prototype, not production
+readiness or broad transcription accuracy.

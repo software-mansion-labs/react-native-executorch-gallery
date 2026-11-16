@@ -144,7 +144,7 @@ export const TASK_SECTIONS: TaskSection[] = [
         id: 'meeting-transcript',
         href: '/meeting-transcript',
         title: 'Meeting transcript',
-        keywords: 'LFM3 Audio Nemotron speakers meeting transcription privacy local',
+        keywords: 'Fluid Speech Pro Nemotron speakers meeting transcription privacy local',
       },
       {
         id: 'voice-activity-detection',

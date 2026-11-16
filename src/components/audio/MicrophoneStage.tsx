@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
@@ -21,6 +21,7 @@ export function MicrophoneStage({
   finishing = false,
   hasResult,
   startLabel = 'Start recording',
+  startIcon = 'mic-outline',
   stopLabel = 'Stop recording',
   onToggle,
   children,
@@ -35,6 +36,7 @@ export function MicrophoneStage({
   finishing?: boolean;
   hasResult: boolean;
   startLabel?: string;
+  startIcon?: ComponentProps<typeof PhotoActionButton>['iconName'];
   stopLabel?: string;
   onToggle: () => Promise<void>;
   children: ReactNode;
@@ -64,7 +66,7 @@ export function MicrophoneStage({
       {ready && (
         <Animated.View entering={entrance} style={styles.controls}>
           <PhotoActionButton
-            iconName={active ? 'stop' : 'mic-outline'}
+            iconName={active ? 'stop' : startIcon}
             label={active ? stopLabel : startLabel}
             primary
             disabled={starting || finishing}
