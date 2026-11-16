@@ -23,7 +23,7 @@ export function IconToggle({
   renderIcon: (selected: boolean, color: string) => ReactNode;
   onChange: (value: boolean) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const position = useSharedValue(value ? segmentWidth : 0);
   useEffect(() => {
     position.set(
@@ -44,10 +44,16 @@ export function IconToggle({
       onPress={() => onChange(!value)}
       style={styles.target}
     >
-      <View style={[styles.control, { borderColor: colors.border }]} pointerEvents="none">
+      <View
+        style={[
+          styles.control,
+          { backgroundColor: colors.promptSurface, borderColor: colors.promptBorder },
+        ]}
+        pointerEvents="none"
+      >
         <Animated.View
           pointerEvents="none"
-          style={[styles.selection, { backgroundColor: colors.surface }, selection]}
+          style={[styles.selection, { backgroundColor: tokens.toggle.thumb[scheme] }, selection]}
         />
         {([false, true] as const).map((option) => (
           <View key={String(option)} style={styles.option}>
@@ -62,8 +68,8 @@ export function IconToggle({
 const { spacing, radius, borderWidth, layout } = tokens;
 const controlHeight = layout.promptSuggestionHeight;
 const controlWidth = controlHeight * 2 - spacing.sm;
-const selectionSize = controlHeight - (spacing.xs + borderWidth.thin) * 2;
-const segmentWidth = (controlWidth - (spacing.xs + borderWidth.thin) * 2) / 2;
+const selectionSize = controlHeight - (spacing.xs + borderWidth.hairline) * 2;
+const segmentWidth = (controlWidth - (spacing.xs + borderWidth.hairline) * 2) / 2;
 const styles = StyleSheet.create({
   target: { minHeight: layout.touchTarget, justifyContent: 'center' },
   control: {
@@ -71,7 +77,7 @@ const styles = StyleSheet.create({
     width: controlWidth,
     height: controlHeight,
     padding: spacing.xs,
-    borderWidth: borderWidth.thin,
+    borderWidth: borderWidth.hairline,
     borderRadius: radius.pill,
   },
   selection: {

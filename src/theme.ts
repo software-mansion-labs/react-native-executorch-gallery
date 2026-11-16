@@ -8,7 +8,7 @@ const palette = {
   light: {
     background: '#FAFAFA',
     surface: '#F0F0F2',
-    promptSurface: 'rgba(240, 240, 242, 0.78)',
+    promptSurface: Platform.OS === 'ios' ? 'rgba(240, 240, 242, 0.88)' : '#F0F0F2',
     promptBorder: 'rgba(36, 37, 42, 0.10)',
     border: '#E1E1E6',
     text: '#24252A',
@@ -22,7 +22,7 @@ const palette = {
   dark: {
     background: '#101114',
     surface: '#1B1C20',
-    promptSurface: 'rgba(40, 41, 46, 0.72)',
+    promptSurface: Platform.OS === 'ios' ? 'rgba(40, 41, 46, 0.86)' : '#28292E',
     promptBorder: 'rgba(242, 242, 243, 0.12)',
     border: '#2B2C31',
     text: '#F2F2F3',
@@ -37,10 +37,17 @@ const palette = {
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
+  toggle: { thumb: { light: '#FFFFFF', dark: '#484A50' } },
   prompt: {
-    blurIntensity: 60,
-    fadeMaskColors: ['transparent', '#000000', '#000000'] as const,
-    fadeMaskLocations: [0, 0.35, 1] as const,
+    blurIntensity: 45,
+    fadeMaskColors: [
+      'rgba(0, 0, 0, 0)',
+      'rgba(0, 0, 0, 0.12)',
+      'rgba(0, 0, 0, 0.5)',
+      'rgba(0, 0, 0, 0.88)',
+      '#000000',
+    ] as const,
+    fadeMaskLocations: [0, 0.2, 0.45, 0.7, 1] as const,
   },
   camera: { chromeBlurIntensity: 60 },
   media: {
@@ -207,7 +214,6 @@ export const tokens = {
     promptSuggestionHeight: 40,
     statusDotSize: 6,
     thinkingDotSize: 5,
-    thinkingDotTravel: 3,
     thinkingIndicatorSize: 18,
   },
   motion: {
@@ -218,6 +224,7 @@ export const tokens = {
     chatDisclosureFadeDuration: 180,
     generatingPulseDuration: 1200,
     generatingPulseOpacity: 0.5,
+    activityPulseOpacity: 0.15,
     photoRevealDuration: 240,
     searchReorderDuration: 420,
     searchResetDuration: 560,

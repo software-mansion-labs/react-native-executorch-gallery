@@ -48,11 +48,11 @@ export function splitLfmResponse(raw: string, enableThinking = true) {
       .replace(/<[^>]*$/g, '')
       .trim();
   return end < 0
-    ? enableThinking
-      ? { thinking: clean(raw), answer: '', reasoning: true }
+    ? enableThinking || raw.includes('<think>')
+      ? { thinking: enableThinking ? clean(raw) : '', answer: '', reasoning: enableThinking }
       : { thinking: '', answer: clean(raw), reasoning: false }
     : {
-        thinking: clean(raw.slice(0, end)),
+        thinking: enableThinking ? clean(raw.slice(0, end)) : '',
         answer: clean(raw.slice(end + '</think>'.length)),
         reasoning: false,
       };
@@ -80,7 +80,8 @@ const units: Record<string, { group: string; scale: number }> = {
 
 /** Real, offline tools; validation failures are returned to the model for correction. */
 export function createChatTools(
-  onResult: (label: string, detail: string, args: Record<string, unknown>) => void
+  onResult: (label: string, detail: string, args: Record<string, unknown>) => void,
+  onStart?: (label: string, args: Record<string, unknown>) => void
 ): llm.ToolDefinition[] {
   const tool = (
     name: string,
@@ -91,9 +92,10 @@ export function createChatTools(
   ): llm.ToolDefinition => ({
     type: 'function',
     function: { name, description, parameters: { type: 'object', properties, required } },
-    execute: (args) => {
+    execute: async (args) => {
+      onStart?.(name, args);
       try {
-        const result = JSON.stringify(run(args));
+        const result = JSON.stringify(await run(args));
         onResult(name, result, args);
         return result;
       } catch (error) {
