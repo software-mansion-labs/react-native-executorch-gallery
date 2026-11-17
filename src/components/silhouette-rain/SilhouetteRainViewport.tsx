@@ -24,7 +24,6 @@ export function SilhouetteRainViewport({ rain }: { rain: ReturnType<typeof useSi
         mask={rain.mask}
         playing={rain.isActive}
         aspectRatio={rain.aspectRatio}
-        onMetrics={rain.setRenderStats}
       />
     </View>
   );

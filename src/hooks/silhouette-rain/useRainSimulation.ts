@@ -1,10 +1,9 @@
 import { useMemo } from 'react';
 import { Skia } from '@shopify/react-native-skia';
 import { useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 import { tokens } from '@/theme';
 import { DROP_TEXTURE, RAIN_COUNT } from '@/lib/silhouette-rain/texture';
-import type { RainMask, RainRenderMetrics } from './useSilhouetteRain';
+import type { RainMask } from './useSilhouetteRain';
 import {
   advanceParticle,
   isFreshMask,
@@ -17,7 +16,7 @@ const SPLASH_COUNT = 384;
 
 /**
  * Simulates 600 rain drops and pooled splashes on the UI thread.
- * @param props Playback, collision mask, viewport geometry and optional timing callback.
+ * @param props Playback, collision mask, viewport geometry.
  * @returns Persistent atlas transforms and a batched splash path.
  */
 export function useRainSimulation({
@@ -26,14 +25,12 @@ export function useRainSimulation({
   width,
   height,
   aspectRatio,
-  onMetrics,
 }: {
   mask: SharedValue<RainMask | null>;
   playing: boolean;
   width: number;
   height: number;
   aspectRatio: number;
-  onMetrics?: (metrics: RainRenderMetrics) => void;
 }) {
   const initial = useMemo(
     () =>
@@ -67,10 +64,8 @@ export function useRainSimulation({
   const initialized = useSharedValue(false),
     elapsed = useSharedValue(0),
     splashIndex = useSharedValue(0);
-  const counters = useSharedValue({ since: 0, frames: 0, hits: 0, cpu: 0 });
   useFrameCallback((info) => {
     'worklet';
-    const started = performance.now();
     const dt = Math.min((info.timeSincePreviousFrame ?? 16) / 1000, 0.04);
     const now = Date.now(),
       field = mask.value,
@@ -80,7 +75,6 @@ export function useRainSimulation({
       for (let i = 0; i < COUNT; i++) spawnParticle(particles.value[i]!, i, true);
       initialized.value = true;
     }
-    let hits = 0;
     if (playing) {
       elapsed.value += dt;
       const pSplash = splashPath.value;
@@ -90,7 +84,6 @@ export function useRainSimulation({
         const transform = transforms.value[i]!;
         transform.set(0, 0, 0, 0);
         if (advanceParticle(p, dt, collider, aspectRatio, elapsed.value)) {
-          hits++;
           // A normal-directed fan creates small, dissipative secondary droplets.
           const energy = Math.min(0.12, 0.025 + p.impactSpeed * 0.055),
             tx = -p.normalY,
@@ -141,22 +134,6 @@ export function useRainSimulation({
       // Notify the atlas mapper and splash renderer after updating the fixed pools.
       transforms.modify(undefined, true);
       splashPath.modify(undefined, true);
-    }
-    const c = counters.value;
-    if (!c.since) c.since = info.timestamp;
-    else c.frames++;
-    c.hits += hits;
-    c.cpu += performance.now() - started;
-    if (info.timestamp - c.since >= 1000) {
-      if (onMetrics)
-        scheduleOnRN(onMetrics, {
-          fps: Math.round((c.frames * 1000) / (info.timestamp - c.since)),
-          maskAgeMs: field ? Math.max(0, Math.round(now - field.sampledAt)) : 0,
-          fresh,
-          contacts: c.hits,
-          animationMs: c.cpu / Math.max(1, c.frames),
-        });
-      counters.value = { since: info.timestamp, frames: 0, hits: 0, cpu: 0 };
     }
   });
   return { transforms, splashPath };

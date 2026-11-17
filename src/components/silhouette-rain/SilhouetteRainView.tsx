@@ -1,7 +1,5 @@
-import { BlurView } from 'expo-blur';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { AppText } from '@/components/AppText';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { TaskHero } from '@/components/TaskHero';
@@ -22,21 +20,7 @@ export function SilhouetteRainView({
   const appearance = rain.showCamera ? 'dark' : undefined;
   return (
     <View style={styles.root}>
-      <View style={styles.stage}>
-        {rain.showCamera && rain.isActive && (
-          <View style={styles.diagnostics}>
-            <BlurView
-              style={StyleSheet.absoluteFill}
-              tint="dark"
-              intensity={tokens.camera.chromeBlurIntensity}
-              pointerEvents="none"
-            />
-            <AppText variant="caption" appearance="dark" testID="rain-diagnostics">
-              {rain.latency.toFixed(1)} ms
-            </AppText>
-          </View>
-        )}
-      </View>
+      <View style={styles.stage} />
       <View style={styles.controls}>
         {ready && (
           <Animated.View style={styles.buttons} entering={entrance}>
@@ -67,19 +51,12 @@ export function SilhouetteRainView({
     </View>
   );
 }
-const { spacing, layout, radius } = tokens;
+const { spacing, layout } = tokens;
 const entrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .easing(Easing.out(Easing.cubic))
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, gap: spacing.md },
-  diagnostics: {
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
   stage: { flex: 1, justifyContent: 'flex-end', alignItems: 'center' },
   buttons: { flexDirection: 'row', justifyContent: 'center', gap: spacing.md },
   controls: {

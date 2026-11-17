@@ -15,21 +15,13 @@ import {
 } from '@/lib/silhouette-rain/segmenter';
 
 export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
-export type RainRenderMetrics = {
-  fps: number;
-  animationMs: number;
-  maskAgeMs: number;
-  fresh: boolean;
-  contacts: number;
-};
-
 /**
  * Loads Selfie Segmentation on request and processes live Vision Camera frames.
  * GPU-resizes the portrait frame to a 256px long edge before synchronous inference on the camera worklet; busy
  * frames are dropped. Backgrounding, stopping and effect changes reject stale masks.
  * @param loaded Whether shared model controls explicitly requested loading.
  * @param prepared Whether the shared model setup transition has completed.
- * @returns Camera output, permission/rain controls, shared collision mask and timings.
+ * @returns Camera output, permission/rain controls, shared collision mask and geometry.
  */
 export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
   const download = useResourceDownload(RAIN_MODEL, { preventLoad: !loaded });
@@ -40,17 +32,9 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
   const [error, setError] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState(3 / 4);
-  const [latency, setLatency] = useState(0);
-  const [renderStats, setRenderStats] = useState<RainRenderMetrics>({
-    fps: 0,
-    animationMs: 0,
-    maskAgeMs: 0,
-    fresh: false,
-    contacts: 0,
-  });
   const mask = useSharedValue<RainMask | null>(null);
   const control = useSharedValue({ active: false, revision: 0 });
-  const reportAt = useSharedValue(0);
+  const reportedAspect = useSharedValue(0);
   const mounted = useRef(true);
   const { resizer, error: resizerError } = useResizer({
     ...RAIN_INPUT_SIZE,
@@ -88,9 +72,8 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
     };
   }, [control, mask]);
 
-  const onTiming = (ms: number, aspect: number) => {
+  const onAspect = (aspect: number) => {
     if (!mounted.current || !control.get().active) return;
-    setLatency(ms);
     setAspectRatio(aspect);
   };
   const onError = (message: string) => {
@@ -133,10 +116,9 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
         const current = control.get();
         if (!current.active || current.revision !== session.revision) return;
         mask.set({ ...projected, distance, sampledAt });
-        const now = Date.now();
-        if (now - reportAt.get() >= 500) {
-          reportAt.set(now);
-          scheduleOnRN(onTiming, result.inferenceMs, aspect);
+        if (reportedAspect.get() !== aspect) {
+          reportedAspect.set(aspect);
+          scheduleOnRN(onAspect, aspect);
         }
       } catch (cause) {
         scheduleOnRN(onError, String(cause));
@@ -178,9 +160,6 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
     showCamera: ready && !!device && hasPermission && foreground,
     mask,
     aspectRatio,
-    latency,
-    renderStats,
-    setRenderStats,
     toggleRain,
     onError,
   };

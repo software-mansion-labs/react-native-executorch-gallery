@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Atlas, BlurMask, Canvas, Group, Path } from '@shopify/react-native-skia';
 import type { SharedValue } from 'react-native-reanimated';
 import { useRainSimulation } from '@/hooks/silhouette-rain/useRainSimulation';
-import type { RainMask, RainRenderMetrics } from '@/hooks/silhouette-rain/useSilhouetteRain';
+import type { RainMask } from '@/hooks/silhouette-rain/useSilhouetteRain';
 import { createRainTexture, DROP_TEXTURE, RAIN_COUNT } from '@/lib/silhouette-rain/texture';
 import { tokens } from '@/theme';
 
@@ -13,13 +13,11 @@ export function RainCanvas({
   mask,
   playing,
   aspectRatio,
-  onMetrics,
 }: {
   enabled?: boolean;
   mask: SharedValue<RainMask | null>;
   playing: boolean;
   aspectRatio: number;
-  onMetrics?: (metrics: RainRenderMetrics) => void;
 }) {
   const [layout, setLayout] = useState({ width: 1, height: 1 });
   const width = Math.max(layout.width, layout.height * aspectRatio),
@@ -30,7 +28,6 @@ export function RainCanvas({
     width,
     height,
     aspectRatio,
-    onMetrics,
   });
   const texture = useMemo(() => createRainTexture(), []);
   const sprites = useMemo(
