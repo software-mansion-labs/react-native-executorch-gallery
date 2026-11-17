@@ -45,7 +45,7 @@ export function segmenterLabel(id: SegmenterId) {
   return `${name} · ${backend} ${precision}`;
 }
 
-export type PersonMask = { data: number[]; width: number; height: number; people: number };
+export type PersonMask = { data: Uint8Array; width: number; height: number; people: number };
 
 /** Loads the published segmentation PTE through the existing low-level API. */
 async function createInstanceRunner(config: SegmenterConfig) {
@@ -79,7 +79,7 @@ async function createInstanceRunner(config: SegmenterConfig) {
       const confidence = scores.getData(new Float32Array(n));
       const labels = classes.getData(new Float32Array(n));
       const bounds = boxes.getData(new Float32Array(n * 4));
-      const union = new Array<number>(mh * mw).fill(0);
+      const union = new Uint8Array(mh * mw);
       let people = 0;
       // Union confident person instances. Duplicate detections cannot add occupancy.
       // Restrict each logit mask to its own model-space box, as the task pipeline does.
@@ -143,7 +143,7 @@ async function createSemanticRunner(config: SegmenterConfig) {
       model.execute('forward', [preprocessor.process(image)], [output]);
       const logits = output.getData(new Float32Array(k * oh * ow));
       const size = 96;
-      const data = new Array<number>(size * size);
+      const data = new Uint8Array(size * size);
       let occupied = 0;
       for (let y = 0; y < size; y++)
         for (let x = 0; x < size; x++) {

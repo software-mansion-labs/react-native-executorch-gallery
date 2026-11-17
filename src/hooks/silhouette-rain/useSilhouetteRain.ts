@@ -5,7 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSharedValue } from 'react-native-reanimated';
 import { useModel, useResourceDownload } from 'react-native-executorch';
 
-import { buildDistanceField, type EffectId } from '@/lib/silhouette-rain/physics';
+import { buildDistanceField } from '@/lib/silhouette-rain/physics';
 import { createClipSampler } from '@/lib/silhouette-rain/video';
 import {
   createRainSegmenter,
@@ -16,6 +16,7 @@ import {
 
 export type RainRenderMetrics = {
   fps: number;
+  animationMs: number;
   maskAgeMs: number;
   fresh: boolean;
   contacts: number;
@@ -30,7 +31,7 @@ const EMPTY_STATS = {
   updates: 0,
 };
 
-export type RainMask = PersonMask & { sampledAt: number; distance: number[] };
+export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
 
 /**
  * Owns clip decoding and one-at-a-time RNE inference. Samples the latest frame,
@@ -39,7 +40,6 @@ export type RainMask = PersonMask & { sampledAt: number; distance: number[] };
  */
 export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfie') {
   const descriptor = SEGMENTERS[modelId];
-  const [effect, setEffect] = useState<EffectId>('lava');
   const download = useResourceDownload(descriptor.config, { preventLoad: !loaded });
   const { model: segmenter, error: modelError } = useModel(createRainSegmenter, download.resource);
   const [player, setPlayer] = useState<VideoPlayer | null>(null);
@@ -50,6 +50,7 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
   const [stats, setStats] = useState(EMPTY_STATS);
   const [renderStats, setRenderStats] = useState<RainRenderMetrics>({
     fps: 0,
+    animationMs: 0,
     maskAgeMs: 0,
     fresh: false,
     contacts: 0,
@@ -194,8 +195,6 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
 
   return {
     player,
-    effect,
-    setEffect,
     modelId,
     waitForIdle: () => pending.current ?? Promise.resolve(),
     status: {

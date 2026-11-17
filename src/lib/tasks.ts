@@ -119,7 +119,7 @@ export const TASK_SECTIONS: TaskSection[] = [
       {
         id: 'silhouette-rain',
         href: '/silhouette-rain',
-        title: 'Silhouette effects',
+        title: 'Silhouette rain',
         keywords: 'particles physics video segmentation mask YOLO ExecuTorch',
       },
       {
