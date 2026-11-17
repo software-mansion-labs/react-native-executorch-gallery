@@ -1,19 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import type { VideoPlayer } from 'expo-video';
-import * as ImagePicker from 'expo-image-picker';
-import { useSharedValue } from 'react-native-reanimated';
 import { useModel, useResourceDownload } from 'react-native-executorch';
+import { useCameraDevice, useCameraPermission, useFrameOutput } from 'react-native-vision-camera';
+import { useResizer, type GPUFrame } from 'react-native-vision-camera-resizer';
+import { useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
-import { buildDistanceField } from '@/lib/silhouette-rain/physics';
-import { createClipSampler } from '@/lib/silhouette-rain/video';
+import { buildDistanceField, projectCameraMask } from '@/lib/silhouette-rain/physics';
 import {
   createRainSegmenter,
-  SEGMENTERS,
+  RAIN_INPUT_SIZE,
+  RAIN_MODEL,
   type PersonMask,
-  type SegmenterId,
 } from '@/lib/silhouette-rain/segmenter';
 
+export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
 export type RainRenderMetrics = {
   fps: number;
   animationMs: number;
@@ -21,33 +22,25 @@ export type RainRenderMetrics = {
   fresh: boolean;
   contacts: number;
 };
-const EMPTY_STATS = {
-  inferenceMs: 0,
-  frameMs: 0,
-  colliderMs: 0,
-  totalMs: 0,
-  updateHz: 0,
-  people: 0,
-  updates: 0,
-};
-
-export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
 
 /**
- * Owns clip decoding and one-at-a-time RNE inference. Samples the latest frame,
- * drops work while busy, and rejects results after pause, background or unmount.
- * Returns native playback controls, shared collision mask and timings.
+ * Loads Selfie Segmentation on request and processes live Vision Camera frames.
+ * GPU-resizes the portrait frame to a 256px long edge before synchronous inference on the camera worklet; busy
+ * frames are dropped. Backgrounding, stopping and effect changes reject stale masks.
+ * @param loaded Whether shared model controls explicitly requested loading.
+ * @param prepared Whether the shared model setup transition has completed.
+ * @returns Camera output, permission/rain controls, shared collision mask and timings.
  */
-export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfie') {
-  const descriptor = SEGMENTERS[modelId];
-  const download = useResourceDownload(descriptor.config, { preventLoad: !loaded });
-  const { model: segmenter, error: modelError } = useModel(createRainSegmenter, download.resource);
-  const [player, setPlayer] = useState<VideoPlayer | null>(null);
-  const [clip, setClip] = useState<string | null>(null);
-  const [playing, setPlaying] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState(16 / 9);
+export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
+  const download = useResourceDownload(RAIN_MODEL, { preventLoad: !loaded });
+  const { model, error: modelError } = useModel(createRainSegmenter, download.resource);
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice('front');
+  const [isActive, setIsActive] = useState(false);
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState(EMPTY_STATS);
+  const [aspectRatio, setAspectRatio] = useState(3 / 4);
+  const [latency, setLatency] = useState(0);
   const [renderStats, setRenderStats] = useState<RainRenderMetrics>({
     fps: 0,
     animationMs: 0,
@@ -55,188 +48,140 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
     fresh: false,
     contacts: 0,
   });
-  const [effectEnabled, setEffectEnabled] = useState(true);
-  const effectEnabledRef = useRef(true);
-  const [collisions, setCollisions] = useState(true);
-  const [showMask, setShowMask] = useState(false);
   const mask = useSharedValue<RainMask | null>(null);
-  const inFlight = useRef(false);
-  const pending = useRef<Promise<void> | null>(null);
-  const generation = useRef(0);
-  const videoRef = useRef<Awaited<ReturnType<typeof createClipSampler>> | null>(null);
-  const playingRef = useRef(false);
+  const control = useSharedValue({ active: false, revision: 0 });
+  const reportAt = useSharedValue(0);
+  const mounted = useRef(true);
+  const { resizer, error: resizerError } = useResizer({
+    ...RAIN_INPUT_SIZE,
+    channelOrder: 'rgb',
+    dataType: 'uint8',
+    scaleMode: 'cover',
+    pixelLayout: 'interleaved',
+  });
+  const segmentWorklet = model?.segmentWorklet;
+  const ready = loaded && prepared && !!model && !!resizer;
 
   useEffect(() => {
-    generation.current++;
-    playingRef.current = playing;
+    control.set((old) => ({
+      active: ready && isActive && foreground,
+      revision: old.revision + 1,
+    }));
     mask.set(null);
-    if (playing) videoRef.current?.play();
-    else videoRef.current?.pause();
-  }, [playing, mask]);
-
+  }, [ready, isActive, foreground, control, mask]);
   useEffect(() => {
+    mounted.current = true;
+    const stop = () => {
+      control.set((old) => ({ active: false, revision: old.revision + 1 }));
+      mask.set(null);
+      setIsActive(false);
+    };
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
-        setPlaying(false);
-        mask.set(null);
-      }
-    });
-    return () => subscription.remove();
-  }, [mask]);
-
-  useEffect(() => {
-    mask.set(null);
-    if (!clip || !loaded) return;
-    let active = true;
-    generation.current++;
-    let dispose = () => {};
-    void (async () => {
-      const sampler = await createClipSampler(clip, descriptor.inputSize);
-      if (!active) {
-        sampler.dispose();
-        return;
-      }
-      videoRef.current = sampler;
-      setPlayer(sampler.player);
-      let timer: ReturnType<typeof setInterval> | undefined;
-      dispose = () => {
-        if (timer) clearInterval(timer);
-        setPlayer(null);
-        sampler.dispose();
-        if (videoRef.current === sampler) videoRef.current = null;
-      };
-      const preview = await sampler.sample(0);
-      if (!active) {
-        preview.image.dispose();
-        return;
-      }
-      preview.image.dispose();
-      setAspectRatio(preview.input.width / preview.input.height);
-      if (playingRef.current) sampler.play();
-      let deliveries: number[] = [];
-      timer = setInterval(() => {
-        const sampledAt = Date.now();
-        if (
-          !active ||
-          !playingRef.current ||
-          !effectEnabledRef.current ||
-          !segmenter ||
-          inFlight.current
-        )
-          return;
-        inFlight.current = true;
-        const revision = generation.current;
-        pending.current = (async () => {
-          const frameStarted = performance.now();
-          const current = await sampler.sample();
-          const frameMs = performance.now() - frameStarted;
-          if (!active || generation.current !== revision) {
-            current.image.dispose();
-            return;
-          }
-          current.image.dispose();
-          const started = performance.now();
-          const result = await segmenter.run(current.input);
-          if (!active || generation.current !== revision) return;
-          const inferenceMs = performance.now() - started;
-          const colliderStarted = performance.now();
-          const distance = buildDistanceField(result, current.input.width / current.input.height);
-          const colliderMs = performance.now() - colliderStarted;
-          const totalMs = performance.now() - frameStarted;
-          const deliveredAt = Date.now();
-          const sourceOffsetMs = (current.requestedSeconds - current.sourceSeconds) * 1000;
-          if (!effectEnabledRef.current) return;
-          mask.set({ ...result, distance, sampledAt: sampledAt - sourceOffsetMs });
-          deliveries = deliveries.filter((time) => deliveredAt - time < 1000);
-          deliveries.push(deliveredAt);
-          const span = deliveredAt - deliveries[0]!;
-          setStats((old) => ({
-            inferenceMs,
-            frameMs,
-            colliderMs,
-            totalMs,
-            updateHz: span > 0 ? ((deliveries.length - 1) * 1000) / span : 0,
-            people: result.people,
-            updates: old.updates + 1,
-          }));
-        })()
-          .catch((cause: unknown) => {
-            if (active) {
-              setError(String(cause));
-              setPlaying(false);
-              mask.set(null);
-            }
-          })
-          .finally(() => {
-            inFlight.current = false;
-          });
-      }, 16);
-    })().catch((cause: unknown) => {
-      if (active) {
-        dispose();
-        setError(String(cause));
-      }
+      setForeground(state === 'active');
+      if (state !== 'active') stop();
     });
     return () => {
-      active = false;
+      mounted.current = false;
+      control.set((old) => ({ active: false, revision: old.revision + 1 }));
       mask.set(null);
-      dispose();
+      subscription.remove();
     };
-  }, [clip, loaded, mask, segmenter, descriptor.inputSize]);
+  }, [control, mask]);
 
-  const openClip = useCallback((uri: string, autoplay = false) => {
-    setPlaying(autoplay);
-    setError(null);
-    setClip(uri);
-    setStats(EMPTY_STATS);
-  }, []);
-
-  const pickClip = async () => {
-    setPlaying(false);
-    setError(null);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['videos'] });
-      if (result.canceled || !result.assets[0]) return;
-      openClip(result.assets[0].uri);
-    } catch (cause) {
-      setError(String(cause));
-    }
+  const onTiming = (ms: number, aspect: number) => {
+    if (!mounted.current || !control.get().active) return;
+    setLatency(ms);
+    setAspectRatio(aspect);
   };
-
-  return {
-    player,
-    effectEnabled,
-    toggleEffect: () => {
-      generation.current++;
-      effectEnabledRef.current = !effectEnabledRef.current;
-      setEffectEnabled(effectEnabledRef.current);
-      mask.set(null);
+  const onError = (message: string) => {
+    if (!mounted.current) return;
+    control.set((old) => ({ active: false, revision: old.revision + 1 }));
+    mask.set(null);
+    setError(message);
+    setIsActive(false);
+  };
+  const frameOutput = useFrameOutput({
+    pixelFormat: 'yuv',
+    // Resolve sensor rotation/mirroring natively before the GPU resizer reads pixels.
+    enablePhysicalBufferRotation: true,
+    dropFramesWhileBusy: true,
+    onFrame(frame) {
+      'worklet';
+      const session = control.get();
+      if (!session.active || !resizer || !segmentWorklet) {
+        frame.dispose();
+        return;
+      }
+      let resized: GPUFrame | undefined;
+      try {
+        const sampledAt = Date.now();
+        const sideways = frame.orientation === 'left' || frame.orientation === 'right';
+        const aspect = sideways ? frame.height / frame.width : frame.width / frame.height;
+        resized = resizer.resize(frame);
+        const result = segmentWorklet({
+          data: new Uint8Array(resized.getPixelBuffer()),
+          ...RAIN_INPUT_SIZE,
+          format: 'rgb',
+          layout: 'hwc',
+        });
+        const projected = projectCameraMask(
+          result,
+          aspect,
+          RAIN_INPUT_SIZE.width / RAIN_INPUT_SIZE.height
+        );
+        const distance = buildDistanceField(projected, aspect);
+        const current = control.get();
+        if (!current.active || current.revision !== session.revision) return;
+        mask.set({ ...projected, distance, sampledAt });
+        const now = Date.now();
+        if (now - reportAt.get() >= 500) {
+          reportAt.set(now);
+          scheduleOnRN(onTiming, now - sampledAt, aspect);
+        }
+      } catch (cause) {
+        scheduleOnRN(onError, String(cause));
+      } finally {
+        resized?.dispose();
+        frame.dispose();
+      }
     },
-    modelId,
-    waitForIdle: () => pending.current ?? Promise.resolve(),
+  });
+
+  const toggleRain = async () => {
+    control.set((old) => ({ active: false, revision: old.revision + 1 }));
+    mask.set(null);
+    setError(null);
+    if (isActive) {
+      setIsActive(false);
+      return;
+    }
+    if (!ready || !device) return;
+    if (!hasPermission && !(await requestPermission())) {
+      setError('Allow camera access in Settings to start the rain.');
+      return;
+    }
+    if (mounted.current) setIsActive(true);
+  };
+  return {
     status: {
-      isReady: !!segmenter,
+      isReady: !!model,
       resource: download.resource,
       downloadProgress: download.downloadProgress,
       error: download.downloadError || modelError,
     },
-    error,
-    aspectRatio,
+    error: error || (resizerError ? String(resizerError) : null),
+    device,
+    frameOutput,
+    hasPermission,
+    ready,
+    isActive,
+    showCamera: ready && !!device && hasPermission && foreground,
     mask,
-    playing,
-    stats,
+    aspectRatio,
+    latency,
     renderStats,
     setRenderStats,
-    collisions,
-    showMask,
-    hasClip: !!clip,
-    pickClip,
-    openClip,
-    togglePlayback: () => {
-      mask.set(null);
-      setPlaying((value) => !value);
-    },
-    toggleCollisions: () => setCollisions((value) => !value),
-    toggleMask: () => setShowMask((value) => !value),
+    toggleRain,
+    onError,
   };
 }

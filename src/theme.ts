@@ -54,10 +54,10 @@ export const tokens = {
     drop: '#C9E8F5',
     distant: '#94C4DA',
     highlight: '#EFFAFF',
-    farWidth: 0.7,
-    dropWidth: 1.0,
-    nearWidth: 1.5,
     splashWidth: 1.0,
+    sprayWidth: 3,
+    sprayBlur: 2,
+    sprayOpacity: 0.2,
   },
   media: {
     cardWidthRatio: 0.7,

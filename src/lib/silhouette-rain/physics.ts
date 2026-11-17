@@ -33,11 +33,36 @@ export function isOccupied(field: CollisionField, x: number, y: number) {
   return field.data[Math.floor(y * field.height) * field.width + Math.floor(x * field.width)] === 1;
 }
 
+/** Maps the cover-cropped model mask back into the complete sensor frame. */
+export function projectCameraMask(
+  mask: { data: Uint8Array; width: number; height: number; people: number },
+  aspect: number,
+  inputAspect = 1
+) {
+  'worklet';
+  const width = mask.width,
+    height = mask.height;
+  const data = new Uint8Array(width * height);
+  const cropWidth = Math.min(1, inputAspect / aspect),
+    cropHeight = Math.min(1, aspect / inputAspect);
+  for (let y = 0; y < height; y++) {
+    const v = ((y + 0.5) / height - 0.5) / cropHeight + 0.5;
+    if (v < 0 || v >= 1) continue;
+    for (let x = 0; x < width; x++) {
+      const u = ((x + 0.5) / width - 0.5) / cropWidth + 0.5;
+      if (u >= 0 && u < 1)
+        data[y * width + x] = mask.data[Math.floor(v * height) * width + Math.floor(u * width)]!;
+    }
+  }
+  return { ...mask, data };
+}
+
 /** Two-pass chamfer distance field, positive outside and negative inside the silhouette. */
 export function buildDistanceField(
   field: Pick<CollisionField, 'data' | 'width' | 'height'>,
   aspect = 1
 ): Float32Array {
+  'worklet';
   const { data, width: w, height: h } = field;
   const sx = (aspect * h) / w,
     diagonal = Math.hypot(sx, 1);
@@ -51,6 +76,7 @@ export function buildDistanceField(
       toBackground[i] = solid ? Math.min((x + 1) * sx, (w - x) * sx, y + 1, h - y) : 0;
     }
   const transform = (d: Float32Array) => {
+    'worklet';
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         const i = y * w + x;

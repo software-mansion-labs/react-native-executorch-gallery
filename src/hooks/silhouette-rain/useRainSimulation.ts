@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Skia } from '@shopify/react-native-skia';
 import { useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { DROP_TEXTURE, RAIN_COUNT } from '@/lib/silhouette-rain/texture';
 import type { RainMask, RainRenderMetrics } from './useSilhouetteRain';
 import {
   advanceParticle,
@@ -10,19 +11,17 @@ import {
   type Particle,
 } from '@/lib/silhouette-rain/physics';
 
-const COUNT = 600;
+const COUNT = RAIN_COUNT;
 const SPLASH_COUNT = 192;
 
 /**
  * Simulates 600 rain drops and pooled splashes on the UI thread.
  * @param props Playback, collision mask, viewport geometry and optional timing callback.
- * @returns Persistent batched Skia paths for three rain layers, splashes and mask inspection.
+ * @returns Persistent atlas transforms and a batched splash path.
  */
 export function useRainSimulation({
   mask,
   playing,
-  collisions,
-  showMask,
   width,
   height,
   aspectRatio,
@@ -30,8 +29,6 @@ export function useRainSimulation({
 }: {
   mask: SharedValue<RainMask | null>;
   playing: boolean;
-  collisions: boolean;
-  showMask: boolean;
   width: number;
   height: number;
   aspectRatio: number;
@@ -57,27 +54,18 @@ export function useRainSimulation({
     () => Array.from({ length: SPLASH_COUNT }, () => ({ x: 0, y: 0, vx: 0, vy: 0, life: 0 })),
     []
   );
-  const initialPaths = useMemo(
-    () => [
-      Skia.Path.Make(),
-      Skia.Path.Make(),
-      Skia.Path.Make(),
-      Skia.Path.Make(),
-      Skia.Path.Make(),
-    ],
-    []
-  );
-  const far = useSharedValue(initialPaths[0]!),
-    middle = useSharedValue(initialPaths[1]!),
-    near = useSharedValue(initialPaths[2]!),
-    splashPath = useSharedValue(initialPaths[3]!),
-    maskPath = useSharedValue(initialPaths[4]!);
+  const initialSplashPath = useMemo(() => Skia.Path.Make(), []);
+  const splashPath = useSharedValue(initialSplashPath);
   const particles = useSharedValue(initial),
     splashes = useSharedValue(splashInitial);
+  const initialTransforms = useMemo(
+    () => Array.from({ length: COUNT }, () => Skia.RSXform(0, 0, 0, 0)),
+    []
+  );
+  const transforms = useSharedValue(initialTransforms);
   const initialized = useSharedValue(false),
     elapsed = useSharedValue(0),
-    splashIndex = useSharedValue(0),
-    lastMask = useSharedValue(-1);
+    splashIndex = useSharedValue(0);
   const counters = useSharedValue({ since: 0, frames: 0, hits: 0, cpu: 0 });
   useFrameCallback((info) => {
     'worklet';
@@ -86,52 +74,20 @@ export function useRainSimulation({
     const now = Date.now(),
       field = mask.value,
       fresh = isFreshMask(field, now, playing),
-      collider = collisions && fresh ? field : null;
+      collider = fresh ? field : null;
     if (!initialized.value) {
       for (let i = 0; i < COUNT; i++) spawnParticle(particles.value[i]!, i, true);
       initialized.value = true;
     }
-    if (showMask) {
-      const stamp = fresh && field ? field.sampledAt : 0;
-      if (lastMask.value !== stamp) {
-        const path = maskPath.value;
-        path.rewind();
-        if (fresh && field)
-          for (let y = 0; y < field.height; y++) {
-            let start = -1;
-            for (let x = 0; x <= field.width; x++) {
-              const occupied = x < field.width && field.data[y * field.width + x] === 1;
-              if (occupied && start < 0) start = x;
-              if (!occupied && start >= 0) {
-                path.addRect(
-                  Skia.XYWHRect(
-                    (start * width) / field.width,
-                    (y * height) / field.height,
-                    ((x - start) * width) / field.width,
-                    height / field.height
-                  )
-                );
-                start = -1;
-              }
-            }
-          }
-        maskPath.modify(undefined, true);
-        lastMask.value = stamp;
-      }
-    }
     let hits = 0;
     if (playing) {
       elapsed.value += dt;
-      const pFar = far.value,
-        pMiddle = middle.value,
-        pNear = near.value,
-        pSplash = splashPath.value;
-      pFar.rewind();
-      pMiddle.rewind();
-      pNear.rewind();
+      const pSplash = splashPath.value;
       pSplash.rewind();
       for (let i = 0; i < COUNT; i++) {
         const p = particles.value[i]!;
+        const transform = transforms.value[i]!;
+        transform.set(0, 0, 0, 0);
         if (advanceParticle(p, dt, collider, aspectRatio, elapsed.value)) {
           hits++;
           // A normal-directed fan creates small, dissipative secondary droplets.
@@ -140,9 +96,11 @@ export function useRainSimulation({
             ty = p.normalX;
           for (let j = 0; j < 3; j++) {
             const s = splashes.value[splashIndex.value % SPLASH_COUNT]!;
-            s.x = p.x;
-            s.y = p.y;
             const variation = ((p.seed >>> (j * 7)) & 127) / 127;
+            // A narrow spray band hides mask quantization without lighting the person.
+            const feather = 0.6 / (collider?.height ?? 96);
+            s.x = p.x + (p.normalX * feather + tx * (variation - 0.5) * feather) / aspectRatio;
+            s.y = p.y + p.normalY * feather + ty * (variation - 0.5) * feather;
             const spread = (variation - 0.5) * energy * 1.8;
             s.vx = p.normalX * energy * (0.4 + variation * 0.6) + tx * spread;
             s.vy = p.normalY * energy * (0.4 + variation * 0.6) + ty * spread;
@@ -155,11 +113,16 @@ export function useRainSimulation({
         }
         if (p.y > 1.06 || p.x < -0.08 || p.x > 1.08 || p.age > 12) spawnParticle(p, i);
         if (p.y < -0.04 || p.y > 1.04) continue;
-        const layer = i % 3,
-          path = layer === 0 ? pFar : layer === 1 ? pMiddle : pNear;
-        const tail = 0.009 + layer * 0.004;
-        path.moveTo(p.x * width, p.y * height);
-        path.lineTo(p.x * width - p.vx * height * tail, p.y * height - p.vy * height * tail);
+        const speed = Math.hypot(p.vx, p.vy);
+        const scale = (height * speed * (0.008 + (i % 3) * 0.004)) / DROP_TEXTURE.anchorY;
+        const scos = (scale * p.vy) / Math.max(speed, 0.001),
+          ssin = (-scale * p.vx) / Math.max(speed, 0.001);
+        transform.set(
+          scos,
+          ssin,
+          p.x * width - scos * DROP_TEXTURE.anchorX + ssin * DROP_TEXTURE.anchorY,
+          p.y * height - ssin * DROP_TEXTURE.anchorX - scos * DROP_TEXTURE.anchorY
+        );
       }
       for (let i = 0; i < SPLASH_COUNT; i++) {
         const p = splashes.value[i]!;
@@ -172,10 +135,8 @@ export function useRainSimulation({
         pSplash.moveTo(p.x * width, p.y * height);
         pSplash.lineTo(p.x * width - p.vx * height * tail, p.y * height - p.vy * height * tail);
       }
-      // Force a change notification after mutating each persistent native path.
-      far.modify(undefined, true);
-      middle.modify(undefined, true);
-      near.modify(undefined, true);
+      // Notify the atlas mapper and splash renderer after updating the fixed pools.
+      transforms.modify(undefined, true);
       splashPath.modify(undefined, true);
     }
     const c = counters.value;
@@ -195,5 +156,5 @@ export function useRainSimulation({
       counters.value = { since: info.timestamp, frames: 0, hits: 0, cpu: 0 };
     }
   });
-  return { far, middle, near, splashPath, maskPath };
+  return { transforms, splashPath };
 }

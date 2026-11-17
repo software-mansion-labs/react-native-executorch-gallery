@@ -8,117 +8,16 @@ import {
 } from 'react-native-executorch';
 import { createImagePreprocessor, type ImageBuffer } from 'react-native-executorch/cv';
 
-export const SEGMENTERS = {
-  selfie: {
-    name: 'Selfie',
-    config: models.semanticSegmentation.SELFIE_SEGMENTATION.DEFAULT,
-    kind: 'semantic',
-    inputSize: 256,
-  },
-  foreground: {
-    name: 'Foreground',
-    config: models.semanticSegmentation.U2NETP.DEFAULT,
-    kind: 'semantic',
-    inputSize: 320,
-  },
-  yolo: {
-    name: 'YOLO Nano',
-    config: models.instanceSegmentation.YOLO26.NANO.SIZE_384.DEFAULT,
-    kind: 'instances',
-    inputSize: 384,
-  },
-} as const;
-export type SegmenterId = keyof typeof SEGMENTERS;
-export type SegmenterConfig = (typeof SEGMENTERS)[SegmenterId]['config'];
-export const RAIN_MODEL = SEGMENTERS.selfie.config;
-
-/** Describes the resolved export, including simulator/Android fallbacks selected by DEFAULT. */
-export function segmenterLabel(id: SegmenterId) {
-  const { name, config } = SEGMENTERS[id];
-  const path = config.modelPath.toLowerCase();
-  const backend = path.includes('coreml')
-    ? 'Core ML'
-    : path.includes('vulkan')
-      ? 'Vulkan'
-      : 'XNNPACK';
-  const precision = path.includes('fp16') ? 'FP16' : path.includes('int8') ? 'INT8' : 'FP32';
-  return `${name} · ${backend} ${precision}`;
-}
+export const RAIN_MODEL = models.semanticSegmentation.SELFIE_SEGMENTATION.DEFAULT;
+// Portrait camera frames retain their field of view at a 256px long edge.
+// The model's configured native preprocessor performs the final 256x256 stretch.
+export const RAIN_INPUT_SIZE = { width: 144, height: 256 };
+type SegmenterConfig = typeof RAIN_MODEL;
 
 export type PersonMask = { data: Uint8Array; width: number; height: number; people: number };
 
-/** Loads the published segmentation PTE through the existing low-level API. */
-async function createInstanceRunner(config: SegmenterConfig) {
-  const scope = createResourceScope();
-  try {
-    const model = scope.track(await wrapAsync(loadModel)(config.modelPath));
-    const { dims, variant } = schema.validateSpec(model.schema, {
-      batched: schema.method(
-        'forward',
-        [schema.f32(1, 3, 'H', 'W')],
-        [schema.f32('N', 4), schema.f32('N'), schema.f32('N'), schema.f32('N', 'MH', 'MW')]
-      ),
-      unbatched: schema.method(
-        'forward',
-        [schema.f32(3, 'H', 'W')],
-        [schema.f32('N', 4), schema.f32('N'), schema.f32('N'), schema.f32('N', 'MH', 'MW')]
-      ),
-    });
-    const [n, h, w, mh, mw] = dims.constant('N', 'H', 'W', 'MH', 'MW');
-    const preprocessor = scope.track(
-      createImagePreprocessor(config.modelOpts, variant === 'batched' ? [1, 3, h, w] : [3, h, w])
-    );
-    const boxes = scope.track(tensor('float32', [n, 4]));
-    const scores = scope.track(tensor('float32', [n]));
-    const classes = scope.track(tensor('float32', [n]));
-    const masks = scope.track(tensor('float32', [n, mh, mw]));
-    const selected = scope.track(tensor('float32', [mh, mw]));
-    const run = (image: ImageBuffer): PersonMask => {
-      'worklet';
-      model.execute('forward', [preprocessor.process(image)], [boxes, scores, classes, masks]);
-      const confidence = scores.getData(new Float32Array(n));
-      const labels = classes.getData(new Float32Array(n));
-      const bounds = boxes.getData(new Float32Array(n * 4));
-      const union = new Uint8Array(mh * mw);
-      let people = 0;
-      // Union confident person instances. Duplicate detections cannot add occupancy.
-      // Restrict each logit mask to its own model-space box, as the task pipeline does.
-      for (let i = 0; i < n; i++) {
-        if (confidence[i]! < 0.4 || Math.round(labels[i]!) !== 0) continue;
-        const logits = masks
-          .copyTo(selected, { offset: i * mh * mw, length: mh * mw })
-          .getData(new Float32Array(mh * mw));
-        let occupied = false;
-        for (let y = 0; y < mh; y++) {
-          for (let x = 0; x < mw; x++) {
-            const px = ((x + 0.5) * w) / mw;
-            const py = ((y + 0.5) * h) / mh;
-            const index = y * mw + x;
-            if (
-              px >= bounds[i * 4]! &&
-              px <= bounds[i * 4 + 2]! &&
-              py >= bounds[i * 4 + 1]! &&
-              py <= bounds[i * 4 + 3]! &&
-              logits[index]! > 0
-            ) {
-              union[index] = 1;
-              occupied = true;
-            }
-          }
-        }
-        if (occupied) people++;
-      }
-      return { data: union, width: mw, height: mh, people };
-    };
-    return { run, dispose: scope.dispose };
-  } catch (error) {
-    scope.dispose();
-    throw error;
-  }
-}
-
-/** Direct logit mask pipeline; avoids resizing a full RGBA mask back to the video resolution. */
-async function createSemanticRunner(config: SegmenterConfig) {
+/** Direct logit mask pipeline; avoids resizing a full RGBA mask back to the camera resolution. */
+export async function createRainSegmenter(config: SegmenterConfig) {
   const scope = createResourceScope();
   try {
     const model = scope.track(await wrapAsync(loadModel)(config.modelPath));
@@ -157,42 +56,9 @@ async function createSemanticRunner(config: SegmenterConfig) {
         }
       return { data, width: size, height: size, people: occupied > 0 ? 1 : 0 };
     };
-    return { run, dispose: scope.dispose };
+    return { segmentWorklet: run, dispose: scope.dispose };
   } catch (error) {
     scope.dispose();
     throw error;
   }
-}
-
-/** Runs inference off-thread and defers teardown until the pending call settles. */
-export async function createRainSegmenter(config: SegmenterConfig) {
-  const runner = await ('outInterpolation' in config.modelOpts
-    ? createSemanticRunner(config)
-    : createInstanceRunner(config));
-  const runAsync = wrapAsync(runner.run);
-  let disposed = false;
-  let pending: Promise<PersonMask> | undefined;
-  return {
-    run: (image: ImageBuffer) => {
-      if (disposed) return Promise.reject(new Error('Segmentation session was disposed.'));
-      if (pending) return Promise.reject(new Error('Segmentation is already running.'));
-      const result = runAsync(image);
-      pending = result;
-      void result.then(
-        () => {
-          pending = undefined;
-        },
-        () => {
-          pending = undefined;
-        }
-      );
-      return result;
-    },
-    dispose: () => {
-      if (disposed) return;
-      disposed = true;
-      if (pending) void pending.then(runner.dispose, runner.dispose);
-      else runner.dispose();
-    },
-  };
 }
