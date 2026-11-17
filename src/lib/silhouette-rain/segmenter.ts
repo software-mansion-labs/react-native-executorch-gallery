@@ -37,9 +37,12 @@ export async function createRainSegmenter(config: SegmenterConfig) {
     const output = scope.track(
       tensor('float32', variant === 'batched' ? [1, k, oh, ow] : [k, oh, ow])
     );
-    const run = (image: ImageBuffer): PersonMask => {
+    const run = (image: ImageBuffer): PersonMask & { inferenceMs: number } => {
       'worklet';
-      model.execute('forward', [preprocessor.process(image)], [output]);
+      const input = preprocessor.process(image);
+      const started = performance.now();
+      model.execute('forward', [input], [output]);
+      const inferenceMs = performance.now() - started;
       const logits = output.getData(new Float32Array(k * oh * ow));
       const size = 96;
       const data = new Uint8Array(size * size);
@@ -54,7 +57,7 @@ export async function createRainSegmenter(config: SegmenterConfig) {
           data[y * size + x] = foreground ? 1 : 0;
           if (foreground) occupied++;
         }
-      return { data, width: size, height: size, people: occupied > 0 ? 1 : 0 };
+      return { data, width: size, height: size, people: occupied > 0 ? 1 : 0, inferenceMs };
     };
     return { segmentWorklet: run, dispose: scope.dispose };
   } catch (error) {

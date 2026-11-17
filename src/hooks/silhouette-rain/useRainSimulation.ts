@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Skia } from '@shopify/react-native-skia';
 import { useFrameCallback, useSharedValue, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { tokens } from '@/theme';
 import { DROP_TEXTURE, RAIN_COUNT } from '@/lib/silhouette-rain/texture';
 import type { RainMask, RainRenderMetrics } from './useSilhouetteRain';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@/lib/silhouette-rain/physics';
 
 const COUNT = RAIN_COUNT;
-const SPLASH_COUNT = 192;
+const SPLASH_COUNT = 384;
 
 /**
  * Simulates 600 rain drops and pooled splashes on the UI thread.
@@ -98,13 +99,13 @@ export function useRainSimulation({
             const s = splashes.value[splashIndex.value % SPLASH_COUNT]!;
             const variation = ((p.seed >>> (j * 7)) & 127) / 127;
             // A narrow spray band hides mask quantization without lighting the person.
-            const feather = 0.6 / (collider?.height ?? 96);
+            const feather = 1.1 / (collider?.height ?? 96);
             s.x = p.x + (p.normalX * feather + tx * (variation - 0.5) * feather) / aspectRatio;
             s.y = p.y + p.normalY * feather + ty * (variation - 0.5) * feather;
             const spread = (variation - 0.5) * energy * 1.8;
             s.vx = p.normalX * energy * (0.4 + variation * 0.6) + tx * spread;
             s.vy = p.normalY * energy * (0.4 + variation * 0.6) + ty * spread;
-            s.life = 0.07 + variation * 0.08;
+            s.life = 0.12 + variation * 0.1;
             splashIndex.value++;
           }
           // A raindrop breaks into short-lived spray rather than bouncing as a full streak.
@@ -114,7 +115,9 @@ export function useRainSimulation({
         if (p.y > 1.06 || p.x < -0.08 || p.x > 1.08 || p.age > 12) spawnParticle(p, i);
         if (p.y < -0.04 || p.y > 1.04) continue;
         const speed = Math.hypot(p.vx, p.vy);
-        const scale = (height * speed * (0.008 + (i % 3) * 0.004)) / DROP_TEXTURE.anchorY;
+        const scale =
+          (height * speed * (0.008 + (i % 3) * 0.004) * tokens.rain.dropScale) /
+          DROP_TEXTURE.anchorY;
         const scos = (scale * p.vy) / Math.max(speed, 0.001),
           ssin = (-scale * p.vx) / Math.max(speed, 0.001);
         transform.set(

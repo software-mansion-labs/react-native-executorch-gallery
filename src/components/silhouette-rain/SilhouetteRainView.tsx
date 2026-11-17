@@ -32,7 +32,7 @@ export function SilhouetteRainView({
               pointerEvents="none"
             />
             <AppText variant="caption" appearance="dark" testID="rain-diagnostics">
-              {rain.renderStats.fps} FPS · {Math.round(rain.latency)} ms
+              {rain.latency.toFixed(1)} ms
             </AppText>
           </View>
         )}

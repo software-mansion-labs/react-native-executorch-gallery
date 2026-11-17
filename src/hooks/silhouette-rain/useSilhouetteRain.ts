@@ -136,7 +136,7 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
         const now = Date.now();
         if (now - reportAt.get() >= 500) {
           reportAt.set(now);
-          scheduleOnRN(onTiming, now - sampledAt, aspect);
+          scheduleOnRN(onTiming, result.inferenceMs, aspect);
         }
       } catch (cause) {
         scheduleOnRN(onError, String(cause));
