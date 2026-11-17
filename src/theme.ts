@@ -50,6 +50,7 @@ export const tokens = {
     fadeMaskLocations: [0, 0.2, 0.45, 0.7, 1] as const,
   },
   camera: { chromeBlurIntensity: 60 },
+  rain: { dropWidth: 1.5 },
   media: {
     cardWidthRatio: 0.7,
     cardAspectRatio: 4 / 3,

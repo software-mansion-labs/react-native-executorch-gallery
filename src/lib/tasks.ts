@@ -117,6 +117,12 @@ export const TASK_SECTIONS: TaskSection[] = [
     keywords: 'vision video camera',
     data: [
       {
+        id: 'silhouette-rain',
+        href: '/silhouette-rain',
+        title: 'Silhouette rain',
+        keywords: 'particles physics video segmentation mask YOLO ExecuTorch',
+      },
+      {
         id: 'realtime-object-detection',
         href: '/realtime-object-detection',
         title: 'Live object detection',
