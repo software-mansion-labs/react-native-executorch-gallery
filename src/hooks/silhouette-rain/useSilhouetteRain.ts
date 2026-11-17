@@ -55,6 +55,8 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
     fresh: false,
     contacts: 0,
   });
+  const [effectEnabled, setEffectEnabled] = useState(true);
+  const effectEnabledRef = useRef(true);
   const [collisions, setCollisions] = useState(true);
   const [showMask, setShowMask] = useState(false);
   const mask = useSharedValue<RainMask | null>(null);
@@ -114,7 +116,14 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
       let deliveries: number[] = [];
       timer = setInterval(() => {
         const sampledAt = Date.now();
-        if (!active || !playingRef.current || !segmenter || inFlight.current) return;
+        if (
+          !active ||
+          !playingRef.current ||
+          !effectEnabledRef.current ||
+          !segmenter ||
+          inFlight.current
+        )
+          return;
         inFlight.current = true;
         const revision = generation.current;
         pending.current = (async () => {
@@ -136,6 +145,7 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
           const totalMs = performance.now() - frameStarted;
           const deliveredAt = Date.now();
           const sourceOffsetMs = (current.requestedSeconds - current.sourceSeconds) * 1000;
+          if (!effectEnabledRef.current) return;
           mask.set({ ...result, distance, sampledAt: sampledAt - sourceOffsetMs });
           deliveries = deliveries.filter((time) => deliveredAt - time < 1000);
           deliveries.push(deliveredAt);
@@ -195,6 +205,13 @@ export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfi
 
   return {
     player,
+    effectEnabled,
+    toggleEffect: () => {
+      generation.current++;
+      effectEnabledRef.current = !effectEnabledRef.current;
+      setEffectEnabled(effectEnabledRef.current);
+      mask.set(null);
+    },
     modelId,
     waitForIdle: () => pending.current ?? Promise.resolve(),
     status: {

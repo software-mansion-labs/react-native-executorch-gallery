@@ -115,12 +115,19 @@ export function surfaceNormal(field: CollisionField, x: number, y: number, aspec
 /** Respawns above the view with decorrelated position, speed and depth layer. */
 export function spawnParticle(p: Particle, index: number, spread = false) {
   'worklet';
-  p.seed = (p.seed * 1664525 + 1013904223) >>> 0;
-  const r = p.seed / 4294967296;
-  p.x = r;
-  p.y = spread ? (index * 0.61803398875) % 1 : -0.04 - r * 0.1;
-  p.vx = (r - 0.5) * 0.035;
-  p.vy = 0.55 + (index % 3) * 0.12 + r * 0.2;
+  // Hash every draw: adjacent pool indices and respawns must not form correlated bands.
+  const random = () => {
+    'worklet';
+    p.seed = (p.seed + 0x9e3779b9) >>> 0;
+    let value = p.seed;
+    value = Math.imul(value ^ (value >>> 16), 0x21f0aaad);
+    value = Math.imul(value ^ (value >>> 15), 0x735a2d97);
+    return ((value ^ (value >>> 15)) >>> 0) / 4294967296;
+  };
+  p.x = random();
+  p.y = spread ? random() : -0.02 - random() * 0.06;
+  p.vx = (random() - 0.5) * 0.035;
+  p.vy = 0.85 + random() * 0.65 + (index % 3) * 0.1;
   p.normalX = 0;
   p.normalY = -1;
   p.impactSpeed = 0;
@@ -140,7 +147,8 @@ export function advanceParticle(
   p.age += dt;
   p.cooldown = Math.max(0, p.cooldown - dt);
   p.vx += (Math.sin(time * 0.55 + p.seed * 0.000001) * 0.008 - 0.85 * p.vx) * dt;
-  p.vy += (1.4 - 0.85 * p.vy) * dt;
+  // Drops enter at falling speed; no synchronized acceleration front after recycling.
+  if (p.cooldown > 0 || p.vy < 0.6) p.vy += (1.4 - 0.85 * p.vy) * dt;
   const steps = field
     ? Math.min(16, Math.max(1, Math.ceil(Math.hypot(p.vx, p.vy) * dt * field.height * 1.5)))
     : 1;

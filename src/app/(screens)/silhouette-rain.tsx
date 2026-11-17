@@ -5,7 +5,7 @@ import { TaskScreen } from '@/components/TaskScreen';
 import { SilhouetteRainView } from '@/components/silhouette-rain/SilhouetteRainView';
 import { useSilhouetteRain } from '@/hooks/silhouette-rain/useSilhouetteRain';
 import { useModelControls, type ModelControls } from '@/hooks/useModelControls';
-import { RAIN_MODEL, segmenterLabel } from '@/lib/silhouette-rain/segmenter';
+import { RAIN_MODEL } from '@/lib/silhouette-rain/segmenter';
 
 function RainSession({ model }: { model: ModelControls }) {
   const rain = useSilhouetteRain(model.loaded);
@@ -22,6 +22,7 @@ function RainSession({ model }: { model: ModelControls }) {
       background={
         rain.hasClip ? (
           <RainCanvas
+            enabled={rain.effectEnabled}
             onMetrics={rain.setRenderStats}
             player={rain.player}
             mask={rain.mask}
@@ -40,7 +41,7 @@ function RainSession({ model }: { model: ModelControls }) {
 }
 
 function SilhouetteRainTask() {
-  const model = useModelControls(RAIN_MODEL.modelPath, { name: segmenterLabel('selfie') });
+  const model = useModelControls(RAIN_MODEL.modelPath, { name: 'Selfie Segmentation' });
   return <RainSession key={model.revision} model={model} />;
 }
 

@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { IconButton } from '@/components/IconButton';
 import { AppText } from '@/components/AppText';
 import { ModelSetup } from '@/components/ModelSetup';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
@@ -25,6 +26,16 @@ export function SilhouetteRainView({
   const appearance = rain.hasClip ? 'dark' : undefined;
   return (
     <View style={styles.root}>
+      <View style={styles.toolbar}>
+        {rain.hasClip && (
+          <IconButton
+            icon={rain.effectEnabled ? 'rainy' : 'rainy-outline'}
+            accessibilityLabel={rain.effectEnabled ? 'Turn rain off' : 'Turn rain on'}
+            appearance={appearance}
+            onPress={rain.toggleEffect}
+          />
+        )}
+      </View>
       <View style={styles.stage}>
         {rain.hasClip && (
           <View style={styles.diagnostics}>
@@ -35,12 +46,9 @@ export function SilhouetteRainView({
               pointerEvents="none"
             />
             <AppText variant="caption" appearance="dark" testID="rain-diagnostics">
-              {rain.renderStats.fps} FPS · {rain.playing ? rain.stats.updateHz.toFixed(1) : '0.0'}{' '}
-              masks/s
-            </AppText>
-            <AppText variant="caption" tone="muted" appearance="dark">
-              Segment {Math.round(rain.stats.inferenceMs)} ms · Animation{' '}
-              {rain.renderStats.animationMs.toFixed(1)} ms
+              {rain.effectEnabled
+                ? `${rain.renderStats.fps} FPS · ${Math.round(rain.stats.inferenceMs)} ms`
+                : 'Rain off'}
             </AppText>
           </View>
         )}
@@ -85,6 +93,7 @@ const entrance = FadeIn.duration(tokens.motion.photoRevealDuration)
   .reduceMotion(ReduceMotion.System);
 const styles = StyleSheet.create({
   root: { flex: 1, gap: spacing.md },
+  toolbar: { flexDirection: 'row', justifyContent: 'flex-end', minHeight: layout.touchTarget },
   diagnostics: {
     alignItems: 'center',
     overflow: 'hidden',

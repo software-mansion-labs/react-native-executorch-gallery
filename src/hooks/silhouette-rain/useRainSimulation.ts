@@ -135,19 +135,23 @@ export function useRainSimulation({
         if (advanceParticle(p, dt, collider, aspectRatio, elapsed.value)) {
           hits++;
           // A normal-directed fan creates small, dissipative secondary droplets.
-          const energy = Math.min(0.28, 0.06 + p.impactSpeed * 0.16),
+          const energy = Math.min(0.12, 0.025 + p.impactSpeed * 0.055),
             tx = -p.normalY,
             ty = p.normalX;
           for (let j = 0; j < 3; j++) {
             const s = splashes.value[splashIndex.value % SPLASH_COUNT]!;
             s.x = p.x;
             s.y = p.y;
-            const spread = (j - 1) * energy * 0.8;
-            s.vx = p.normalX * energy + tx * spread;
-            s.vy = p.normalY * energy + ty * spread;
-            s.life = 0.18 + j * 0.055;
+            const variation = ((p.seed >>> (j * 7)) & 127) / 127;
+            const spread = (variation - 0.5) * energy * 1.8;
+            s.vx = p.normalX * energy * (0.4 + variation * 0.6) + tx * spread;
+            s.vy = p.normalY * energy * (0.4 + variation * 0.6) + ty * spread;
+            s.life = 0.07 + variation * 0.08;
             splashIndex.value++;
           }
+          // A raindrop breaks into short-lived spray rather than bouncing as a full streak.
+          spawnParticle(p, i);
+          continue;
         }
         if (p.y > 1.06 || p.x < -0.08 || p.x > 1.08 || p.age > 12) spawnParticle(p, i);
         if (p.y < -0.04 || p.y > 1.04) continue;
@@ -164,7 +168,7 @@ export function useRainSimulation({
         p.vy += 0.85 * dt;
         p.x += (p.vx * dt) / aspectRatio;
         p.y += p.vy * dt;
-        const tail = Math.min(0.016, p.life * 0.08);
+        const tail = Math.min(0.008, p.life * 0.05);
         pSplash.moveTo(p.x * width, p.y * height);
         pSplash.lineTo(p.x * width - p.vx * height * tail, p.y * height - p.vy * height * tail);
       }

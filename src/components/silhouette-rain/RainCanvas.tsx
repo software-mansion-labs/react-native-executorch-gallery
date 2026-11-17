@@ -9,6 +9,7 @@ import { tokens, useTheme } from '@/theme';
 
 /** Five batched draws: three rain layers, impact splashes and an optional diagnostic mask. */
 export function RainCanvas({
+  enabled = true,
   mask,
   playing,
   collisions,
@@ -18,6 +19,7 @@ export function RainCanvas({
   fullScreen = false,
   onMetrics,
 }: {
+  enabled?: boolean;
   mask: SharedValue<RainMask | null>;
   playing: boolean;
   collisions: boolean;
@@ -33,7 +35,7 @@ export function RainCanvas({
     height = width / aspectRatio;
   const { far, middle, near, splashPath, maskPath } = useRainSimulation({
     mask,
-    playing,
+    playing: playing && enabled,
     collisions,
     showMask,
     width,
@@ -60,46 +62,48 @@ export function RainCanvas({
         />
       )}
       <Canvas style={StyleSheet.absoluteFill}>
-        <Group
-          transform={[
-            { translateX: (layout.width - width) / 2 },
-            { translateY: (layout.height - height) / 2 },
-          ]}
-        >
-          <Path
-            path={far}
-            color={tokens.rain.distant}
-            style="stroke"
-            strokeWidth={tokens.rain.farWidth}
-            opacity={0.25}
-            strokeCap="round"
-          />
-          <Path
-            path={middle}
-            color={tokens.rain.drop}
-            style="stroke"
-            strokeWidth={tokens.rain.dropWidth}
-            opacity={0.55}
-            strokeCap="round"
-          />
-          <Path
-            path={near}
-            color={tokens.rain.highlight}
-            style="stroke"
-            strokeWidth={tokens.rain.nearWidth}
-            opacity={0.8}
-            strokeCap="round"
-          />
-          <Path
-            path={splashPath}
-            color={tokens.rain.highlight}
-            style="stroke"
-            strokeWidth={tokens.rain.splashWidth}
-            opacity={0.8}
-            strokeCap="round"
-          />
-          {showMask && <Path path={maskPath} color={colors.accent} opacity={0.25} />}
-        </Group>
+        {enabled && (
+          <Group
+            transform={[
+              { translateX: (layout.width - width) / 2 },
+              { translateY: (layout.height - height) / 2 },
+            ]}
+          >
+            <Path
+              path={far}
+              color={tokens.rain.distant}
+              style="stroke"
+              strokeWidth={tokens.rain.farWidth}
+              opacity={0.25}
+              strokeCap="round"
+            />
+            <Path
+              path={middle}
+              color={tokens.rain.drop}
+              style="stroke"
+              strokeWidth={tokens.rain.dropWidth}
+              opacity={0.55}
+              strokeCap="round"
+            />
+            <Path
+              path={near}
+              color={tokens.rain.highlight}
+              style="stroke"
+              strokeWidth={tokens.rain.nearWidth}
+              opacity={0.8}
+              strokeCap="round"
+            />
+            <Path
+              path={splashPath}
+              color={tokens.rain.highlight}
+              style="stroke"
+              strokeWidth={tokens.rain.splashWidth}
+              opacity={0.8}
+              strokeCap="round"
+            />
+            {showMask && <Path path={maskPath} color={colors.accent} opacity={0.25} />}
+          </Group>
+        )}
       </Canvas>
     </View>
   );
