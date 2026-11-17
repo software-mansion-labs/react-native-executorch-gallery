@@ -5,29 +5,60 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSharedValue } from 'react-native-reanimated';
 import { useModel, useResourceDownload } from 'react-native-executorch';
 
+import { buildDistanceField, type EffectId } from '@/lib/silhouette-rain/physics';
 import { createClipSampler } from '@/lib/silhouette-rain/video';
-import { createRainSegmenter, RAIN_MODEL, type PersonMask } from '@/lib/silhouette-rain/segmenter';
+import {
+  createRainSegmenter,
+  SEGMENTERS,
+  type PersonMask,
+  type SegmenterId,
+} from '@/lib/silhouette-rain/segmenter';
 
-export type RainMask = PersonMask & { sampledAt: number };
+export type RainRenderMetrics = {
+  fps: number;
+  maskAgeMs: number;
+  fresh: boolean;
+  contacts: number;
+};
+const EMPTY_STATS = {
+  inferenceMs: 0,
+  frameMs: 0,
+  colliderMs: 0,
+  totalMs: 0,
+  updateHz: 0,
+  people: 0,
+  updates: 0,
+};
+
+export type RainMask = PersonMask & { sampledAt: number; distance: number[] };
 
 /**
  * Owns clip decoding and one-at-a-time RNE inference. Samples the latest frame,
  * drops work while busy, and rejects results after pause, background or unmount.
  * Returns native playback controls, shared collision mask and timings.
  */
-export function useSilhouetteRain(loaded: boolean) {
-  const download = useResourceDownload(RAIN_MODEL, { preventLoad: !loaded });
+export function useSilhouetteRain(loaded: boolean, modelId: SegmenterId = 'selfie') {
+  const descriptor = SEGMENTERS[modelId];
+  const [effect, setEffect] = useState<EffectId>('lava');
+  const download = useResourceDownload(descriptor.config, { preventLoad: !loaded });
   const { model: segmenter, error: modelError } = useModel(createRainSegmenter, download.resource);
   const [player, setPlayer] = useState<VideoPlayer | null>(null);
   const [clip, setClip] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState({ inferenceMs: 0, updateHz: 0, people: 0, updates: 0 });
+  const [stats, setStats] = useState(EMPTY_STATS);
+  const [renderStats, setRenderStats] = useState<RainRenderMetrics>({
+    fps: 0,
+    maskAgeMs: 0,
+    fresh: false,
+    contacts: 0,
+  });
   const [collisions, setCollisions] = useState(true);
   const [showMask, setShowMask] = useState(false);
   const mask = useSharedValue<RainMask | null>(null);
   const inFlight = useRef(false);
+  const pending = useRef<Promise<void> | null>(null);
   const generation = useRef(0);
   const videoRef = useRef<Awaited<ReturnType<typeof createClipSampler>> | null>(null);
   const playingRef = useRef(false);
@@ -57,7 +88,7 @@ export function useSilhouetteRain(loaded: boolean) {
     generation.current++;
     let dispose = () => {};
     void (async () => {
-      const sampler = await createClipSampler(clip);
+      const sampler = await createClipSampler(clip, descriptor.inputSize);
       if (!active) {
         sampler.dispose();
         return;
@@ -79,23 +110,16 @@ export function useSilhouetteRain(loaded: boolean) {
       preview.image.dispose();
       setAspectRatio(preview.input.width / preview.input.height);
       if (playingRef.current) sampler.play();
-      let lastSample = 0;
-      let previousSample = 0;
+      let deliveries: number[] = [];
       timer = setInterval(() => {
         const sampledAt = Date.now();
-        if (
-          !active ||
-          !playingRef.current ||
-          !segmenter ||
-          inFlight.current ||
-          sampledAt - lastSample < 120
-        )
-          return;
-        lastSample = sampledAt;
+        if (!active || !playingRef.current || !segmenter || inFlight.current) return;
         inFlight.current = true;
         const revision = generation.current;
-        void (async () => {
+        pending.current = (async () => {
+          const frameStarted = performance.now();
           const current = await sampler.sample();
+          const frameMs = performance.now() - frameStarted;
           if (!active || generation.current !== revision) {
             current.image.dispose();
             return;
@@ -104,12 +128,23 @@ export function useSilhouetteRain(loaded: boolean) {
           const started = performance.now();
           const result = await segmenter.run(current.input);
           if (!active || generation.current !== revision) return;
-          mask.set({ ...result, sampledAt });
-          const elapsed = sampledAt - previousSample;
-          previousSample = sampledAt;
+          const inferenceMs = performance.now() - started;
+          const colliderStarted = performance.now();
+          const distance = buildDistanceField(result, current.input.width / current.input.height);
+          const colliderMs = performance.now() - colliderStarted;
+          const totalMs = performance.now() - frameStarted;
+          const deliveredAt = Date.now();
+          const sourceOffsetMs = (current.requestedSeconds - current.sourceSeconds) * 1000;
+          mask.set({ ...result, distance, sampledAt: sampledAt - sourceOffsetMs });
+          deliveries = deliveries.filter((time) => deliveredAt - time < 1000);
+          deliveries.push(deliveredAt);
+          const span = deliveredAt - deliveries[0]!;
           setStats((old) => ({
-            inferenceMs: performance.now() - started,
-            updateHz: elapsed > 0 && old.updates > 0 ? 1000 / elapsed : 0,
+            inferenceMs,
+            frameMs,
+            colliderMs,
+            totalMs,
+            updateHz: span > 0 ? ((deliveries.length - 1) * 1000) / span : 0,
             people: result.people,
             updates: old.updates + 1,
           }));
@@ -124,7 +159,7 @@ export function useSilhouetteRain(loaded: boolean) {
           .finally(() => {
             inFlight.current = false;
           });
-      }, 50);
+      }, 16);
     })().catch((cause: unknown) => {
       if (active) {
         dispose();
@@ -136,13 +171,13 @@ export function useSilhouetteRain(loaded: boolean) {
       mask.set(null);
       dispose();
     };
-  }, [clip, loaded, mask, segmenter]);
+  }, [clip, loaded, mask, segmenter, descriptor.inputSize]);
 
   const openClip = useCallback((uri: string, autoplay = false) => {
     setPlaying(autoplay);
     setError(null);
     setClip(uri);
-    setStats({ inferenceMs: 0, updateHz: 0, people: 0, updates: 0 });
+    setStats(EMPTY_STATS);
   }, []);
 
   const pickClip = async () => {
@@ -159,6 +194,10 @@ export function useSilhouetteRain(loaded: boolean) {
 
   return {
     player,
+    effect,
+    setEffect,
+    modelId,
+    waitForIdle: () => pending.current ?? Promise.resolve(),
     status: {
       isReady: !!segmenter,
       resource: download.resource,
@@ -170,6 +209,8 @@ export function useSilhouetteRain(loaded: boolean) {
     mask,
     playing,
     stats,
+    renderStats,
+    setRenderStats,
     collisions,
     showMask,
     hasClip: !!clip,

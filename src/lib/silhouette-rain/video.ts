@@ -10,7 +10,7 @@ import { skImageToBuffer } from '@/lib/image';
  * Skia video-texture readback produced black pixels, so this PoC uses encoded
  * native image frames instead. Temporary PNGs and native image refs are released.
  */
-export async function createClipSampler(uri: string) {
+export async function createClipSampler(uri: string, inputSize = 384) {
   const player = createVideoPlayer(null);
   let pending: Promise<unknown> | undefined;
   let disposed = false;
@@ -40,8 +40,8 @@ export async function createClipSampler(uri: string) {
     player.loop = true;
     const sampleFrame = async (seconds: number) => {
       const thumbnails = await player.generateThumbnailsAsync(seconds, {
-        maxWidth: 640,
-        maxHeight: 640,
+        maxWidth: inputSize,
+        maxHeight: inputSize,
       });
       const thumbnail = thumbnails[0];
       if (!thumbnail) throw new Error('Could not decode a video frame.');
@@ -55,7 +55,12 @@ export async function createClipSampler(uri: string) {
           const image = Skia.Image.MakeImageFromEncoded(data);
           if (!image) throw new Error('Could not read the decoded frame.');
           try {
-            return { image, input: skImageToBuffer(image), sourceSeconds: seconds };
+            return {
+              image,
+              input: skImageToBuffer(image),
+              sourceSeconds: Number.isFinite(thumbnail.actualTime) ? thumbnail.actualTime : seconds,
+              requestedSeconds: seconds,
+            };
           } catch (error) {
             image.dispose();
             throw error;

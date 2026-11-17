@@ -8,12 +8,47 @@ import {
 } from 'react-native-executorch';
 import { createImagePreprocessor, type ImageBuffer } from 'react-native-executorch/cv';
 
-export const RAIN_MODEL = models.instanceSegmentation.YOLO26.NANO.SIZE_384.XNNPACK_INT8;
+export const SEGMENTERS = {
+  selfie: {
+    name: 'Selfie',
+    config: models.semanticSegmentation.SELFIE_SEGMENTATION.DEFAULT,
+    kind: 'semantic',
+    inputSize: 256,
+  },
+  foreground: {
+    name: 'Foreground',
+    config: models.semanticSegmentation.U2NETP.DEFAULT,
+    kind: 'semantic',
+    inputSize: 320,
+  },
+  yolo: {
+    name: 'YOLO Nano',
+    config: models.instanceSegmentation.YOLO26.NANO.SIZE_384.DEFAULT,
+    kind: 'instances',
+    inputSize: 384,
+  },
+} as const;
+export type SegmenterId = keyof typeof SEGMENTERS;
+export type SegmenterConfig = (typeof SEGMENTERS)[SegmenterId]['config'];
+export const RAIN_MODEL = SEGMENTERS.selfie.config;
+
+/** Describes the resolved export, including simulator/Android fallbacks selected by DEFAULT. */
+export function segmenterLabel(id: SegmenterId) {
+  const { name, config } = SEGMENTERS[id];
+  const path = config.modelPath.toLowerCase();
+  const backend = path.includes('coreml')
+    ? 'Core ML'
+    : path.includes('vulkan')
+      ? 'Vulkan'
+      : 'XNNPACK';
+  const precision = path.includes('fp16') ? 'FP16' : path.includes('int8') ? 'INT8' : 'FP32';
+  return `${name} · ${backend} ${precision}`;
+}
 
 export type PersonMask = { data: number[]; width: number; height: number; people: number };
 
 /** Loads the published segmentation PTE through the existing low-level API. */
-async function createRunner(config: typeof RAIN_MODEL) {
+async function createInstanceRunner(config: SegmenterConfig) {
   const scope = createResourceScope();
   try {
     const model = scope.track(await wrapAsync(loadModel)(config.modelPath));
@@ -82,9 +117,58 @@ async function createRunner(config: typeof RAIN_MODEL) {
   }
 }
 
+/** Direct logit mask pipeline; avoids resizing a full RGBA mask back to the video resolution. */
+async function createSemanticRunner(config: SegmenterConfig) {
+  const scope = createResourceScope();
+  try {
+    const model = scope.track(await wrapAsync(loadModel)(config.modelPath));
+    const { dims, variant } = schema.validateSpec(model.schema, {
+      batched: schema.method(
+        'forward',
+        [schema.f32(1, 3, 'H', 'W')],
+        [schema.f32(1, 'K', 'OH', 'OW')]
+      ),
+      unbatched: schema.method('forward', [schema.f32(3, 'H', 'W')], [schema.f32('K', 'OH', 'OW')]),
+    });
+    const [h, w, k, oh, ow] = dims.constant('H', 'W', 'K', 'OH', 'OW');
+    if (k !== 1 && k !== 2) throw new Error('Expected a binary foreground segmentation model.');
+    const preprocessor = scope.track(
+      createImagePreprocessor(config.modelOpts, variant === 'batched' ? [1, 3, h, w] : [3, h, w])
+    );
+    const output = scope.track(
+      tensor('float32', variant === 'batched' ? [1, k, oh, ow] : [k, oh, ow])
+    );
+    const run = (image: ImageBuffer): PersonMask => {
+      'worklet';
+      model.execute('forward', [preprocessor.process(image)], [output]);
+      const logits = output.getData(new Float32Array(k * oh * ow));
+      const size = 96;
+      const data = new Array<number>(size * size);
+      let occupied = 0;
+      for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++) {
+          const index =
+            Math.min(oh - 1, Math.floor(((y + 0.5) * oh) / size)) * ow +
+            Math.min(ow - 1, Math.floor(((x + 0.5) * ow) / size));
+          const foreground =
+            k === 1 ? logits[index]! > 0 : logits[oh * ow + index]! > logits[index]!;
+          data[y * size + x] = foreground ? 1 : 0;
+          if (foreground) occupied++;
+        }
+      return { data, width: size, height: size, people: occupied > 0 ? 1 : 0 };
+    };
+    return { run, dispose: scope.dispose };
+  } catch (error) {
+    scope.dispose();
+    throw error;
+  }
+}
+
 /** Runs inference off-thread and defers teardown until the pending call settles. */
-export async function createRainSegmenter(config: typeof RAIN_MODEL) {
-  const runner = await createRunner(config);
+export async function createRainSegmenter(config: SegmenterConfig) {
+  const runner = await ('outInterpolation' in config.modelOpts
+    ? createSemanticRunner(config)
+    : createInstanceRunner(config));
   const runAsync = wrapAsync(runner.run);
   let disposed = false;
   let pending: Promise<PersonMask> | undefined;

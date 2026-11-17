@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import RNBlobUtil from 'react-native-blob-util';
 
-const DEMO_URL = 'https://videos.pexels.com/video-files/8502433/8502433-hd_1080_1920_25fps.mp4';
+// SHVETS production / Pexels, https://www.pexels.com/video/man-stretching-his-arms-9710766/
+// Used under https://www.pexels.com/license/. Downloaded on request; no bundled footage.
+const DEMO_URL = 'https://videos.pexels.com/video-files/9710766/9710766-hd_1080_1920_25fps.mp4';
 
 /** Downloads and caches the portrait sample on request, then opens it for playback. */
 export function useDemoClip(openClip: (uri: string, autoplay?: boolean) => void) {
@@ -20,7 +22,7 @@ export function useDemoClip(openClip: (uri: string, autoplay?: boolean) => void)
     pending.current = true;
     setLoading(true);
     setError(null);
-    const path = `${RNBlobUtil.fs.dirs.DocumentDir}/silhouette-demo-8502433.mp4`;
+    const path = `${RNBlobUtil.fs.dirs.DocumentDir}/silhouette-demo-9710766.mp4`;
     const partial = `${path}.partial`;
     try {
       if (!(await RNBlobUtil.fs.exists(path))) {
