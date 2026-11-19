@@ -11,6 +11,7 @@ import { useTaskState } from '@/hooks/useTaskState';
 import { createDepthTexture } from '@/lib/depth-estimation/depth-focus';
 
 import { findForegroundBumper, type ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
+import { estimateTableGradient, FLAT_TABLE_GRADIENT } from '@/lib/photo-pinball/table-plane';
 
 const MODEL = models.depthEstimation.DEPTH_ANYTHING_V3_SMALL.DEFAULT;
 
@@ -20,6 +21,7 @@ export default function PhotoPinball() {
   const [photo, setPhoto] = useTaskState<PickedImage | null>(null, model.revision);
   const [depth, setDepth] = useDisposableImage(model.revision);
   const [foreground, setForeground] = useTaskState<ForegroundBumper | null>(null, model.revision);
+  const [gradient, setGradient] = useTaskState(FLAT_TABLE_GRADIENT, model.revision);
   const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
   const canPick = model.prepared && model.loaded && estimator.isReady;
@@ -29,7 +31,9 @@ export default function PhotoPinball() {
     setBusy(true);
     setError(null);
     try {
-      const texture = createDepthTexture(await estimator.estimateDepth(photo.buffer));
+      const map = await estimator.estimateDepth(photo.buffer);
+      const texture = createDepthTexture(map);
+      setGradient(estimateTableGradient(map));
       setForeground(findForegroundBumper(texture));
       setDepth(texture);
     } catch (cause) {
@@ -66,6 +70,7 @@ export default function PhotoPinball() {
                   depth={depth}
                   transform={transform}
                   foreground={foreground}
+                  gradient={gradient}
                 />
               )
             : undefined

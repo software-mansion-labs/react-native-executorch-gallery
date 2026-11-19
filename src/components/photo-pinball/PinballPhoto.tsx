@@ -15,6 +15,7 @@ import { PhotoActionButton } from '@/components/PhotoActionButton';
 import type { ViewportTransform } from '@/components/PhotoPicker';
 import { usePhotoPinball } from '@/hooks/usePhotoPinball';
 import type { ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
+import type { TableDepthGradient } from '@/lib/photo-pinball/table-plane';
 import { tokens } from '@/theme';
 
 const ballEffect = Skia.RuntimeEffect.Make(`
@@ -50,11 +51,13 @@ export function PinballPhoto({
   depth,
   transform,
   foreground,
+  gradient,
 }: {
   image: SkImage;
   depth: SkImage;
   transform: ViewportTransform;
   foreground: ForegroundBumper | null;
+  gradient: TableDepthGradient;
 }) {
   const rect = {
     x: transform.offsetX,
@@ -62,7 +65,7 @@ export function PinballPhoto({
     width: image.width() * transform.scale,
     height: image.height() * transform.scale,
   };
-  const game = usePhotoPinball(rect.width, rect.height, [rect.x, rect.y], foreground);
+  const game = usePhotoPinball(rect.width, rect.height, [rect.x, rect.y], foreground, gradient);
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>
