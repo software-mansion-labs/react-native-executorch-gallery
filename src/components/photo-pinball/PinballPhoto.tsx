@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   Canvas,
   FilterMode,
@@ -64,24 +65,26 @@ export function PinballPhoto({
   const game = usePhotoPinball(rect.width, rect.height, [rect.x, rect.y], foreground);
 
   return (
-    <View style={StyleSheet.absoluteFill}>
-      <Canvas style={StyleSheet.absoluteFill} accessibilityLabel="Photo bounce test">
-        <Image image={image} fit="fill" {...rect} />
-        {ballEffect && foreground && (
-          <Rect rect={rect}>
-            <Shader source={ballEffect} uniforms={game.uniforms}>
-              <ImageShader
-                image={depth}
-                fit="fill"
-                rect={rect}
-                tx="clamp"
-                ty="clamp"
-                sampling={{ filter: FilterMode.Linear }}
-              />
-            </Shader>
-          </Rect>
-        )}
-      </Canvas>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+      <GestureDetector gesture={game.swipe}>
+        <Canvas style={StyleSheet.absoluteFill} accessibilityLabel="Photo bounce test">
+          <Image image={image} fit="fill" {...rect} />
+          {ballEffect && (
+            <Rect rect={rect}>
+              <Shader source={ballEffect} uniforms={game.uniforms}>
+                <ImageShader
+                  image={depth}
+                  fit="fill"
+                  rect={rect}
+                  tx="clamp"
+                  ty="clamp"
+                  sampling={{ filter: FilterMode.Linear }}
+                />
+              </Shader>
+            </Rect>
+          )}
+        </Canvas>
+      </GestureDetector>
       {foreground && (
         <View style={styles.controls}>
           <PhotoActionButton
@@ -93,7 +96,7 @@ export function PinballPhoto({
           />
         </View>
       )}
-    </View>
+    </GestureHandlerRootView>
   );
 }
 

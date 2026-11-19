@@ -73,8 +73,8 @@ export default function PhotoPinball() {
         result={
           depth
             ? foreground
-              ? 'Foreground object detected'
-              : 'No foreground object detected'
+              ? 'Swipe to launch · ▶ to replay'
+              : 'Swipe to launch · No obstacle detected'
             : undefined
         }
       />
