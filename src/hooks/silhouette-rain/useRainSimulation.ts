@@ -76,7 +76,7 @@ export function useRainSimulation({
       for (let i = 0; i < COUNT; i++) spawnParticle(particles.value[i]!, i, true);
       initialized.value = true;
     }
-    if (playing) {
+    if (playing && field) {
       elapsed.value += dt;
       for (let i = 0; i < COUNT; i++) {
         const p = particles.value[i]!;

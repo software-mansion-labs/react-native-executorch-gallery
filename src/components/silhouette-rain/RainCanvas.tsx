@@ -46,12 +46,11 @@ export function RainCanvas({
   const { backdropRgb, personOpacity, silhouetteFeather } = tokens.rain;
   const previewShade = useDerivedValue(() => {
     const field = mask.get();
-    const width = field?.width ?? 1;
-    const height = field?.height ?? 1;
+    if (!field) return null;
+    const { width, height, distance } = field;
     const pixels = new Uint8Array(width * height * 4);
     for (let i = 0; i < width * height; i++) {
-      const distance = field?.distance[i] ?? silhouetteFeather;
-      const t = Math.max(0, Math.min(1, 0.5 + distance / (2 * silhouetteFeather)));
+      const t = Math.max(0, Math.min(1, 0.5 + distance[i]! / (2 * silhouetteFeather)));
       const blend = t * t * (3 - 2 * t);
       const opacity = personOpacity + blend * (1 - personOpacity);
       const offset = i * 4;
@@ -66,6 +65,7 @@ export function RainCanvas({
       width * 4
     );
   });
+  const effectOpacity = useDerivedValue(() => (previewShade.get() ? 1 : 0));
   const sprites = useMemo(
     () =>
       Array.from({ length: RAIN_COUNT }, () => ({
@@ -86,6 +86,7 @@ export function RainCanvas({
       <Canvas style={StyleSheet.absoluteFill}>
         {enabled && (
           <Group
+            opacity={effectOpacity}
             transform={[
               { translateX: (layout.width - width) / 2 },
               { translateY: (layout.height - height) / 2 },
