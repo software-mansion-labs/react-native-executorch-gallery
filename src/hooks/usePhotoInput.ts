@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { useImage } from '@shopify/react-native-skia';
+import { Alert } from 'react-native';
+import { Skia, type SkImage } from '@shopify/react-native-skia';
+import RNBlobUtil from 'react-native-blob-util';
 
 import type { PickedImage } from '@/components/PhotoPicker';
 import { pickImage, skImageToBuffer } from '@/lib/image';
 
-/** Shared CV/chat input: decodes the picked URI with Skia, publishes its raw pixels, and exposes that same image for the canvas. */
+/** Decodes a picked photo once and shares the resulting Skia image and pixels with the preview and model. */
 export function usePhotoInput(
   onPick: (image: PickedImage | null) => void,
   targetWidth: number | null = 800,
   onError?: (message: string) => void
 ) {
-  const [uri, setUri] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<{ uri: string; image: SkImage } | null>(null);
   const [picking, setPicking] = useState(false);
   const mounted = useRef(true);
   useEffect(() => {
@@ -19,36 +21,39 @@ export function usePhotoInput(
       mounted.current = false;
     };
   }, []);
-  const image = useImage(uri, () => {
-    onPick(null);
-    onError?.('Could not open this photo. Try another image.');
-  });
+
   const choose = async (source: 'library' | 'camera') => {
     if (picking) return;
     setPicking(true);
     try {
-      const widthToUse = targetWidth === null ? undefined : targetWidth;
-      const picked = await pickImage(source, widthToUse);
-      if (!picked || !mounted.current) return;
-      onPick(null);
-      setUri(picked);
+      const uri = await pickImage(source, targetWidth ?? undefined);
+      if (!uri || !mounted.current) return;
+      const path = uri.startsWith('file://') ? decodeURIComponent(uri.slice(7)) : uri;
+      const encoded = await RNBlobUtil.fs.readFile(path, 'base64');
+      if (!mounted.current) return;
+      const data = Skia.Data.fromBase64(encoded);
+      try {
+        const image = Skia.Image.MakeImageFromEncoded(data);
+        if (!image) throw new Error('Could not open this photo. Try another image.');
+        const buffer = skImageToBuffer(image);
+        setPhoto({ uri, image });
+        onPick({ uri, buffer, width: image.width(), height: image.height() });
+      } finally {
+        data.dispose();
+      }
     } catch (cause) {
-      if (onError) {
-        if (mounted.current) onError(cause instanceof Error ? cause.message : String(cause));
-      } else throw cause;
+      if (!mounted.current) return;
+      const message = cause instanceof Error ? cause.message : String(cause);
+      if (onError) onError(message);
+      else Alert.alert('Could not open photo', message);
     } finally {
       if (mounted.current) setPicking(false);
     }
   };
-  useEffect(() => {
-    if (!image || !uri) return;
-    onPick({ uri, buffer: skImageToBuffer(image), width: image.width(), height: image.height() });
-    // Publish once per decoded photo, exactly as in the CV PhotoPicker.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, uri]);
+
   const clear = () => {
-    setUri(null);
+    setPhoto(null);
     onPick(null);
   };
-  return { image, uri, choose, clear, picking };
+  return { image: photo?.image ?? null, uri: photo?.uri ?? null, choose, clear, picking };
 }
