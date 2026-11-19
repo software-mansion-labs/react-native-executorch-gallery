@@ -3,10 +3,9 @@
 <p align="center">On-device AI. Private. Offline. In your pocket.</p>
 
 <p align="center">
-  <img src=".github/assets/vision.webp" width="180" alt="Live object detection labels objects in the camera feed">
-  <img src=".github/assets/chat.webp" width="180" alt="A local chat model streams its response">
-  <img src=".github/assets/search.webp" width="180" alt="An on-device search for somewhere peaceful ranks matching photos">
-  <img src=".github/assets/speech.webp" width="180" alt="On-device text to speech highlights words as they are spoken">
+  <img src=".github/assets/vision.webp" width="240" alt="Live object detection labels objects in the camera feed">
+  <img src=".github/assets/chat.webp" width="240" alt="A local chat model streams its response">
+  <img src=".github/assets/search.webp" width="240" alt="An on-device search for somewhere peaceful ranks matching photos">
 </p>
 
 ## Demos
