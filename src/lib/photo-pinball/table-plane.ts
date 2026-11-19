@@ -67,6 +67,7 @@ export function tableToPhoto(x: number, y: number, p: TableProjection) {
   return { x: p.cx + u / scale, y: p.cy + v / scale, scale };
 }
 
+type TablePoint = { x: number; y: number };
 type TableWall = { nx: number; ny: number; limit: number };
 
 /** Project the photo edges onto the tabletop and inset them by the ball radius. */
@@ -77,6 +78,10 @@ export function createTableWalls(p: TableProjection, radius: number): TableWall[
     photoToTable(p.cx * 2, p.cy * 2, p),
     photoToTable(0, p.cy * 2, p),
   ];
+  return polygonEdges(corners, radius);
+}
+
+function polygonEdges(corners: TablePoint[], radius: number): TableWall[] {
   return corners.map((point, index) => {
     const next = corners[(index + 1) % corners.length];
     const dx = next.x - point.x;
@@ -88,9 +93,46 @@ export function createTableWalls(p: TableProjection, radius: number): TableWall[
   });
 }
 
-export function insideTable(x: number, y: number, walls: TableWall[]): boolean {
+/** Expand the projected object outline so the ball contacts it at its edge. */
+export function createTableObstacle(
+  p: TableProjection,
+  outline: TablePoint[],
+  radius: number
+): TableWall[] {
+  const corners = outline.map(({ x, y }) => photoToTable(x * p.cx * 2, y * p.cy * 2, p));
+  return polygonEdges(corners, -radius);
+}
+
+/** Find the first moment the ray enters all of the obstacle's half-planes. */
+function obstacleHit(
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  obstacle: TableWall[],
+  maxTime: number
+) {
   'worklet';
-  return walls.every(({ nx, ny, limit }) => x * nx + y * ny >= limit - 1e-7);
+  let enter = -Infinity;
+  let exit = maxTime;
+  let edge: TableWall | null = null;
+  for (const wall of obstacle) {
+    const distance = x * wall.nx + y * wall.ny - wall.limit;
+    const approach = vx * wall.nx + vy * wall.ny;
+    if (Math.abs(approach) < 1e-7) {
+      if (distance < 0) return null;
+      continue;
+    }
+    const time = -distance / approach;
+    if (approach > 0 && time > enter) {
+      enter = time;
+      edge = wall;
+    } else if (approach < 0) {
+      exit = Math.min(exit, time);
+    }
+    if (enter > exit) return null;
+  }
+  return edge && enter >= -1e-7 ? { time: Math.max(0, enter), edge } : null;
 }
 
 /** Resolve the first edge hit, then spend the remaining frame time on the reflected path. */
@@ -100,7 +142,8 @@ export function advanceWithinTable(
   vx: number,
   vy: number,
   dt: number,
-  walls: TableWall[]
+  walls: TableWall[],
+  obstacle: TableWall[] = []
 ) {
   'worklet';
   let remaining = dt;
@@ -116,6 +159,11 @@ export function advanceWithinTable(
         travel = untilHit;
         wallHit = wall;
       }
+    }
+    const contact = obstacleHit(x, y, vx, vy, obstacle, travel);
+    if (contact) {
+      travel = contact.time;
+      wallHit = contact.edge;
     }
     x += vx * travel;
     y += vy * travel;

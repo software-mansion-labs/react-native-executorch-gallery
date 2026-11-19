@@ -5,9 +5,9 @@ import { scheduleOnUI } from 'react-native-worklets';
 import type { ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
 import {
   advanceWithinTable,
+  createTableObstacle,
   createTableProjection,
   createTableWalls,
-  insideTable,
   photoToTable,
   tableToPhoto,
   type TableDepthGradient,
@@ -41,13 +41,7 @@ export function usePhotoPinball(
   const target = foreground
     ? photoToTable(foreground.x * width, foreground.y * height, projection)
     : null;
-  const bumper =
-    target && foreground
-      ? {
-          ...target,
-          radius: foreground.radius * size * tableToPhoto(target.x, target.y, projection).scale,
-        }
-      : null;
+  const obstacle = foreground ? createTableObstacle(projection, foreground.outline, radius) : [];
 
   const launch = (vx: number, vy: number) => {
     'worklet';
@@ -59,10 +53,10 @@ export function usePhotoPinball(
 
   const runTest = () => {
     'worklet';
-    if (!bumper) return;
+    if (!target) return;
     const duration = 0.55;
-    const vx = (bumper.x - start.x) / duration;
-    const vy = (bumper.y - start.y) / duration;
+    const vx = (target.x - start.x) / duration;
+    const vy = (target.y - start.y) / duration;
     launch(vx, vy);
   };
 
@@ -89,34 +83,16 @@ export function usePhotoPinball(
     const current = ball.get();
     if (!timeSincePreviousFrame || !current.moving) return;
     const dt = Math.min(timeSincePreviousFrame / 1000, 1 / 50);
-    let { x, y, vx, vy } = advanceWithinTable(
+    const next = advanceWithinTable(
       current.x,
       current.y,
       current.vx,
       current.vy,
       dt,
-      walls
+      walls,
+      obstacle
     );
-    if (bumper) {
-      const dx = x - bumper.x;
-      const dy = y - bumper.y;
-      const distance = Math.hypot(dx, dy);
-      const contact = bumper.radius + radius;
-      if (distance > 0 && distance < contact) {
-        const nx = dx / distance;
-        const ny = dy / distance;
-        const inwardSpeed = Math.min(0, vx * nx + vy * ny);
-        const contactX = bumper.x + nx * contact;
-        const contactY = bumper.y + ny * contact;
-        if (insideTable(contactX, contactY, walls)) {
-          x = contactX;
-          y = contactY;
-        }
-        vx -= 2 * inwardSpeed * nx;
-        vy -= 2 * inwardSpeed * ny;
-      }
-    }
-    ball.set({ x, y, vx, vy, moving: true });
+    ball.set({ ...next, moving: true });
   });
 
   const uniforms = useDerivedValue(() => {

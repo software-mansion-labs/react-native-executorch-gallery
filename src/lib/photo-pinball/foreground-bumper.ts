@@ -1,11 +1,41 @@
 import type { SkImage } from '@shopify/react-native-skia';
 
-export type ForegroundBumper = { x: number; y: number; radius: number };
+type Point = { x: number; y: number };
+export type ForegroundBumper = Point & { outline: Point[] };
 
 const grid = 64;
 const threshold = 0.12;
 
-/** Finds the base of the largest foreground object standing on the playfield. */
+/** Convex envelope of the depth samples, including the space between the rim and base. */
+function outlineOf(cells: number[]): Point[] {
+  const points = new Set<number>();
+  const stride = grid + 1;
+  for (const cell of cells) {
+    const corner = Math.floor(cell / grid) * stride + (cell % grid);
+    for (const index of [corner, corner + 1, corner + stride, corner + stride + 1]) {
+      points.add(index);
+    }
+  }
+  const sorted = [...points]
+    .map((index) => ({ x: (index % stride) / grid, y: Math.floor(index / stride) / grid }))
+    .sort((a, b) => a.x - b.x || a.y - b.y);
+  const chain = (ordered: Point[]) => {
+    const edge: Point[] = [];
+    for (const point of ordered) {
+      while (edge.length >= 2) {
+        const a = edge[edge.length - 2];
+        const b = edge[edge.length - 1];
+        if ((b.x - a.x) * (point.y - a.y) > (b.y - a.y) * (point.x - a.x)) break;
+        edge.pop();
+      }
+      edge.push(point);
+    }
+    return edge.slice(0, -1);
+  };
+  return [...chain(sorted), ...chain(sorted.reverse())];
+}
+
+/** Finds the largest foreground region and derives its collision outline. */
 export function findForegroundBumper(depth: SkImage): ForegroundBumper | null {
   const pixels = depth.readPixels();
   if (!(pixels instanceof Uint8Array)) return null;
@@ -43,14 +73,14 @@ export function findForegroundBumper(depth: SkImage): ForegroundBumper | null {
   }
   if (biggest.length < grid) return null;
 
-  const bottom = Math.max(...biggest.map((cell) => Math.floor(cell / grid)));
-  const base = biggest.filter((cell) => Math.floor(cell / grid) >= bottom - 4);
-  const xCoordinates = base.map((cell) => cell % grid);
-  const minX = Math.min(...xCoordinates);
-  const maxX = Math.max(...xCoordinates);
-  const radius = (maxX - minX + 1) / (2 * grid);
-  const radiusY = (radius * Math.min(width, height)) / height;
-  const front = (bottom + 1) / grid;
-  if (radius < 0.035 || front > 0.79) return null;
-  return { x: (minX + maxX + 1) / (2 * grid), y: front - radiusY, radius };
+  const outline = outlineOf(biggest);
+  if (outline.length < 3 || outline.some(({ y }) => y > 0.79)) return null;
+  const center = outline.reduce(
+    (sum, point) => ({
+      x: sum.x + point.x / outline.length,
+      y: sum.y + point.y / outline.length,
+    }),
+    { x: 0, y: 0 }
+  );
+  return { ...center, outline };
 }
