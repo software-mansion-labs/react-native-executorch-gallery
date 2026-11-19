@@ -21,13 +21,14 @@
     "expo-image-picker": "~57.0.14",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.8",
-    "expo-router": "~57.0.17",
+    "expo-router": "57.0.31",
     "expo-splash-screen": "~57.0.8",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.3",
     "expo-video": "~57.0.5",
     "expo-web-browser": "~57.0.2",
+    "patch-package": "^8.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -73,12 +74,21 @@
     "check": "npm test && npm run typecheck && npm run lint && npm run format:check",
     "hooks:install": "lefthook install",
     "native:android": "node scripts/build-native.mjs android",
-    "native:ios": "node scripts/build-native.mjs ios"
+    "native:ios": "node scripts/build-native.mjs ios",
+    "postinstall": "patch-package --error-on-fail"
   },
   "private": true,
   "enriched-markdown": {
     "enableMath": true,
     "enableCodeHighlight": false,
     "enableVideo": false
+  },
+  "overrides": {
+    "@expo/fingerprint": {
+      "minimatch": "^11.0.1"
+    },
+    "expo-router": {
+      "query-string": "^9.5.0"
+    }
   }
 }
