@@ -1,6 +1,8 @@
 import { Gesture } from 'react-native-gesture-handler';
 import { useDerivedValue, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 
+import type { ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
+
 const ballRadiusRatio = 0.026;
 const bumperRadiusRatio = 0.055;
 
@@ -10,13 +12,15 @@ const bumperRadiusRatio = 0.055;
  * @param height Height of the displayed photo.
  * @param origin Top-left corner of the displayed photo within the canvas.
  * @param occlusion Whether the depth texture should mask the ball.
+ * @param foreground Estimated footprint of the photographed object.
  * @returns Gestures, bumper geometry, and animated shader uniforms.
  */
 export function usePhotoPinball(
   width: number,
   height: number,
   origin: [number, number],
-  occlusion: boolean
+  occlusion: boolean,
+  foreground: ForegroundBumper | null
 ) {
   const size = Math.min(width, height);
   const radius = ballRadiusRatio * size;
@@ -27,6 +31,13 @@ export function usePhotoPinball(
     { x: width * 0.23, y: height * 0.26, radius: size * bumperRadiusRatio },
     { x: width * 0.77, y: height * 0.34, radius: size * bumperRadiusRatio },
   ];
+
+  const colliders = foreground
+    ? [
+        ...bumpers,
+        { x: foreground.x * width, y: foreground.y * height, radius: foreground.radius * size },
+      ]
+    : bumpers;
 
   const launch = (vx: number, vy: number) => {
     'worklet';
@@ -66,7 +77,7 @@ export function usePhotoPinball(
       y = radius;
       vy = Math.abs(vy) * 0.84;
     }
-    for (const bumper of bumpers) {
+    for (const bumper of colliders) {
       const dx = x - bumper.x;
       const dy = y - bumper.y;
       const distance = Math.hypot(dx, dy);

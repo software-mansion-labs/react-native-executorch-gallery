@@ -17,6 +17,7 @@ import { AppText } from '@/components/AppText';
 import { PhotoActionButton } from '@/components/PhotoActionButton';
 import type { ViewportTransform } from '@/components/PhotoPicker';
 import { usePhotoPinball } from '@/hooks/usePhotoPinball';
+import type { ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
 import { tokens, useTheme } from '@/theme';
 
 const ballEffect = Skia.RuntimeEffect.Make(`
@@ -52,10 +53,12 @@ export function PinballPhoto({
   image,
   depth,
   transform,
+  foreground,
 }: {
   image: SkImage;
   depth: SkImage;
   transform: ViewportTransform;
+  foreground: ForegroundBumper | null;
 }) {
   const [occlusion, setOcclusion] = useState(true);
   const { colors } = useTheme();
@@ -65,7 +68,7 @@ export function PinballPhoto({
     width: image.width() * transform.scale,
     height: image.height() * transform.scale,
   };
-  const game = usePhotoPinball(rect.width, rect.height, [rect.x, rect.y], occlusion);
+  const game = usePhotoPinball(rect.width, rect.height, [rect.x, rect.y], occlusion, foreground);
 
   return (
     <GestureHandlerRootView style={StyleSheet.absoluteFill}>

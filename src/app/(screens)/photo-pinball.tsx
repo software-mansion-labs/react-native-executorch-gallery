@@ -10,6 +10,8 @@ import { useModelControls } from '@/hooks/useModelControls';
 import { useTaskState } from '@/hooks/useTaskState';
 import { createDepthTexture } from '@/lib/depth-estimation/depth-focus';
 
+import { findForegroundBumper, type ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
+
 const MODEL = models.depthEstimation.DEPTH_ANYTHING_V3_SMALL.DEFAULT;
 
 export default function PhotoPinball() {
@@ -17,6 +19,7 @@ export default function PhotoPinball() {
   const estimator = useDepthEstimator(MODEL, { preventLoad: !model.loaded });
   const [photo, setPhoto] = useTaskState<PickedImage | null>(null, model.revision);
   const [depth, setDepth] = useDisposableImage(model.revision);
+  const [foreground, setForeground] = useTaskState<ForegroundBumper | null>(null, model.revision);
   const [error, setError] = useTaskState<string | null>(null, model.revision);
   const [busy, setBusy] = useState(false);
   const canPick = model.prepared && model.loaded && estimator.isReady;
@@ -26,7 +29,9 @@ export default function PhotoPinball() {
     setBusy(true);
     setError(null);
     try {
-      setDepth(createDepthTexture(await estimator.estimateDepth(photo.buffer)));
+      const texture = createDepthTexture(await estimator.estimateDepth(photo.buffer));
+      setForeground(findForegroundBumper(texture));
+      setDepth(texture);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -46,6 +51,7 @@ export default function PhotoPinball() {
         setupAction={<ModelSetup model={model} status={estimator} disabled={busy} />}
         onPick={(image) => {
           setDepth(null);
+          setForeground(null);
           setError(null);
           setPhoto(image);
         }}
@@ -55,11 +61,22 @@ export default function PhotoPinball() {
         renderPhoto={
           depth
             ? (image, transform) => (
-                <PinballPhoto image={image} depth={depth} transform={transform} />
+                <PinballPhoto
+                  image={image}
+                  depth={depth}
+                  transform={transform}
+                  foreground={foreground}
+                />
               )
             : undefined
         }
-        result={depth ? 'Flick to launch · Tap for a straight shot' : undefined}
+        result={
+          depth
+            ? foreground
+              ? 'Tap to test the object bounce'
+              : 'Flick to launch · Tap for a straight shot'
+            : undefined
+        }
       />
     </TaskScreen>
   );
