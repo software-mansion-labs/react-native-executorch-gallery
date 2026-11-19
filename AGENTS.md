@@ -26,8 +26,8 @@ and starts when they are marked ready for review.
 
 ## Expo and native code
 
-When changing Expo APIs or configuration, consult the matching SDK 57 documentation
-at https://docs.expo.dev/versions/v57.0.0/. The app requires a native build; Expo Go
+When changing Expo APIs or configuration, consult the matching SDK 58 documentation
+at https://docs.expo.dev/versions/v58.0.0/. The app requires a native build; Expo Go
 and web previews cannot validate native inference.
 
 `ios/` and `android/` are generated and ignored. Make lasting native configuration

@@ -2,6 +2,8 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // MaskedView still declares its ref with React Native’s legacy NativeMethods type.
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"],
     "paths": {
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"]

@@ -37,7 +37,7 @@ as workflow artifacts for seven days. Marking a draft ready for review starts CI
 converting it back to draft cancels the active run without starting build jobs.
 Use `workflow_dispatch` to run CI manually on a branch, including a draft branch.
 
-For local equivalents, install Android Studio / SDK and Java 17, or Xcode 26.4+
+For local equivalents, install Android Studio / SDK and Java 17, or Xcode 27+
 and CocoaPods, then run:
 
 ```bash
