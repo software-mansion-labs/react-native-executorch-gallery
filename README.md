@@ -27,6 +27,7 @@ Explore the categories below. Each demo links to its screen implementation.
 <summary><strong>Computer vision</strong></summary>
 
 - [Depth estimation](<src/app/(screens)/depth-estimation.tsx>)
+- [Photo pinball](<src/app/(screens)/photo-pinball.tsx>)
 - [Photo cleanup](<src/app/(screens)/inpainting.tsx>)
 - [Style transfer](<src/app/(screens)/style-transfer.tsx>)
 - [Instance segmentation](<src/app/(screens)/instance-segmentation.tsx>)

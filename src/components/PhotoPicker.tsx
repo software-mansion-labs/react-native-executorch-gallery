@@ -53,6 +53,8 @@ export interface PhotoPickerProps {
   busy?: boolean;
   /** Whether a photo may be chosen or captured; gate on model readiness. */
   canPick?: boolean;
+  /** Show the camera capture control alongside the photo library. */
+  allowCamera?: boolean;
   /** Run action displayed after the gallery and camera controls. */
   onRun?: () => void;
   canRun?: boolean;
@@ -86,6 +88,7 @@ export function PhotoPicker({
   targetWidth = 800,
   busy = false,
   canPick = true,
+  allowCamera = true,
   onRun,
   canRun = false,
   running = false,
@@ -178,12 +181,14 @@ export function PhotoPicker({
               disabled={busy || picking || !canPick}
               onPress={() => choose('library')}
             />
-            <PhotoActionButton
-              iconName="camera-outline"
-              label="Take photo"
-              disabled={busy || picking || !canPick}
-              onPress={() => choose('camera')}
-            />
+            {allowCamera && (
+              <PhotoActionButton
+                iconName="camera-outline"
+                label="Take photo"
+                disabled={busy || picking || !canPick}
+                onPress={() => choose('camera')}
+              />
+            )}
             {onRun && (
               <PhotoActionButton
                 iconName="arrow-up"
