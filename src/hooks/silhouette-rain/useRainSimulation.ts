@@ -54,6 +54,7 @@ export function useRainSimulation({
   );
   const initialSplashPath = useMemo(() => Skia.Path.Make(), []);
   const splashPath = useSharedValue(initialSplashPath);
+  const splashPathBuilder = useMemo(() => Skia.PathBuilder.Make(), []);
   const particles = useSharedValue(initial),
     splashes = useSharedValue(splashInitial);
   const initialTransforms = useMemo(
@@ -77,8 +78,6 @@ export function useRainSimulation({
     }
     if (playing) {
       elapsed.value += dt;
-      const pSplash = splashPath.value;
-      pSplash.rewind();
       for (let i = 0; i < COUNT; i++) {
         const p = particles.value[i]!;
         const transform = transforms.value[i]!;
@@ -128,12 +127,15 @@ export function useRainSimulation({
         p.x += (p.vx * dt) / aspectRatio;
         p.y += p.vy * dt;
         const tail = Math.min(0.008, p.life * 0.05);
-        pSplash.moveTo(p.x * width, p.y * height);
-        pSplash.lineTo(p.x * width - p.vx * height * tail, p.y * height - p.vy * height * tail);
+        splashPathBuilder.moveTo(p.x * width, p.y * height);
+        splashPathBuilder.lineTo(
+          p.x * width - p.vx * height * tail,
+          p.y * height - p.vy * height * tail
+        );
       }
       // Notify the atlas mapper and splash renderer after updating the fixed pools.
       transforms.modify(undefined, true);
-      splashPath.modify(undefined, true);
+      splashPath.value = splashPathBuilder.detach();
     }
   });
   return { transforms, splashPath };

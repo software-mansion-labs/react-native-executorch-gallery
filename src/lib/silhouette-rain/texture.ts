@@ -9,12 +9,14 @@ export function createRainTexture() {
   const surface = Skia.Surface.MakeOffscreen(DROP_TEXTURE.width, DROP_TEXTURE.height);
   if (!surface) return null;
   const canvas = surface.getCanvas();
-  const path = Skia.Path.Make();
-  path.moveTo(12, 5);
-  path.cubicTo(11, 36, 8, 68, 8, 81);
-  path.cubicTo(8, 89, 16, 89, 16, 81);
-  path.cubicTo(16, 68, 13, 36, 12, 5);
-  path.close();
+  const builder = Skia.PathBuilder.Make();
+  builder.moveTo(12, 5);
+  builder.cubicTo(11, 36, 8, 68, 8, 81);
+  builder.cubicTo(8, 89, 16, 89, 16, 81);
+  builder.cubicTo(16, 68, 13, 36, 12, 5);
+  builder.close();
+  const path = builder.detach();
+  builder.dispose();
   const faint = Skia.Color(tokens.rain.distant);
   faint[3] = 0;
   const paint = Skia.Paint();
@@ -34,6 +36,7 @@ export function createRainTexture() {
   paint.setAlphaf(0.85);
   paint.setMaskFilter(null);
   canvas.drawPath(path, paint);
+  path.dispose();
   const snapshot = surface.makeImageSnapshot();
   const image = snapshot.makeNonTextureImage();
   snapshot.dispose();
