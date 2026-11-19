@@ -12,6 +12,8 @@ export const RAIN_MODEL = models.semanticSegmentation.SELFIE_SEGMENTATION.DEFAUL
 // Portrait camera frames retain their field of view at a 256px long edge.
 // The model's configured native preprocessor performs the final 256x256 stretch.
 export const RAIN_INPUT_SIZE = { width: 144, height: 256 };
+// A log-odds margin of 0.4 requires roughly 60% foreground confidence.
+const PERSON_LOGIT_MARGIN = 0.4;
 type SegmenterConfig = typeof RAIN_MODEL;
 
 export type PersonMask = { data: Uint8Array; width: number; height: number; people: number };
@@ -49,8 +51,8 @@ export async function createRainSegmenter(config: SegmenterConfig) {
           const index =
             Math.min(oh - 1, Math.floor(((y + 0.5) * oh) / size)) * ow +
             Math.min(ow - 1, Math.floor(((x + 0.5) * ow) / size));
-          const foreground =
-            k === 1 ? logits[index]! > 0 : logits[oh * ow + index]! > logits[index]!;
+          const personLogit = k === 1 ? logits[index]! : logits[oh * ow + index]! - logits[index]!;
+          const foreground = personLogit > PERSON_LOGIT_MARGIN;
           data[y * size + x] = foreground ? 1 : 0;
           if (foreground) occupied++;
         }

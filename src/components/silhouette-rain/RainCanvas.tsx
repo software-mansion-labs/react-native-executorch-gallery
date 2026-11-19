@@ -1,6 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Atlas, BlurMask, Canvas, Group, Path } from '@shopify/react-native-skia';
+import {
+  AlphaType,
+  Atlas,
+  BlurMask,
+  Canvas,
+  ColorType,
+  FilterMode,
+  Group,
+  Image,
+  MipmapMode,
+  Path,
+  Skia,
+} from '@shopify/react-native-skia';
+import { useDerivedValue } from 'react-native-reanimated';
 import type { SharedValue } from 'react-native-reanimated';
 import { useRainSimulation } from '@/hooks/silhouette-rain/useRainSimulation';
 import type { RainMask } from '@/hooks/silhouette-rain/useSilhouetteRain';
@@ -30,6 +43,29 @@ export function RainCanvas({
     aspectRatio,
   });
   const texture = useMemo(() => createRainTexture(), []);
+  const { backdropRgb, personOpacity, silhouetteFeather } = tokens.rain;
+  const previewShade = useDerivedValue(() => {
+    const field = mask.get();
+    const width = field?.width ?? 1;
+    const height = field?.height ?? 1;
+    const pixels = new Uint8Array(width * height * 4);
+    for (let i = 0; i < width * height; i++) {
+      const distance = field?.distance[i] ?? silhouetteFeather;
+      const t = Math.max(0, Math.min(1, 0.5 + distance / (2 * silhouetteFeather)));
+      const blend = t * t * (3 - 2 * t);
+      const opacity = personOpacity + blend * (1 - personOpacity);
+      const offset = i * 4;
+      pixels[offset] = Math.round(backdropRgb[0] * opacity);
+      pixels[offset + 1] = Math.round(backdropRgb[1] * opacity);
+      pixels[offset + 2] = Math.round(backdropRgb[2] * opacity);
+      pixels[offset + 3] = Math.round(255 * opacity);
+    }
+    return Skia.Image.MakeImage(
+      { width, height, alphaType: AlphaType.Premul, colorType: ColorType.RGBA_8888 },
+      Skia.Data.fromBytes(pixels),
+      width * 4
+    );
+  });
   const sprites = useMemo(
     () =>
       Array.from({ length: RAIN_COUNT }, () => ({
@@ -55,6 +91,15 @@ export function RainCanvas({
               { translateY: (layout.height - height) / 2 },
             ]}
           >
+            <Image
+              image={previewShade}
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              fit="fill"
+              sampling={{ filter: FilterMode.Linear, mipmap: MipmapMode.None }}
+            />
             <Atlas
               image={texture}
               sprites={sprites}
