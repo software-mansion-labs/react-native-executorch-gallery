@@ -66,3 +66,65 @@ export function tableToPhoto(x: number, y: number, p: TableProjection) {
   const scale = 1 - p.dx * u - p.dy * v;
   return { x: p.cx + u / scale, y: p.cy + v / scale, scale };
 }
+
+type TableWall = { nx: number; ny: number; limit: number };
+
+/** Project the photo edges onto the tabletop and inset them by the ball radius. */
+export function createTableWalls(p: TableProjection, radius: number): TableWall[] {
+  const corners = [
+    photoToTable(0, 0, p),
+    photoToTable(p.cx * 2, 0, p),
+    photoToTable(p.cx * 2, p.cy * 2, p),
+    photoToTable(0, p.cy * 2, p),
+  ];
+  return corners.map((point, index) => {
+    const next = corners[(index + 1) % corners.length];
+    const dx = next.x - point.x;
+    const dy = next.y - point.y;
+    const length = Math.hypot(dx, dy);
+    const nx = -dy / length;
+    const ny = dx / length;
+    return { nx, ny, limit: point.x * nx + point.y * ny + radius };
+  });
+}
+
+export function insideTable(x: number, y: number, walls: TableWall[]): boolean {
+  'worklet';
+  return walls.every(({ nx, ny, limit }) => x * nx + y * ny >= limit - 1e-7);
+}
+
+/** Resolve the first edge hit, then spend the remaining frame time on the reflected path. */
+export function advanceWithinTable(
+  x: number,
+  y: number,
+  vx: number,
+  vy: number,
+  dt: number,
+  walls: TableWall[]
+) {
+  'worklet';
+  let remaining = dt;
+  for (let hit = 0; hit < 4 && remaining > 0; hit++) {
+    let travel = remaining;
+    let wallHit: TableWall | null = null;
+    for (const wall of walls) {
+      const normalSpeed = vx * wall.nx + vy * wall.ny;
+      if (normalSpeed >= -1e-7) continue;
+      const distance = x * wall.nx + y * wall.ny - wall.limit;
+      const untilHit = Math.max(0, distance) / -normalSpeed;
+      if (untilHit <= travel) {
+        travel = untilHit;
+        wallHit = wall;
+      }
+    }
+    x += vx * travel;
+    y += vy * travel;
+    remaining -= travel;
+    if (wallHit) {
+      const normalSpeed = vx * wallHit.nx + vy * wallHit.ny;
+      vx -= 2 * normalSpeed * wallHit.nx;
+      vy -= 2 * normalSpeed * wallHit.ny;
+    }
+  }
+  return { x, y, vx, vy };
+}

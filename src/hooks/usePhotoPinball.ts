@@ -4,7 +4,10 @@ import { scheduleOnUI } from 'react-native-worklets';
 
 import type { ForegroundBumper } from '@/lib/photo-pinball/foreground-bumper';
 import {
+  advanceWithinTable,
   createTableProjection,
+  createTableWalls,
+  insideTable,
   photoToTable,
   tableToPhoto,
   type TableDepthGradient,
@@ -32,9 +35,9 @@ export function usePhotoPinball(
   const projection = createTableProjection(width, height, gradient);
   const photoStart = { x: width * 0.5, y: height * 0.84 };
   const start = photoToTable(photoStart.x, photoStart.y, projection);
-  const idle = { ...start, vx: 0, vy: 0, time: 0 };
-  const ball = useSharedValue(idle);
+  const ball = useSharedValue({ ...start, vx: 0, vy: 0, moving: false });
   const radius = ballRadiusRatio * size * tableToPhoto(start.x, start.y, projection).scale;
+  const walls = createTableWalls(projection, radius);
   const target = foreground
     ? photoToTable(foreground.x * width, foreground.y * height, projection)
     : null;
@@ -51,7 +54,7 @@ export function usePhotoPinball(
     const speed = Math.hypot(vx, vy);
     if (speed === 0) return;
     const scale = Math.min(1, (size * 2.2) / speed);
-    ball.set({ ...start, vx: vx * scale, vy: vy * scale, time: 0.001 });
+    ball.set({ ...start, vx: vx * scale, vy: vy * scale, moving: true });
   };
 
   const runTest = () => {
@@ -84,12 +87,16 @@ export function usePhotoPinball(
 
   useFrameCallback(({ timeSincePreviousFrame }) => {
     const current = ball.get();
-    if (!timeSincePreviousFrame || current.time === 0) return;
+    if (!timeSincePreviousFrame || !current.moving) return;
     const dt = Math.min(timeSincePreviousFrame / 1000, 1 / 50);
-    let { x, y, vx, vy, time } = current;
-    time += dt;
-    x += vx * dt;
-    y += vy * dt;
+    let { x, y, vx, vy } = advanceWithinTable(
+      current.x,
+      current.y,
+      current.vx,
+      current.vy,
+      dt,
+      walls
+    );
     if (bumper) {
       const dx = x - bumper.x;
       const dy = y - bumper.y;
@@ -99,28 +106,24 @@ export function usePhotoPinball(
         const nx = dx / distance;
         const ny = dy / distance;
         const inwardSpeed = Math.min(0, vx * nx + vy * ny);
-        x = bumper.x + nx * contact;
-        y = bumper.y + ny * contact;
+        const contactX = bumper.x + nx * contact;
+        const contactY = bumper.y + ny * contact;
+        if (insideTable(contactX, contactY, walls)) {
+          x = contactX;
+          y = contactY;
+        }
         vx -= 2 * inwardSpeed * nx;
         vy -= 2 * inwardSpeed * ny;
       }
     }
-    const photo = tableToPhoto(x, y, projection);
-    const outside =
-      photo.scale <= 0 ||
-      photo.y > height + radius ||
-      photo.y < -radius ||
-      photo.x < -radius ||
-      photo.x > width + radius;
-    ball.set(outside || time > 5 ? idle : { x, y, vx, vy, time });
+    ball.set({ x, y, vx, vy, moving: true });
   });
 
   const uniforms = useDerivedValue(() => {
     const state = ball.get();
-    const photo =
-      state.time > 0
-        ? tableToPhoto(state.x, state.y, projection)
-        : tableToPhoto(start.x, start.y, projection);
+    const photo = state.moving
+      ? tableToPhoto(state.x, state.y, projection)
+      : tableToPhoto(start.x, start.y, projection);
     return {
       origin,
       size: [width, height],
