@@ -72,7 +72,7 @@ Explore the categories below. Each demo links to its screen implementation.
 
 ## Getting started
 
-Requirements: Node.js 24 and npm. Git/source builds also use Corepack for the library’s pinned Yarn version. Native builds require Xcode 26.4 or newer for iOS, or Android Studio and Java 17 for Android.
+Requirements: Node.js 24 and npm. Git/source builds also use Corepack for the library’s pinned Yarn version. Native builds require Xcode 27 or newer for iOS, or Android Studio and Java 17 for Android.
 
 ```bash
 nvm use
@@ -81,7 +81,7 @@ npm run deps:sync
 npm run ios        # or npm run android
 ```
 
-The app uses Expo SDK 57 and React Native 0.86, targeting iOS 17+ and Android 13+. It requires a native build; Expo Go is not supported.
+The app uses Expo SDK 58 and React Native 0.88, targeting iOS 17+ and Android 13+. It requires a native build; Expo Go is not supported.
 
 ## Choosing the library version
 

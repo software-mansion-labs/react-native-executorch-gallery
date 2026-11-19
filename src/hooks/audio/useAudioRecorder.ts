@@ -30,10 +30,12 @@ export function useAudioRecorder(onStop: () => void, onError: (error: string) =>
 
   useEffect(() => {
     mounted.current = true;
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'spokenAudio',
-      iosOptions: ['allowBluetoothHFP', 'defaultToSpeaker'],
+    AudioManager.setSystemOptions({
+      ios: {
+        category: 'playAndRecord',
+        mode: 'spokenAudio',
+        options: ['allowBluetoothHFP', 'defaultToSpeaker'],
+      },
     });
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'background') void stopRecording();
