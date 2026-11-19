@@ -80,7 +80,7 @@ export function RainCanvas({
   return (
     <View
       onLayout={({ nativeEvent }) => setLayout(nativeEvent.layout)}
-      style={StyleSheet.absoluteFill}
+      style={[StyleSheet.absoluteFill, !enabled && styles.hidden]}
       pointerEvents="none"
     >
       <Canvas style={StyleSheet.absoluteFill}>
@@ -130,3 +130,7 @@ export function RainCanvas({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  hidden: { opacity: 0 },
+});

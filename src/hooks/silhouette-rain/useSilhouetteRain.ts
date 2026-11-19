@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { useModel, useResourceDownload } from 'react-native-executorch';
 import { useCameraDevice, useCameraPermission, useFrameOutput } from 'react-native-vision-camera';
@@ -15,6 +15,8 @@ import {
 } from '@/lib/silhouette-rain/segmenter';
 
 export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
+const INITIAL_SESSION = { active: false, revision: 0 };
+
 /**
  * Loads Selfie Segmentation on request and processes live Vision Camera frames.
  * GPU-resizes the portrait frame to a 256px long edge before synchronous inference on the camera worklet; busy
@@ -33,7 +35,8 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
   const [error, setError] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState(3 / 4);
   const mask = useSharedValue<RainMask | null>(null);
-  const control = useSharedValue({ active: false, revision: 0 });
+  const sessionOnRN = useRef(INITIAL_SESSION);
+  const control = useSharedValue(INITIAL_SESSION);
   const reportedAspect = useSharedValue(0);
   const mounted = useRef(true);
   const { resizer, error: resizerError } = useResizer({
@@ -46,18 +49,24 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
   const segmentWorklet = model?.segmentWorklet;
   const ready = loaded && prepared && !!model && !!resizer;
 
+  const updateSession = useCallback(
+    (active: boolean) => {
+      // Publish from JS without synchronously reading the busy UI runtime.
+      const next = { active, revision: sessionOnRN.current.revision + 1 };
+      sessionOnRN.current = next;
+      control.set(next);
+      mask.set(null);
+    },
+    [control, mask]
+  );
+
   useEffect(() => {
-    control.set((old) => ({
-      active: ready && isActive && foreground,
-      revision: old.revision + 1,
-    }));
-    mask.set(null);
-  }, [ready, isActive, foreground, control, mask]);
+    updateSession(ready && isActive && foreground);
+  }, [ready, isActive, foreground, updateSession]);
   useEffect(() => {
     mounted.current = true;
     const stop = () => {
-      control.set((old) => ({ active: false, revision: old.revision + 1 }));
-      mask.set(null);
+      updateSession(false);
       setIsActive(false);
     };
     const subscription = AppState.addEventListener('change', (state) => {
@@ -66,20 +75,18 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
     });
     return () => {
       mounted.current = false;
-      control.set((old) => ({ active: false, revision: old.revision + 1 }));
-      mask.set(null);
+      updateSession(false);
       subscription.remove();
     };
-  }, [control, mask]);
+  }, [updateSession]);
 
   const onAspect = (aspect: number) => {
-    if (!mounted.current || !control.get().active) return;
+    if (!mounted.current || !sessionOnRN.current.active) return;
     setAspectRatio(aspect);
   };
   const onError = (message: string) => {
     if (!mounted.current) return;
-    control.set((old) => ({ active: false, revision: old.revision + 1 }));
-    mask.set(null);
+    updateSession(false);
     setError(message);
     setIsActive(false);
   };
@@ -130,10 +137,9 @@ export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
   });
 
   const toggleRain = async () => {
-    control.set((old) => ({ active: false, revision: old.revision + 1 }));
-    mask.set(null);
     setError(null);
     if (isActive) {
+      updateSession(false);
       setIsActive(false);
       return;
     }
