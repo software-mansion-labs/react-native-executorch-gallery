@@ -63,6 +63,12 @@ export const TASK_SECTIONS: TaskSection[] = [
         keywords: 'focus blur bokeh portrait distance Depth Anything',
       },
       {
+        id: 'photo-pinball',
+        href: '/photo-pinball',
+        title: 'Photo pinball',
+        keywords: 'depth Anything photo game ball physics occlusion',
+      },
+      {
         id: 'inpainting',
         href: '/inpainting',
         title: 'Photo cleanup',
