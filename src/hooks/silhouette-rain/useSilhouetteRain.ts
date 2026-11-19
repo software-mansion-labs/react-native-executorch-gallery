@@ -1,0 +1,172 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
+import { useModel, useResourceDownload } from 'react-native-executorch';
+import { useCameraDevice, useCameraPermission, useFrameOutput } from 'react-native-vision-camera';
+import { useResizer, type GPUFrame } from 'react-native-vision-camera-resizer';
+import { useSharedValue } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
+
+import { buildDistanceField, projectCameraMask } from '@/lib/silhouette-rain/physics';
+import {
+  createRainSegmenter,
+  RAIN_INPUT_SIZE,
+  RAIN_MODEL,
+  type PersonMask,
+} from '@/lib/silhouette-rain/segmenter';
+
+export type RainMask = PersonMask & { sampledAt: number; distance: Float32Array };
+const INITIAL_SESSION = { active: false, revision: 0 };
+
+/**
+ * Loads Selfie Segmentation on request and processes live Vision Camera frames.
+ * GPU-resizes the portrait frame to a 256px long edge before synchronous inference on the camera worklet; busy
+ * frames are dropped. Backgrounding, stopping and effect changes reject stale masks.
+ * @param loaded Whether shared model controls explicitly requested loading.
+ * @param prepared Whether the shared model setup transition has completed.
+ * @returns Camera output, permission/rain controls, shared collision mask and geometry.
+ */
+export function useSilhouetteRain(loaded: boolean, prepared: boolean) {
+  const download = useResourceDownload(RAIN_MODEL, { preventLoad: !loaded });
+  const { model, error: modelError } = useModel(createRainSegmenter, download.resource);
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice('front');
+  const [isActive, setIsActive] = useState(false);
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [error, setError] = useState<string | null>(null);
+  const [aspectRatio, setAspectRatio] = useState(3 / 4);
+  const mask = useSharedValue<RainMask | null>(null);
+  const sessionOnRN = useRef(INITIAL_SESSION);
+  const control = useSharedValue(INITIAL_SESSION);
+  const reportedAspect = useSharedValue(0);
+  const mounted = useRef(true);
+  const { resizer, error: resizerError } = useResizer({
+    ...RAIN_INPUT_SIZE,
+    channelOrder: 'rgb',
+    dataType: 'uint8',
+    scaleMode: 'cover',
+    pixelLayout: 'interleaved',
+  });
+  const segmentWorklet = model?.segmentWorklet;
+  const ready = loaded && prepared && !!model && !!resizer;
+
+  const updateSession = useCallback(
+    (active: boolean) => {
+      // Publish from JS without synchronously reading the busy UI runtime.
+      const next = { active, revision: sessionOnRN.current.revision + 1 };
+      sessionOnRN.current = next;
+      control.set(next);
+      mask.set(null);
+    },
+    [control, mask]
+  );
+
+  useEffect(() => {
+    updateSession(ready && isActive && foreground);
+  }, [ready, isActive, foreground, updateSession]);
+  useEffect(() => {
+    mounted.current = true;
+    const stop = () => {
+      updateSession(false);
+      setIsActive(false);
+    };
+    const subscription = AppState.addEventListener('change', (state) => {
+      setForeground(state === 'active');
+      if (state !== 'active') stop();
+    });
+    return () => {
+      mounted.current = false;
+      updateSession(false);
+      subscription.remove();
+    };
+  }, [updateSession]);
+
+  const onAspect = (aspect: number) => {
+    if (!mounted.current || !sessionOnRN.current.active) return;
+    setAspectRatio(aspect);
+  };
+  const onError = (message: string) => {
+    if (!mounted.current) return;
+    updateSession(false);
+    setError(message);
+    setIsActive(false);
+  };
+  const frameOutput = useFrameOutput({
+    pixelFormat: 'yuv',
+    // Resolve sensor rotation/mirroring natively before the GPU resizer reads pixels.
+    enablePhysicalBufferRotation: true,
+    dropFramesWhileBusy: true,
+    onFrame(frame) {
+      'worklet';
+      const session = control.get();
+      if (!session.active || !resizer || !segmentWorklet) {
+        frame.dispose();
+        return;
+      }
+      let resized: GPUFrame | undefined;
+      try {
+        const sampledAt = Date.now();
+        const sideways = frame.orientation === 'left' || frame.orientation === 'right';
+        const aspect = sideways ? frame.height / frame.width : frame.width / frame.height;
+        resized = resizer.resize(frame);
+        const result = segmentWorklet({
+          data: new Uint8Array(resized.getPixelBuffer()),
+          ...RAIN_INPUT_SIZE,
+          format: 'rgb',
+          layout: 'hwc',
+        });
+        const projected = projectCameraMask(
+          result,
+          aspect,
+          RAIN_INPUT_SIZE.width / RAIN_INPUT_SIZE.height
+        );
+        const distance = buildDistanceField(projected, aspect);
+        const current = control.get();
+        if (!current.active || current.revision !== session.revision) return;
+        mask.set({ ...projected, distance, sampledAt });
+        if (reportedAspect.get() !== aspect) {
+          reportedAspect.set(aspect);
+          scheduleOnRN(onAspect, aspect);
+        }
+      } catch (cause) {
+        scheduleOnRN(onError, String(cause));
+      } finally {
+        resized?.dispose();
+        frame.dispose();
+      }
+    },
+  });
+
+  const toggleRain = async () => {
+    setError(null);
+    if (isActive) {
+      updateSession(false);
+      setIsActive(false);
+      return;
+    }
+    if (!ready || !device) return;
+    if (!hasPermission && !(await requestPermission())) {
+      setError('Allow camera access in Settings to start the rain.');
+      return;
+    }
+    if (mounted.current) setIsActive(true);
+  };
+  return {
+    status: {
+      isReady: !!model,
+      resource: download.resource,
+      downloadProgress: download.downloadProgress,
+      error: download.downloadError || modelError,
+    },
+    error: error || (resizerError ? String(resizerError) : null),
+    device,
+    frameOutput,
+    hasPermission,
+    ready,
+    isActive,
+    showCamera: ready && !!device && hasPermission && foreground,
+    mask,
+    aspectRatio,
+    toggleRain,
+    onError,
+  };
+}
