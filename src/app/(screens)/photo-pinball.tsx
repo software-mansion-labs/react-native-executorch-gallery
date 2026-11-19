@@ -43,7 +43,7 @@ export default function PhotoPinball() {
     <TaskScreen title="Photo pinball" model={model} status={estimator} error={error} busy={busy}>
       <PhotoPicker
         key={model.revision}
-        placeholderTitle="Play inside a photo"
+        placeholderTitle="Test a bounce in a photo"
         placeholderDescription="Choose an angled desk photo with a foreground object and some clear space around it."
         allowCamera={false}
         busy={busy || model.deleting}
@@ -73,8 +73,8 @@ export default function PhotoPinball() {
         result={
           depth
             ? foreground
-              ? 'Tap to test the object bounce'
-              : 'Flick to launch · Tap for a straight shot'
+              ? 'Foreground object detected'
+              : 'No foreground object detected'
             : undefined
         }
       />
