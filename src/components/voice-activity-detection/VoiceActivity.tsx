@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { tokens, useTheme } from '@/theme';
 
 /** Reflects actual FSMN speech events rather than animating a simulated microphone level. */
 export function VoiceActivity({ speaking, listening }: { speaking: boolean; listening: boolean }) {
-  const { colors, iconSize } = useTheme();
+  const { colors, iconSize, scheme } = useTheme();
   const animation = useAnimatedStyle(() => ({
     transform: [
       { scale: withTiming(speaking ? 1 : 0.9, { duration: tokens.motion.photoRevealDuration }) },
@@ -15,17 +16,12 @@ export function VoiceActivity({ speaking, listening }: { speaking: boolean; list
   }));
   return (
     <View style={styles.root}>
-      <Animated.View
-        style={[
-          styles.orb,
-          { backgroundColor: speaking ? colors.accent : colors.surface },
-          animation,
-        ]}
-      >
+      <Animated.View style={[styles.orb, { backgroundColor: colors.surface }, animation]}>
+        {speaking && <BlueActionSurface scheme={scheme} />}
         <Ionicons
           name="mic-outline"
           size={iconSize.large}
-          color={speaking ? colors.onAccent : colors.text}
+          color={speaking ? tokens.actionSurface[scheme].foreground : colors.text}
         />
       </Animated.View>
       <AppText variant="hero" style={styles.label} accessibilityLiveRegion="polite">
