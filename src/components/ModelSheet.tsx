@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -52,23 +51,13 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
         <View style={styles.row}>
           <View style={styles.model}>
             <AppText variant="title">{model.info.name}</AppText>
-            <View style={styles.status}>
-              {ready && (
-                <Animated.View
-                  accessible={false}
-                  entering={readyEntrance}
-                  style={[styles.dot, { backgroundColor: colors.ready }]}
-                />
-              )}
-              <AppText
-                variant="secondary"
-                tone={ready ? 'text' : 'muted'}
-                accessibilityLiveRegion="polite"
-                style={styles.detail}
-              >
-                {state}
-              </AppText>
-            </View>
+            <AppText
+              variant="secondary"
+              tone={ready ? 'text' : 'muted'}
+              accessibilityLiveRegion="polite"
+            >
+              {state}
+            </AppText>
           </View>
           <View style={styles.storage}>
             {!!model.storedBytes && (
@@ -107,15 +96,11 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
   );
 }
 
-const { spacing, layout, radius } = tokens;
-const readyEntrance = FadeIn.duration(tokens.motion.photoRevealDuration).reduceMotion(
-  ReduceMotion.System
-);
+const { spacing, layout } = tokens;
 const styles = StyleSheet.create({
   content: { gap: spacing.lg, paddingBottom: spacing.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   model: { flex: 1, gap: spacing.xs },
-  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   storage: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -123,13 +108,7 @@ const styles = StyleSheet.create({
     // Match the sheet header's smaller inset for the close button.
     marginEnd: -spacing.md,
   },
-  detail: { flexShrink: 1 },
   storageSize: { flexShrink: 1, includeFontPadding: false },
-  dot: {
-    width: layout.statusDotSize,
-    height: layout.statusDotSize,
-    borderRadius: radius.pill,
-  },
   activity: {
     width: layout.touchTarget,
     height: layout.touchTarget,
