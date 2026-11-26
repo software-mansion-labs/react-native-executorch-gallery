@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { useLLMChatSession } from 'react-native-executorch';
@@ -91,9 +92,15 @@ export function ChatContext({
                 accessibilityLabel="Context used"
                 accessibilityValue={{ min: 0, max: context.maxContextLen, now: context.pos }}
               >
-                <Animated.View
-                  style={[styles.fill, { backgroundColor: colors.accent }, meterStyle]}
-                />
+                <Animated.View style={[styles.fill, meterStyle]}>
+                  <LinearGradient
+                    colors={tokens.progressStroke[scheme].context}
+                    locations={tokens.progressStroke.stops}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
               </View>
               <AppText variant="caption" tone="muted" style={styles.number}>
                 {context.pos} of {context.maxContextLen} used · {Math.round(used * 100)}%
@@ -150,7 +157,7 @@ const styles = StyleSheet.create({
   number: { fontVariant: ['tabular-nums'] },
   usage: { gap: spacing.sm },
   track: { height: layout.contextMeterHeight, borderRadius: radius.pill, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: radius.pill },
+  fill: { height: '100%', borderRadius: radius.pill, overflow: 'hidden' },
   reset: {
     minHeight: layout.touchTarget,
     alignSelf: 'center',

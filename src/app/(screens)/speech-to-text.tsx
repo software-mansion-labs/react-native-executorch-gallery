@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { models, useSpeechToText, WHISPER_SAMPLE_RATE_HZ } from 'react-native-executorch';
 import { MicrophoneStage } from '@/components/audio/MicrophoneStage';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { SpeechActivityHalo } from '@/components/speech-to-text/SpeechActivityHalo';
 import { Transcript } from '@/components/speech-to-text/Transcript';
 import { TaskScreen } from '@/components/TaskScreen';
 import { useAudioRecorder } from '@/hooks/audio/useAudioRecorder';
@@ -85,8 +86,9 @@ function SpeechToTextTask() {
         finishing={streaming && !recorder.isRecording && !recorder.starting}
         hasResult={!!committed || !!partial}
         onToggle={toggleRecording}
+        recordingIndicator={<SpeechActivityHalo level={level} />}
       >
-        <Transcript committed={committed} partial={partial} listening={streaming} level={level} />
+        <Transcript committed={committed} partial={partial} />
       </MicrophoneStage>
     </TaskScreen>
   );

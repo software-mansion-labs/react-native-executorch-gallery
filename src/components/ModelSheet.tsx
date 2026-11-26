@@ -29,6 +29,7 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
   const { colors, iconSize } = useTheme();
   const ready = model.loaded && status.isReady && !model.deleting;
   const loading = model.loaded && !status.isReady && !status.error;
+  const canDelete = !!model.storedBytes && !busy && !loading;
   const state = model.deleting
     ? 'Deleting model…'
     : ready
@@ -57,12 +58,12 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
                   <Animated.View
                     accessible={false}
                     entering={readyEntrance}
-                    style={[styles.dot, { backgroundColor: colors.accent }]}
+                    style={[styles.dot, { backgroundColor: colors.ready }]}
                   />
                 )}
                 <AppText
                   variant="secondary"
-                  tone={ready ? 'accent' : 'muted'}
+                  tone={ready ? 'text' : 'muted'}
                   accessibilityLiveRegion="polite"
                   style={styles.statusText}
                 >
@@ -90,8 +91,8 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
               icon="trash-outline"
               accessibilityLabel="Delete downloaded model"
               onPress={() => model.remove(busy || loading)}
-              disabled={!model.storedBytes || busy || loading}
-              tone="danger"
+              disabled={!canDelete}
+              tone={canDelete ? 'text' : 'muted'}
             />
           )}
         </View>

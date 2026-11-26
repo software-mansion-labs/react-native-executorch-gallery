@@ -7,10 +7,8 @@ import { tokens, useTheme } from '@/theme';
 
 /** Small capacity ring: the accent arc shows how much conversation space remains. */
 export function ContextGauge({ used }: { used: SharedValue<number> }) {
-  const { colors, scheme } = useTheme();
-  const { track, highlight, shade } = tokens.progressStroke[scheme];
-  const arcColors =
-    scheme === 'light' ? tokens.progressStroke.contextLight : [highlight, colors.accent, shade];
+  const { scheme } = useTheme();
+  const { track, context: arcColors } = tokens.progressStroke[scheme];
   const path = useMemo(() => {
     const builder = Skia.PathBuilder.Make();
     builder.addCircle(center, center, (size - stroke) / 2);

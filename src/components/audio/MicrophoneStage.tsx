@@ -21,6 +21,7 @@ export function MicrophoneStage({
   finishing = false,
   hasResult,
   onToggle,
+  recordingIndicator,
   children,
 }: {
   model: ModelControls;
@@ -32,6 +33,7 @@ export function MicrophoneStage({
   finishing?: boolean;
   hasResult: boolean;
   onToggle: () => Promise<void>;
+  recordingIndicator?: ReactNode;
   children: ReactNode;
 }) {
   const ready = model.loaded && model.prepared && status.isReady && !model.deleting;
@@ -55,16 +57,19 @@ export function MicrophoneStage({
       )}
       {ready && (
         <Animated.View entering={entrance} style={styles.controls}>
-          <PhotoActionButton
-            iconName={active ? 'stop' : 'mic-outline'}
-            label={active ? 'Stop recording' : 'Start recording'}
-            primary
-            disabled={starting || finishing}
-            loading={starting || finishing}
-            onPress={() => {
-              void onToggle();
-            }}
-          />
+          <View style={recordingIndicator ? styles.controlWithIndicator : undefined}>
+            {active && recordingIndicator}
+            <PhotoActionButton
+              iconName={active ? 'stop' : 'mic-outline'}
+              label={active ? 'Stop recording' : 'Start recording'}
+              primary
+              disabled={starting || finishing}
+              loading={starting || finishing}
+              onPress={() => {
+                void onToggle();
+              }}
+            />
+          </View>
         </Animated.View>
       )}
     </View>
@@ -77,4 +82,10 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   content: { flex: 1 },
   controls: { alignItems: 'center', paddingTop: tokens.spacing.lg },
+  controlWithIndicator: {
+    width: tokens.layout.speechActivitySize,
+    height: tokens.layout.speechActivitySize,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

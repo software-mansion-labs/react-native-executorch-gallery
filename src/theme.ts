@@ -1,8 +1,23 @@
 import { useMemo } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
+import { interpolateColor } from 'react-native-reanimated';
 
 import { useAppearance } from '@/hooks/useAppearance';
 import { useThemeColors } from '@/hooks/useThemeColors';
+
+// Gradient stops from assets/images/logo-hero.svg.
+const logoGradient = ['#2A47FF', '#D0E2FF'] as const;
+const gradientRange = [0, 1] as const;
+
+function blendColor(from: string, to: string, strength: number) {
+  return interpolateColor(strength, gradientRange, [from, to], 'RGB', { gamma: 1 });
+}
+
+/** Shades a point on the flame gradient toward navy for UI surfaces and strokes. */
+function shadeLogoGradient(position: number, strength: number) {
+  const color = blendColor(...logoGradient, position);
+  return blendColor('#080E28', color, strength);
+}
 
 const palette = {
   light: {
@@ -14,8 +29,10 @@ const palette = {
     text: '#24252A',
     thinkingIndicator: '#000000',
     muted: '#686A73',
-    accent: '#365B9B',
+    accent: shadeLogoGradient(0.15, 0.62),
+    readAlongHighlight: blendColor('#FAFAFA', logoGradient[0], 0.09),
     onAccent: '#FFFFFF',
+    ready: '#2D805E',
     danger: '#B3261E',
     scrim: 'rgba(0, 0, 0, 0.4)',
   },
@@ -28,41 +45,68 @@ const palette = {
     text: '#F2F2F3',
     thinkingIndicator: '#FFFFFF',
     muted: '#A3A4AD',
-    accent: '#A7BDED',
+    accent: blendColor(...logoGradient, 0.82),
+    readAlongHighlight: blendColor('#101114', logoGradient[0], 0.24),
     onAccent: '#162A49',
+    ready: '#82C5A8',
     danger: '#FFB4AB',
     scrim: 'rgba(0, 0, 0, 0.55)',
   },
 };
 
+const darkProgressArc: [string, string, string] = [
+  logoGradient[1],
+  shadeLogoGradient(0.68, 1),
+  shadeLogoGradient(0.48, 0.76),
+];
+
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
   actionSurface: {
     light: {
-      fill: ['#385787', '#162D53', '#101F39'],
-      rim: ['#5A79A8', '#0B1930'],
+      fill: [
+        shadeLogoGradient(0.28, 0.63),
+        shadeLogoGradient(0.06, 0.35),
+        shadeLogoGradient(0, 0.17),
+      ],
+      rim: [shadeLogoGradient(0.52, 0.72), shadeLogoGradient(0.1, 0.28)],
       foreground: '#F5F8FF',
     },
     dark: {
-      fill: ['#3A4D75', '#262D3A', '#232730'],
-      rim: ['#627EAF', '#343D50'],
+      fill: [
+        shadeLogoGradient(0.44, 0.58),
+        shadeLogoGradient(0.4, 0.34),
+        shadeLogoGradient(0.35, 0.27),
+      ],
+      rim: [shadeLogoGradient(0.53, 0.79), shadeLogoGradient(0.4, 0.41)],
       foreground: '#F2F5FF',
     },
     fillStops: [0, 0.62, 1],
   } as const,
+  speechActivity: {
+    light: [shadeLogoGradient(0.56, 0.84), logoGradient[0]],
+    dark: [logoGradient[1], shadeLogoGradient(0.3, 0.95)],
+  },
   progressStroke: {
-    contextLight: ['#2A4C82', '#193459', '#0F213D'],
     light: {
       track: ['#C6D1E3', '#E1E7F1'],
-      highlight: '#6589C3',
-      shade: '#28477D',
+      arc: [
+        shadeLogoGradient(0.28, 0.8),
+        shadeLogoGradient(0.17, 0.65),
+        shadeLogoGradient(0.12, 0.39),
+      ],
+      context: [
+        shadeLogoGradient(0.16, 0.55),
+        shadeLogoGradient(0.12, 0.32),
+        shadeLogoGradient(0.08, 0.17),
+      ] satisfies [string, string, string],
     },
     dark: {
       track: ['#35425C', '#222833'],
-      highlight: '#E3EBFF',
-      shade: '#627EAF',
+      arc: darkProgressArc,
+      context: darkProgressArc,
     },
-    stops: [0, 0.42, 1],
+    stops: [0, 0.42, 1] satisfies [number, number, number],
   },
   prompt: {
     blurIntensity: 45,
@@ -229,9 +273,8 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
-    speechWaveformHeight: 24,
+    speechActivitySize: 104,
     speechLevelGain: 10,
-    speechWaveformBarWidth: 3,
     inpaintingBrushSize: 28,
     liveDetectionStatusWidth: 176,
     depthFocusRadius: 14,

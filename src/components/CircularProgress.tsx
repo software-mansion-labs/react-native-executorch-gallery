@@ -22,8 +22,8 @@ export function CircularProgress({
   accessible = true,
   accessibilityLabel,
 }: CircularProgressProps) {
-  const { colors, scheme } = useTheme();
-  const { track, highlight, shade } = tokens.progressStroke[scheme];
+  const { scheme } = useTheme();
+  const { track, arc } = tokens.progressStroke[scheme];
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
   const { path, end, trackStart, transform } = useCircularProgress(percentage, indeterminate);
 
@@ -66,7 +66,7 @@ export function CircularProgress({
               <LinearGradient
                 start={gradientStart}
                 end={gradientEnd}
-                colors={[highlight, color ?? colors.accent, color ?? shade]}
+                colors={color ? [arc[0], color, color] : arc}
                 positions={tokens.progressStroke.stops}
               />
             </Path>
