@@ -52,49 +52,49 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
         <View style={styles.row}>
           <View style={styles.model}>
             <AppText variant="title">{model.info.name}</AppText>
-            <View style={styles.metadata}>
-              <View style={styles.status}>
-                {ready && (
-                  <Animated.View
-                    accessible={false}
-                    entering={readyEntrance}
-                    style={[styles.dot, { backgroundColor: colors.ready }]}
-                  />
-                )}
-                <AppText
-                  variant="secondary"
-                  tone={ready ? 'text' : 'muted'}
-                  accessibilityLiveRegion="polite"
-                  style={styles.statusText}
-                >
-                  {state}
-                </AppText>
-              </View>
-              {!!model.storedBytes && (
-                <AppText variant="secondary" tone="muted">
-                  {formatModelSize(model.storedBytes)}
-                </AppText>
+            <View style={styles.status}>
+              {ready && (
+                <Animated.View
+                  accessible={false}
+                  entering={readyEntrance}
+                  style={[styles.dot, { backgroundColor: colors.ready }]}
+                />
               )}
+              <AppText
+                variant="secondary"
+                tone={ready ? 'text' : 'muted'}
+                accessibilityLiveRegion="polite"
+                style={styles.detail}
+              >
+                {state}
+              </AppText>
             </View>
           </View>
-          {model.deleting ? (
-            <View style={styles.activity}>
-              <CircularProgress
-                progress={100}
-                indeterminate
-                size={iconSize.medium}
-                accessible={false}
+          <View style={styles.storage}>
+            {!!model.storedBytes && (
+              <AppText variant="secondary" tone="muted" style={styles.detail}>
+                {formatModelSize(model.storedBytes)}
+              </AppText>
+            )}
+            {model.deleting ? (
+              <View style={styles.activity}>
+                <CircularProgress
+                  progress={100}
+                  indeterminate
+                  size={iconSize.medium}
+                  accessible={false}
+                />
+              </View>
+            ) : (
+              <IconButton
+                icon="trash-outline"
+                accessibilityLabel="Delete downloaded model"
+                onPress={() => model.remove(busy || loading)}
+                disabled={!canDelete}
+                tone={canDelete ? 'text' : 'muted'}
               />
-            </View>
-          ) : (
-            <IconButton
-              icon="trash-outline"
-              accessibilityLabel="Delete downloaded model"
-              onPress={() => model.remove(busy || loading)}
-              disabled={!canDelete}
-              tone={canDelete ? 'text' : 'muted'}
-            />
-          )}
+            )}
+          </View>
         </View>
         {model.error && (
           <AppText variant="secondary" accessibilityRole="alert" style={{ color: colors.danger }}>
@@ -114,9 +114,15 @@ const styles = StyleSheet.create({
   content: { gap: spacing.lg, paddingBottom: spacing.xl },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   model: { flex: 1, gap: spacing.xs },
-  metadata: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md },
-  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, maxWidth: '100%' },
-  statusText: { flexShrink: 1 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  storage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexShrink: 1,
+    // Match the sheet header's smaller inset for the close button.
+    marginEnd: -spacing.md,
+  },
+  detail: { flexShrink: 1 },
   dot: {
     width: layout.statusDotSize,
     height: layout.statusDotSize,
