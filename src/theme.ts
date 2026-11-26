@@ -24,13 +24,13 @@ const palette = {
     background: '#FAFAFA',
     surface: '#F0F0F2',
     promptSurface: '#F0F0F2',
+    promptAccessory: '#E0E2EA',
     promptBorder: 'rgba(36, 37, 42, 0.10)',
     promptChip: '#E6EAF4',
     promptChipBorder: '#C8D0E1',
     promptDisabledAction: '#E0E0E4',
     border: '#E1E1E6',
     text: '#24252A',
-    thinkingIndicator: '#000000',
     muted: '#686A73',
     accent: shadeLogoGradient(0.15, 0.62),
     readAlongHighlight: blendColor('#FAFAFA', logoGradient[0], 0.09),
@@ -43,13 +43,13 @@ const palette = {
     background: '#101114',
     surface: '#1B1C20',
     promptSurface: '#28292E',
+    promptAccessory: '#1B1C20',
     promptBorder: 'rgba(242, 242, 243, 0.12)',
     promptChip: blendColor('#28292E', logoGradient[1], 0.08),
     promptChipBorder: blendColor('#28292E', logoGradient[1], 0.18),
     promptDisabledAction: '#38393F',
     border: '#2B2C31',
     text: '#F2F2F3',
-    thinkingIndicator: '#FFFFFF',
     muted: '#A3A4AD',
     accent: blendColor(...logoGradient, 0.82),
     readAlongHighlight: blendColor('#101114', logoGradient[0], 0.24),
@@ -60,59 +60,36 @@ const palette = {
   },
 };
 
-const darkProgressArc: [string, string, string] = [
-  logoGradient[1],
-  shadeLogoGradient(0.68, 1),
-  shadeLogoGradient(0.48, 0.76),
-];
+const actionCharcoal = '#272628';
+const actionPearl = '#E9EAF0';
+const actionBlue = blendColor(...logoGradient, 0.24);
+const lightActionFillBlue = blendColor(actionPearl, actionBlue, 0.32);
+const lightActionRimBlue = blendColor(actionPearl, actionBlue, 0.49);
+const darkActionFillBlue = blendColor(actionCharcoal, actionBlue, 0.37);
+const darkActionRimBlue = blendColor(actionCharcoal, actionBlue, 0.52);
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
   actionSurface: {
     light: {
-      fill: [
-        shadeLogoGradient(0.28, 0.63),
-        shadeLogoGradient(0.06, 0.35),
-        shadeLogoGradient(0, 0.17),
-      ],
-      rim: [shadeLogoGradient(0.52, 0.72), shadeLogoGradient(0.1, 0.28)],
-      foreground: '#F5F8FF',
+      fill: [lightActionFillBlue, blendColor(actionPearl, actionBlue, 0.08), actionPearl],
+      rim: [lightActionRimBlue, blendColor(actionPearl, shadeLogoGradient(0.5, 0.4), 0.15)],
+      foreground: '#26326D',
     },
     dark: {
-      fill: [
-        shadeLogoGradient(0.44, 0.58),
-        shadeLogoGradient(0.4, 0.34),
-        shadeLogoGradient(0.35, 0.27),
-      ],
-      rim: [shadeLogoGradient(0.53, 0.79), shadeLogoGradient(0.4, 0.41)],
+      fill: [darkActionFillBlue, blendColor(actionCharcoal, actionBlue, 0.08), actionCharcoal],
+      rim: [darkActionRimBlue, blendColor(actionCharcoal, logoGradient[1], 0.16)],
       foreground: '#F2F5FF',
     },
-    fillStops: [0, 0.62, 1],
+    fillStops: [0, 0.47, 1],
   } as const,
-  speechActivity: {
-    light: [shadeLogoGradient(0.56, 0.84), logoGradient[0]],
-    dark: [logoGradient[1], shadeLogoGradient(0.3, 0.95)],
+  activityAccent: {
+    light: [lightActionRimBlue, lightActionFillBlue] satisfies [string, string],
+    dark: [darkActionRimBlue, darkActionFillBlue] satisfies [string, string],
   },
-  progressStroke: {
-    light: {
-      track: ['#C6D1E3', '#E1E7F1'],
-      arc: [
-        shadeLogoGradient(0.28, 0.8),
-        shadeLogoGradient(0.17, 0.65),
-        shadeLogoGradient(0.12, 0.39),
-      ],
-      context: [
-        shadeLogoGradient(0.16, 0.55),
-        shadeLogoGradient(0.12, 0.32),
-        shadeLogoGradient(0.08, 0.17),
-      ] satisfies [string, string, string],
-    },
-    dark: {
-      track: ['#35425C', '#222833'],
-      arc: darkProgressArc,
-      context: darkProgressArc,
-    },
-    stops: [0, 0.42, 1] satisfies [number, number, number],
+  progressTrack: {
+    light: [blendColor(actionPearl, actionBlue, 0.14), actionPearl],
+    dark: [blendColor(actionCharcoal, logoGradient[1], 0.14), actionCharcoal],
   },
   prompt: {
     blurIntensity: 45,

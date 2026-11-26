@@ -94,10 +94,7 @@ export function ChatContext({
               >
                 <Animated.View style={[styles.fill, meterStyle]}>
                   <LinearGradient
-                    colors={tokens.progressStroke[scheme].context}
-                    locations={tokens.progressStroke.stops}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
+                    colors={tokens.activityAccent[scheme]}
                     style={StyleSheet.absoluteFill}
                   />
                 </Animated.View>

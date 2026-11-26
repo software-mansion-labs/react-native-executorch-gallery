@@ -7,12 +7,12 @@ import { tokens, useTheme } from '@/theme';
 /** A recording ring that brightens and expands with microphone energy. */
 export function SpeechActivityHalo({ level }: { level: SharedValue<number> }) {
   const { scheme } = useTheme();
+  const colors = tokens.activityAccent[scheme];
   const reducedMotion = useReducedMotion();
   const radius = useDerivedValue(
     () => buttonRadius + spacing.xs + (reducedMotion ? 0 : level.get() * spacing.sm)
   );
   const glowOpacity = useDerivedValue(() => (reducedMotion ? 0.35 : 0.24 + level.get() * 0.54));
-  const colors = tokens.speechActivity[scheme];
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill} accessible={false}>

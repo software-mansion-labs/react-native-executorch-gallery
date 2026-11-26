@@ -2,15 +2,15 @@ import { Canvas, Group, LinearGradient, Path, vec } from '@shopify/react-native-
 import { StyleSheet, View } from 'react-native';
 
 import { useCircularProgress } from '@/hooks/useCircularProgress';
-import { tokens, useTheme } from '@/theme';
+import { tokens, useTheme, type Theme } from '@/theme';
 
 type CircularProgressProps = {
   progress: number;
   indeterminate?: boolean;
   size?: number;
-  color?: string;
   accessible?: boolean;
   accessibilityLabel?: string;
+  appearance?: Theme['scheme'];
 };
 
 /** A rounded hexagon showing download progress and rotating fully colored while preparing. */
@@ -18,12 +18,12 @@ export function CircularProgress({
   progress,
   indeterminate = false,
   size = tokens.layout.modelProgressSize,
-  color,
   accessible = true,
   accessibilityLabel,
+  appearance,
 }: CircularProgressProps) {
-  const { scheme } = useTheme();
-  const { track, arc } = tokens.progressStroke[scheme];
+  const { scheme } = useTheme(appearance);
+  const track = tokens.progressTrack[scheme];
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
   const { path, end, trackStart, transform } = useCircularProgress(percentage, indeterminate);
 
@@ -66,8 +66,7 @@ export function CircularProgress({
               <LinearGradient
                 start={gradientStart}
                 end={gradientEnd}
-                colors={color ? [arc[0], color, color] : arc}
-                positions={tokens.progressStroke.stops}
+                colors={tokens.activityAccent[scheme]}
               />
             </Path>
           </Group>

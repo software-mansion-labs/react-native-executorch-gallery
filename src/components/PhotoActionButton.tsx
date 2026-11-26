@@ -59,7 +59,7 @@ export function PhotoActionButton({
           styles.button,
           small ? styles.smallFace : styles.large,
           disabledPrimary && { backgroundColor: colors.promptDisabledAction },
-          !primary && { backgroundColor: colors.surface },
+          !primary && { backgroundColor: small ? colors.promptAccessory : colors.surface },
         ]}
       >
         {primary && !disabledPrimary && <BlueActionSurface scheme={scheme} />}
@@ -68,8 +68,8 @@ export function PhotoActionButton({
             progress={100}
             indeterminate
             size={glyphSize}
-            color={foreground}
             accessible={false}
+            appearance={appearance}
           />
         ) : (
           <Ionicons name={iconName} size={glyphSize} color={foreground} />

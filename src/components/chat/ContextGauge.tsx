@@ -8,7 +8,7 @@ import { tokens, useTheme } from '@/theme';
 /** Small capacity ring: the accent arc shows how much conversation space remains. */
 export function ContextGauge({ used }: { used: SharedValue<number> }) {
   const { scheme } = useTheme();
-  const { track, context: arcColors } = tokens.progressStroke[scheme];
+  const track = tokens.progressTrack[scheme];
   const path = useMemo(() => {
     const builder = Skia.PathBuilder.Make();
     builder.addCircle(center, center, (size - stroke) / 2);
@@ -32,8 +32,7 @@ export function ContextGauge({ used }: { used: SharedValue<number> }) {
           <LinearGradient
             start={gradientStart}
             end={gradientEnd}
-            colors={arcColors}
-            positions={tokens.progressStroke.stops}
+            colors={tokens.activityAccent[scheme]}
           />
         </Path>
       </Group>
@@ -44,6 +43,6 @@ export function ContextGauge({ used }: { used: SharedValue<number> }) {
 const size = tokens.iconSize.small;
 const center = size / 2;
 const stroke = tokens.layout.contextGaugeStroke;
-const gradientStart = vec(size, 0);
-const gradientEnd = vec(0, size);
+const gradientStart = vec(size, center);
+const gradientEnd = vec(0, center);
 const styles = StyleSheet.create({ gauge: { width: size, height: size } });
