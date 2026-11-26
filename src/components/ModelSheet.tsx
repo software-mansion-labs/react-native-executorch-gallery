@@ -1,8 +1,9 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
+import { CircularProgress } from '@/components/CircularProgress';
 import { IconButton } from '@/components/IconButton';
 import type { ModelControls } from '@/hooks/useModelControls';
 import { formatModelSize } from '@/lib/model-cache';
@@ -25,7 +26,7 @@ type ModelSheetProps = {
 
 /** A compact model summary with readiness and deletion of cached weights. */
 export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheetProps) {
-  const { colors } = useTheme();
+  const { colors, iconSize } = useTheme();
   const ready = model.loaded && status.isReady && !model.deleting;
   const loading = model.loaded && !status.isReady && !status.error;
   const state = model.deleting
@@ -77,7 +78,12 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
           </View>
           {model.deleting ? (
             <View style={styles.activity}>
-              <ActivityIndicator color={colors.muted} />
+              <CircularProgress
+                progress={100}
+                indeterminate
+                size={iconSize.medium}
+                accessible={false}
+              />
             </View>
           ) : (
             <IconButton

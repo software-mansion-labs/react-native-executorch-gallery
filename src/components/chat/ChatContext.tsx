@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ContextGauge } from '@/components/chat/ContextGauge';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
@@ -27,7 +28,7 @@ export function ChatContext({
   hasMessages: boolean;
   onNewChat: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const context = useChatContext(session, busy);
   const [visible, setVisible] = useState(false);
   const pill = useCardPressAnimation();
@@ -112,14 +113,14 @@ export function ChatContext({
               }}
               onPressIn={reset.onPressIn}
               onPressOut={reset.onPressOut}
-              style={[
-                styles.reset,
-                { backgroundColor: colors.background },
-                resetDisabled && styles.disabled,
-                reset.animatedStyle,
-              ]}
+              style={[styles.reset, resetDisabled && styles.disabled, reset.animatedStyle]}
             >
-              <AppText variant="secondary" numberOfLines={1}>
+              <BlueActionSurface scheme={scheme} />
+              <AppText
+                variant="secondary"
+                numberOfLines={1}
+                style={{ color: tokens.actionSurface[scheme].foreground }}
+              >
                 New chat
               </AppText>
             </AnimatedPressable>
@@ -153,7 +154,6 @@ const styles = StyleSheet.create({
   reset: {
     minHeight: layout.touchTarget,
     alignSelf: 'center',
-    borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     alignItems: 'center',

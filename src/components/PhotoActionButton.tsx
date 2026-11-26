@@ -3,6 +3,7 @@ import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { CircularProgress } from '@/components/CircularProgress';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { tokens, useTheme, type Theme } from '@/theme';
@@ -27,7 +28,8 @@ export function PhotoActionButton({
   size?: 'small' | 'large';
   appearance?: Theme['scheme'];
 }) {
-  const { colors, iconSize } = useTheme(appearance);
+  const { colors, iconSize, scheme } = useTheme(appearance);
+  const foreground = primary ? tokens.actionSurface[scheme].foreground : colors.text;
   const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable
@@ -41,23 +43,24 @@ export function PhotoActionButton({
       style={[
         styles.button,
         size === 'small' ? styles.small : styles.large,
-        { backgroundColor: primary ? colors.accent : colors.surface },
+        !primary && { backgroundColor: colors.surface },
         press.animatedStyle,
       ]}
     >
+      {primary && <BlueActionSurface scheme={scheme} />}
       {loading ? (
         <CircularProgress
           progress={100}
           indeterminate
           size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={primary ? colors.onAccent : colors.text}
+          color={foreground}
           accessible={false}
         />
       ) : (
         <Ionicons
           name={iconName}
           size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={primary ? colors.onAccent : colors.text}
+          color={foreground}
         />
       )}
     </AnimatedPressable>

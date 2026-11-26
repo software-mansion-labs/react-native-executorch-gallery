@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { usePromptInputSize } from '@/hooks/usePromptInputSize';
 import { tokens, useTheme } from '@/theme';
@@ -42,7 +43,7 @@ export function PromptInput({
   submitLabel = 'Send message',
   stopLabel = 'Stop generating',
 }: PromptInputProps) {
-  const { colors, iconSize } = useTheme();
+  const { colors, iconSize, scheme } = useTheme();
   const input = useRef<TextInput>(null);
   const sizing = usePromptInputSize(value);
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
@@ -138,12 +139,13 @@ export function PromptInput({
             onPress={isGenerating ? onStop : onSubmit}
             onPressIn={press.onPressIn}
             onPressOut={press.onPressOut}
-            style={[styles.send, { backgroundColor: colors.accent }, press.animatedStyle]}
+            style={[styles.send, press.animatedStyle]}
           >
+            <BlueActionSurface scheme={scheme} />
             <Ionicons
               name={isGenerating ? 'stop' : 'arrow-up'}
               size={iconSize.medium}
-              color={colors.onAccent}
+              color={tokens.actionSurface[scheme].foreground}
             />
           </AnimatedPressable>
         </View>
@@ -203,7 +205,6 @@ const styles = StyleSheet.create({
   send: {
     width: layout.touchTarget,
     height: layout.touchTarget,
-    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },

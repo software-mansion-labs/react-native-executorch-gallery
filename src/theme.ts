@@ -37,7 +37,33 @@ const palette = {
 
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
-  toggle: { thumb: { light: '#FFFFFF', dark: '#484A50' } },
+  actionSurface: {
+    light: {
+      fill: ['#385787', '#162D53', '#101F39'],
+      rim: ['#5A79A8', '#0B1930'],
+      foreground: '#F5F8FF',
+    },
+    dark: {
+      fill: ['#3A4D75', '#262D3A', '#232730'],
+      rim: ['#627EAF', '#343D50'],
+      foreground: '#F2F5FF',
+    },
+    fillStops: [0, 0.62, 1],
+  } as const,
+  progressStroke: {
+    contextLight: ['#2A4C82', '#193459', '#0F213D'],
+    light: {
+      track: ['#C6D1E3', '#E1E7F1'],
+      highlight: '#6589C3',
+      shade: '#28477D',
+    },
+    dark: {
+      track: ['#35425C', '#222833'],
+      highlight: '#E3EBFF',
+      shade: '#627EAF',
+    },
+    stops: [0, 0.42, 1],
+  },
   prompt: {
     blurIntensity: 45,
     fadeMaskColors: [
@@ -222,7 +248,7 @@ export const tokens = {
     chatInputMaxHeight: 144,
     chatPhotoHeight: 180,
     chatScrollThreshold: 96,
-    contextGaugeStroke: 1.5,
+    contextGaugeStroke: 2,
     contextMeterHeight: 4,
     promptSuggestionHeight: 40,
     statusDotSize: 6,

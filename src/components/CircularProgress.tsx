@@ -1,4 +1,4 @@
-import { Canvas, Group, Path } from '@shopify/react-native-skia';
+import { Canvas, Group, LinearGradient, Path, vec } from '@shopify/react-native-skia';
 import { StyleSheet, View } from 'react-native';
 
 import { useCircularProgress } from '@/hooks/useCircularProgress';
@@ -22,7 +22,8 @@ export function CircularProgress({
   accessible = true,
   accessibilityLabel,
 }: CircularProgressProps) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
+  const { track, highlight, shade } = tokens.progressStroke[scheme];
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
   const { path, end, trackStart, transform } = useCircularProgress(percentage, indeterminate);
 
@@ -50,8 +51,9 @@ export function CircularProgress({
                 style="stroke"
                 strokeWidth={stroke}
                 strokeCap="round"
-                color={colors.border}
-              />
+              >
+                <LinearGradient start={gradientStart} end={gradientEnd} colors={track} />
+              </Path>
             )}
             <Path
               path={path}
@@ -60,8 +62,14 @@ export function CircularProgress({
               style="stroke"
               strokeWidth={stroke}
               strokeCap="round"
-              color={color ?? colors.accent}
-            />
+            >
+              <LinearGradient
+                start={gradientStart}
+                end={gradientEnd}
+                colors={[highlight, color ?? colors.accent, color ?? shade]}
+                positions={tokens.progressStroke.stops}
+              />
+            </Path>
           </Group>
         </Group>
       </Canvas>
@@ -72,3 +80,5 @@ export function CircularProgress({
 const size = tokens.layout.modelProgressSize;
 const stroke = tokens.layout.modelProgressStroke;
 const center = size / 2;
+const gradientStart = vec(0, 0);
+const gradientEnd = vec(size, size);

@@ -7,6 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { tokens, useTheme } from '@/theme';
 
 /** A single press surface with two circular icon states and a sliding selection. */
@@ -24,6 +25,7 @@ export function IconToggle({
   onChange: (value: boolean) => void;
 }) {
   const { colors, scheme } = useTheme();
+  const { foreground } = tokens.actionSurface[scheme];
   const position = useSharedValue(value ? segmentWidth : 0);
   useEffect(() => {
     position.set(
@@ -51,13 +53,12 @@ export function IconToggle({
         ]}
         pointerEvents="none"
       >
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.selection, { backgroundColor: tokens.toggle.thumb[scheme] }, selection]}
-        />
+        <Animated.View pointerEvents="none" style={[styles.selection, selection]}>
+          <BlueActionSurface scheme={scheme} />
+        </Animated.View>
         {([false, true] as const).map((option) => (
           <View key={String(option)} style={styles.option}>
-            {renderIcon(option, value === option ? colors.text : colors.muted)}
+            {renderIcon(option, value === option ? foreground : colors.muted)}
           </View>
         ))}
       </View>
@@ -86,7 +87,6 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     width: selectionSize,
     height: selectionSize,
-    borderRadius: radius.pill,
   },
   option: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
