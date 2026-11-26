@@ -37,8 +37,6 @@ const palette = {
     onAccent: '#FFFFFF',
     ready: '#2D805E',
     danger: '#B3261E',
-    warning: '#855321',
-    warningSurface: '#F4E6D4',
     scrim: 'rgba(0, 0, 0, 0.4)',
   },
   dark: {
@@ -58,8 +56,6 @@ const palette = {
     onAccent: '#162A49',
     ready: '#82C5A8',
     danger: '#FFB4AB',
-    warning: '#F2C38F',
-    warningSurface: '#352D26',
     scrim: 'rgba(0, 0, 0, 0.55)',
   },
 };

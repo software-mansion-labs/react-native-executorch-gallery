@@ -16,74 +16,63 @@ export function ChatResponseError({
 }) {
   const { colors, iconSize } = useTheme();
   return (
-    <View style={[styles.root, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.icon, { backgroundColor: colors.warningSurface }]}>
+    <View style={[styles.root, { borderColor: colors.border }]}>
+      <View style={styles.notice}>
         <Ionicons
           name="alert-circle-outline"
+          style={styles.icon}
           size={iconSize.small}
-          color={colors.warning}
+          color={colors.danger}
           accessible={false}
         />
-      </View>
-      <View style={styles.content}>
         <View style={styles.message} accessibilityRole="alert" accessibilityLiveRegion="polite">
           <AppText variant="title">Response unfinished</AppText>
           <AppText variant="secondary" tone="muted">
             {message}
           </AppText>
         </View>
-        <Pressable
-          onPress={onEditPrompt}
-          disabled={disabled}
-          accessibilityRole="button"
-          accessibilityState={{ disabled }}
-          style={({ pressed }) => [
-            styles.action,
-            { backgroundColor: colors.background, borderColor: colors.border },
-            pressed && styles.pressed,
-            disabled && styles.disabled,
-          ]}
-        >
-          <Ionicons
-            name="pencil-outline"
-            size={iconSize.small}
-            color={colors.accent}
-            accessible={false}
-          />
-          <AppText variant="label" tone="accent">
-            Edit prompt
-          </AppText>
-        </Pressable>
       </View>
+      <Pressable
+        onPress={onEditPrompt}
+        disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled }}
+        style={({ pressed }) => [
+          styles.action,
+          pressed && styles.pressed,
+          disabled && styles.disabled,
+        ]}
+      >
+        <View
+          style={[styles.capsule, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <AppText variant="label">Edit prompt</AppText>
+        </View>
+      </Pressable>
     </View>
   );
 }
 
-const { spacing, layout, opacity, radius, borderWidth } = tokens;
+const { spacing, layout, opacity, borderWidth, radius } = tokens;
 const styles = StyleSheet.create({
   root: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     marginTop: spacing.md,
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderWidth: borderWidth.hairline,
-    borderRadius: radius.card,
+    paddingStart: spacing.md,
+    borderStartWidth: borderWidth.thin,
   },
-  icon: { borderRadius: radius.pill, padding: spacing.xs },
-  content: { flex: 1, gap: spacing.md },
-  message: { gap: spacing.xxs },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  icon: { marginTop: spacing.xs },
+  message: { flex: 1, gap: spacing.xxs },
   action: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'flex-start',
     minHeight: layout.touchTarget,
-    gap: spacing.sm,
+  },
+  capsule: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
-    borderWidth: borderWidth.hairline,
+    borderWidth: borderWidth.thin,
   },
   pressed: { opacity: opacity.pressed },
   disabled: { opacity: opacity.disabled },
