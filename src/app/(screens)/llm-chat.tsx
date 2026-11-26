@@ -119,7 +119,7 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
         session={session}
         model={model}
         onNewChat={onNewChat}
-        contextAccessory={
+        trailingAccessory={
           <ChatThinkingToggle enabled={thinking} onChange={setThinking} disabled={busy} />
         }
       />

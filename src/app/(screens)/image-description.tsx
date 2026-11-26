@@ -66,9 +66,9 @@ function ImageSession({ model, onNewChat }: { model: ModelControls; onNewChat: (
         heroDescription="Choose a photo, then ask what’s in it."
         suggestions={[]}
         canSend={chat.canSend && !photo.picking}
-        contextAccessory={
+        trailingAccessory={
           <ChatImageInput
-            onChoose={photo.choose}
+            onChoose={() => photo.choose('library')}
             picking={photo.picking}
             disabled={!model.prepared || !session.isReady || chat.busy}
           />

@@ -41,7 +41,7 @@ Explore the categories below. Each demo links to its screen implementation.
 <details>
 <summary><strong>Real time</strong></summary>
 
-- [Silhouette rain](<src/app/(screens)/silhouette-rain.tsx>)
+- [Matrix code rain](<src/app/(screens)/silhouette-rain.tsx>)
 - [Live object detection](<src/app/(screens)/realtime-object-detection.tsx>)
 
 </details>

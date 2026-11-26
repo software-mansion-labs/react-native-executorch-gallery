@@ -20,6 +20,7 @@ export function TextTaskView({
   title,
   description,
   placeholder,
+  submitLabel,
   suggestions,
   model,
   status,
@@ -28,6 +29,7 @@ export function TextTaskView({
   title: string;
   description: string;
   placeholder: string;
+  submitLabel: string;
   suggestions: readonly { label: string; prompt: string }[];
   model: ModelControls;
   status: ModelStatus;
@@ -62,7 +64,7 @@ export function TextTaskView({
                 disabled={task.busy}
                 canSubmit={!!task.input.trim() && !task.busy}
                 placeholder={placeholder}
-                submitLabel="Run task"
+                submitLabel={submitLabel}
                 suggestions={suggestions}
               />
             </>

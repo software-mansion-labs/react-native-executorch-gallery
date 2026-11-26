@@ -1,11 +1,11 @@
 import { Keyboard, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
+import { IconButton } from '@/components/IconButton';
 import { ModelSetup } from '@/components/ModelSetup';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { PromptInput } from '@/components/PromptInput';
 import { PromptStage } from '@/components/PromptStage';
-import { PhotoActionButton } from '@/components/PhotoActionButton';
 import { SpeechReadAlong } from '@/components/text-to-speech/SpeechReadAlong';
 import { TaskHero } from '@/components/TaskHero';
 import { TaskHeroStage } from '@/components/TaskHeroStage';
@@ -84,21 +84,16 @@ export function TextToSpeechView({
                   submitLabel="Speak text"
                   stopLabel="Stop speaking"
                   suggestions={suggestions}
-                  reserveSuggestionSpace
-                  leadingAccessory={
+                  trailingAccessory={
                     playback.canReplay ? (
-                      <Animated.View entering={entrance}>
-                        <PhotoActionButton
-                          iconName="refresh-outline"
-                          label="Replay speech"
-                          size="small"
-                          disabled={false}
-                          onPress={() => {
-                            Keyboard.dismiss();
-                            void onReplay();
-                          }}
-                        />
-                      </Animated.View>
+                      <IconButton
+                        icon="refresh-outline"
+                        accessibilityLabel="Replay speech"
+                        onPress={() => {
+                          Keyboard.dismiss();
+                          void onReplay();
+                        }}
+                      />
                     ) : undefined
                   }
                 />

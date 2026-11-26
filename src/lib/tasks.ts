@@ -119,8 +119,8 @@ export const TASK_SECTIONS: TaskSection[] = [
       {
         id: 'silhouette-rain',
         href: '/silhouette-rain',
-        title: 'Silhouette rain',
-        keywords: 'particles physics camera selfie segmentation mask ExecuTorch',
+        title: 'Matrix code rain',
+        keywords: 'silhouette particles physics camera selfie segmentation mask ExecuTorch',
       },
       {
         id: 'realtime-object-detection',

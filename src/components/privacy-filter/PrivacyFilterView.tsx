@@ -89,8 +89,7 @@ export function PrivacyFilterView({
                   placeholder="Paste text to filter…"
                   submitLabel="Filter text"
                   suggestions={suggestions}
-                  reserveSuggestionSpace
-                  leadingAccessory={
+                  trailingAccessory={
                     result && result.entities.length > 0 ? (
                       <PrivacyFilterToggle
                         original={showOriginal}

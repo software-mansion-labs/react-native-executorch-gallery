@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { BlueActionSurface } from '@/components/BlueActionSurface';
@@ -30,6 +30,8 @@ export function PhotoActionButton({
 }) {
   const { colors, iconSize, scheme } = useTheme(appearance);
   const foreground = primary ? tokens.actionSurface[scheme].foreground : colors.text;
+  const small = size === 'small';
+  const glyphSize = small ? iconSize.small : iconSize.large;
   const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable
@@ -40,29 +42,29 @@ export function PhotoActionButton({
       onPress={onPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
-      style={[
-        styles.button,
-        size === 'small' ? styles.small : styles.large,
-        !primary && { backgroundColor: colors.surface },
-        press.animatedStyle,
-      ]}
+      style={[styles.button, small ? styles.small : styles.large, press.animatedStyle]}
     >
-      {primary && <BlueActionSurface scheme={scheme} />}
-      {loading ? (
-        <CircularProgress
-          progress={100}
-          indeterminate
-          size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={foreground}
-          accessible={false}
-        />
-      ) : (
-        <Ionicons
-          name={iconName}
-          size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={foreground}
-        />
-      )}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.button,
+          small ? styles.smallFace : styles.large,
+          !primary && { backgroundColor: colors.surface },
+        ]}
+      >
+        {primary && <BlueActionSurface scheme={scheme} />}
+        {loading ? (
+          <CircularProgress
+            progress={100}
+            indeterminate
+            size={glyphSize}
+            color={foreground}
+            accessible={false}
+          />
+        ) : (
+          <Ionicons name={iconName} size={glyphSize} color={foreground} />
+        )}
+      </View>
     </AnimatedPressable>
   );
 }
@@ -71,5 +73,6 @@ const { layout, radius } = tokens;
 const styles = StyleSheet.create({
   button: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
   small: { width: layout.touchTarget, height: layout.touchTarget },
+  smallFace: { width: layout.compactPromptActionSize, height: layout.compactPromptActionSize },
   large: { width: layout.photoControlSize, height: layout.photoControlSize },
 });
