@@ -29,7 +29,12 @@ export function PhotoActionButton({
   appearance?: Theme['scheme'];
 }) {
   const { colors, iconSize, scheme } = useTheme(appearance);
-  const foreground = primary ? tokens.actionSurface[scheme].foreground : colors.text;
+  const disabledPrimary = primary && disabled && !loading;
+  const foreground = disabledPrimary
+    ? colors.muted
+    : primary
+      ? tokens.actionSurface[scheme].foreground
+      : colors.text;
   const small = size === 'small';
   const glyphSize = small ? iconSize.small : iconSize.large;
   const press = useCircularButtonPressAnimation(disabled && !loading);
@@ -42,17 +47,22 @@ export function PhotoActionButton({
       onPress={onPress}
       onPressIn={press.onPressIn}
       onPressOut={press.onPressOut}
-      style={[styles.button, small ? styles.small : styles.large, press.animatedStyle]}
+      style={[
+        styles.button,
+        small ? styles.small : styles.large,
+        !disabledPrimary && press.animatedStyle,
+      ]}
     >
       <View
         pointerEvents="none"
         style={[
           styles.button,
           small ? styles.smallFace : styles.large,
+          disabledPrimary && { backgroundColor: colors.promptDisabledAction },
           !primary && { backgroundColor: colors.surface },
         ]}
       >
-        {primary && <BlueActionSurface scheme={scheme} />}
+        {primary && !disabledPrimary && <BlueActionSurface scheme={scheme} />}
         {loading ? (
           <CircularProgress
             progress={100}
