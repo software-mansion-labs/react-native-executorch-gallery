@@ -72,7 +72,7 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
           </View>
           <View style={styles.storage}>
             {!!model.storedBytes && (
-              <AppText variant="secondary" tone="muted" style={styles.detail}>
+              <AppText variant="secondary" tone="muted" style={styles.storageSize}>
                 {formatModelSize(model.storedBytes)}
               </AppText>
             )}
@@ -88,6 +88,7 @@ export function ModelSheet({ visible, onClose, model, status, busy }: ModelSheet
             ) : (
               <IconButton
                 icon="trash-outline"
+                size="small"
                 accessibilityLabel="Delete downloaded model"
                 onPress={() => model.remove(busy || loading)}
                 disabled={!canDelete}
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
     marginEnd: -spacing.md,
   },
   detail: { flexShrink: 1 },
+  storageSize: { flexShrink: 1, includeFontPadding: false },
   dot: {
     width: layout.statusDotSize,
     height: layout.statusDotSize,
