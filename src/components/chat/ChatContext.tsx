@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.hairline,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    minHeight: layout.promptSuggestionHeight,
+    minHeight: layout.compactControlHeight,
   },
   details: { gap: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.lg },
   balance: { gap: spacing.xs },

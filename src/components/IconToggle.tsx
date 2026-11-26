@@ -67,7 +67,7 @@ export function IconToggle({
 }
 
 const { spacing, radius, borderWidth, layout } = tokens;
-const controlHeight = layout.promptSuggestionHeight;
+const controlHeight = layout.compactControlHeight;
 const controlWidth = controlHeight * 2 - spacing.sm;
 const selectionSize = controlHeight - (spacing.xs + borderWidth.hairline) * 2;
 const segmentWidth = (controlWidth - (spacing.xs + borderWidth.hairline) * 2) / 2;

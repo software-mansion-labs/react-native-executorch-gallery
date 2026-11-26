@@ -81,7 +81,7 @@ const { spacing, radius, layout, borderWidth, opacity } = tokens;
 const styles = StyleSheet.create({
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   option: {
-    minHeight: layout.promptSuggestionHeight,
+    minHeight: layout.compactControlHeight,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     flexDirection: 'row',

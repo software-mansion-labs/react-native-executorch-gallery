@@ -206,14 +206,14 @@ const styles = StyleSheet.create({
   suggestions: {
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    padding: spacing.xs,
   },
   chip: {
     borderRadius: radius.pill,
     borderWidth: borderWidth.thin,
     minHeight: layout.promptSuggestionHeight,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
