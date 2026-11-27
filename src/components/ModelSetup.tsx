@@ -4,6 +4,7 @@ import Animated, { Easing, FadeIn, FadeOut, ReduceMotion } from 'react-native-re
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { CircularProgress } from '@/components/CircularProgress';
 import type { ModelStatus } from '@/components/ModelSheet';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
@@ -19,7 +20,8 @@ type ModelSetupProps = {
 
 /** A compact setup action with separate download progress and preparation status. */
 export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
-  const { colors } = useTheme();
+  const { scheme } = useTheme();
+  const { foreground } = tokens.actionSurface[scheme];
   const { animatedStyle, onPressIn, onPressOut } = useCardPressAnimation();
   const { preparing, loading, ready, onExit } = useModelSetup(model, status);
   const preparationExit = useMemo(
@@ -78,18 +80,14 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
               : model.loadLabel
           }
           accessibilityState={{ disabled: !!blocked }}
-          style={[
-            styles.action,
-            { backgroundColor: colors.accent },
-            blocked && styles.disabled,
-            animatedStyle,
-          ]}
+          style={[styles.action, blocked && styles.disabled, animatedStyle]}
         >
-          <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
+          <BlueActionSurface scheme={scheme} />
+          <AppText variant="taskLabel" style={{ color: foreground }}>
             {model.storedBytes === null ? 'Download' : model.loadLabel}
           </AppText>
           {model.downloadSizeLabel && (
-            <AppText variant="taskLabel" style={{ color: colors.onAccent }}>
+            <AppText variant="taskLabel" style={{ color: foreground }}>
               {model.downloadSizeLabel}
             </AppText>
           )}
@@ -99,7 +97,7 @@ export function ModelSetup({ model, status, disabled }: ModelSetupProps) {
   );
 }
 
-const { spacing, layout, radius, opacity } = tokens;
+const { spacing, layout, opacity } = tokens;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const loadingEntrance = FadeIn.duration(tokens.motion.modelSetupTransitionDuration)
   .easing(Easing.out(Easing.cubic))
@@ -123,7 +121,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: radius.pill,
   },
   progressArea: { alignItems: 'center', gap: spacing.sm },
   progressLabel: { fontVariant: ['tabular-nums'] },

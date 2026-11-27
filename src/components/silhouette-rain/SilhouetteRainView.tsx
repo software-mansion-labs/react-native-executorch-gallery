@@ -38,11 +38,11 @@ export function SilhouetteRainView({
       {!rain.showCamera && (
         <TaskHeroStage pointerEvents={ready ? 'none' : 'box-none'}>
           <TaskHero
-            title="A shelter in the rain"
+            title="Step into the Matrix"
             description={
               rain.device
-                ? 'Start the camera and watch rain splash against your silhouette.'
-                : 'This demo needs a device with a camera.'
+                ? 'Move in front of the camera and watch green code cascade around your silhouette.'
+                : 'Use a device with a camera to see green code cascade around your silhouette.'
             }
             setup={<ModelSetup model={model} status={rain.status} />}
           />

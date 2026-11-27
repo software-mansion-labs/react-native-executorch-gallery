@@ -44,7 +44,7 @@ export function ChatView({
   suggestions = defaultSuggestions,
   canSend = true,
   composerAccessory,
-  contextAccessory,
+  trailingAccessory,
 }: {
   draft: string;
   onDraftChange: (value: string) => void;
@@ -60,7 +60,7 @@ export function ChatView({
   suggestions?: readonly { label: string; prompt: string }[];
   canSend?: boolean;
   composerAccessory?: ReactNode;
-  contextAccessory?: ReactNode;
+  trailingAccessory?: ReactNode;
 }) {
   const { colors } = useTheme();
   const { keyboardStyle, heroStyle } = useChatKeyboard();
@@ -91,28 +91,19 @@ export function ChatView({
                     void onSend();
                   }}
                   suggestions={!turns.length ? suggestions : undefined}
-                  reserveSuggestionSpace={!turns.length}
+                  layoutMode="toolbar"
                   attachment={composerAccessory}
+                  trailingAccessory={trailingAccessory}
                   leadingAccessory={
-                    <View
-                      style={[
-                        styles.contextActions,
-                        !!contextAccessory &&
-                          (turns.length > 0 || suggestions.length === 0) &&
-                          styles.expandedActions,
-                      ]}
-                    >
-                      <ChatContext
-                        session={session}
-                        busy={busy}
-                        hasMessages={!!turns.length}
-                        onNewChat={() => {
-                          model.resetPreparation();
-                          onNewChat();
-                        }}
-                      />
-                      {contextAccessory}
-                    </View>
+                    <ChatContext
+                      session={session}
+                      busy={busy}
+                      hasMessages={!!turns.length}
+                      onNewChat={() => {
+                        model.resetPreparation();
+                        onNewChat();
+                      }}
+                    />
                   }
                 />
               </Animated.View>
@@ -248,6 +239,4 @@ const styles = StyleSheet.create({
   },
   reply: { paddingTop: spacing.sm },
   imageQuestion: { width: '90%', gap: spacing.md },
-  contextActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 0 },
-  expandedActions: { flex: 1, justifyContent: 'space-between' },
 });

@@ -11,7 +11,7 @@ export const ThinkingIndicator = memo(function ThinkingIndicator({
 }: {
   accessibilityLabel?: string;
 }) {
-  const { colors } = useTheme();
+  const { scheme } = useTheme();
   const pulse = useActivityPulse();
   return (
     <View
@@ -21,7 +21,9 @@ export const ThinkingIndicator = memo(function ThinkingIndicator({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ busy: true }}
     >
-      <Animated.View style={[styles.dot, { backgroundColor: colors.thinkingIndicator }, pulse]} />
+      <Animated.View
+        style={[styles.dot, { backgroundColor: tokens.activityForeground[scheme] }, pulse]}
+      />
     </View>
   );
 });

@@ -46,19 +46,19 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
       { question, responses: [''], pending: true, tools: [], plainResponse: !thinking },
     ]);
     try {
-      const result = await session.sendMessage(
-        question,
-        (token) => {
-          if (!mounted.current || !active.current) return;
-          setTurns((items) =>
-            updateLastTurn(items, (turn) => ({
-              ...turn,
-              responses: [...turn.responses.slice(0, -1), (turn.responses.at(-1) ?? '') + token],
-            }))
-          );
-        },
-        { enableThinking: thinking }
-      );
+      const streamToken = (token: string) => {
+        if (!mounted.current || !active.current) return;
+        setTurns((items) =>
+          updateLastTurn(items, (turn) => ({
+            ...turn,
+            responses: [...turn.responses.slice(0, -1), (turn.responses.at(-1) ?? '') + token],
+          }))
+        );
+      };
+      // A late thinking tag or tool call can change which text belongs to the final answer.
+      const result = await session.sendMessage(question, thinking ? streamToken : undefined, {
+        enableThinking: thinking,
+      });
       if (!mounted.current) return;
       if (result.finishReason === 'cancelled') {
         setTurns((items) => items.slice(0, -1));
@@ -119,7 +119,7 @@ function ChatSession({ model, onNewChat }: { model: ModelControls; onNewChat: ()
         session={session}
         model={model}
         onNewChat={onNewChat}
-        contextAccessory={
+        trailingAccessory={
           <ChatThinkingToggle enabled={thinking} onChange={setThinking} disabled={busy} />
         }
       />

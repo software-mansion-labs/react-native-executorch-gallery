@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { CircularProgress } from '@/components/CircularProgress';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { tokens, useTheme, type Theme } from '@/theme';
@@ -27,7 +28,15 @@ export function PhotoActionButton({
   size?: 'small' | 'large';
   appearance?: Theme['scheme'];
 }) {
-  const { colors, iconSize } = useTheme(appearance);
+  const { colors, iconSize, scheme } = useTheme(appearance);
+  const disabledPrimary = primary && disabled && !loading;
+  const foreground = disabledPrimary
+    ? colors.muted
+    : primary
+      ? tokens.actionSurface[scheme].foreground
+      : colors.text;
+  const small = size === 'small';
+  const glyphSize = small ? iconSize.medium : iconSize.large;
   const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable
@@ -40,26 +49,32 @@ export function PhotoActionButton({
       onPressOut={press.onPressOut}
       style={[
         styles.button,
-        size === 'small' ? styles.small : styles.large,
-        { backgroundColor: primary ? colors.accent : colors.surface },
-        press.animatedStyle,
+        small ? styles.small : styles.large,
+        !disabledPrimary && press.animatedStyle,
       ]}
     >
-      {loading ? (
-        <CircularProgress
-          progress={100}
-          indeterminate
-          size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={primary ? colors.onAccent : colors.text}
-          accessible={false}
-        />
-      ) : (
-        <Ionicons
-          name={iconName}
-          size={size === 'small' ? iconSize.medium : iconSize.large}
-          color={primary ? colors.onAccent : colors.text}
-        />
-      )}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.button,
+          small ? styles.smallFace : styles.large,
+          disabledPrimary && { backgroundColor: colors.promptDisabledAction },
+          !primary && { backgroundColor: small ? colors.promptAccessory : colors.surface },
+        ]}
+      >
+        {primary && !disabledPrimary && <BlueActionSurface scheme={scheme} />}
+        {loading ? (
+          <CircularProgress
+            progress={100}
+            indeterminate
+            size={glyphSize}
+            accessible={false}
+            appearance={appearance}
+          />
+        ) : (
+          <Ionicons name={iconName} size={glyphSize} color={foreground} />
+        )}
+      </View>
     </AnimatedPressable>
   );
 }
@@ -68,5 +83,6 @@ const { layout, radius } = tokens;
 const styles = StyleSheet.create({
   button: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.pill },
   small: { width: layout.touchTarget, height: layout.touchTarget },
+  smallFace: { width: layout.compactPromptActionSize, height: layout.compactPromptActionSize },
   large: { width: layout.photoControlSize, height: layout.photoControlSize },
 });

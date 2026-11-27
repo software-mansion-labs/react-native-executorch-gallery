@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { useLLMChatSession } from 'react-native-executorch';
@@ -9,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { BottomSheet } from '@/components/BottomSheet';
 import { ContextGauge } from '@/components/chat/ContextGauge';
 import { useCardPressAnimation } from '@/hooks/useCardPressAnimation';
@@ -27,7 +29,7 @@ export function ChatContext({
   hasMessages: boolean;
   onNewChat: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const context = useChatContext(session, busy);
   const [visible, setVisible] = useState(false);
   const pill = useCardPressAnimation();
@@ -67,7 +69,7 @@ export function ChatContext({
           ]}
         >
           {context && <ContextGauge used={progress} />}
-          <AppText variant="secondary" style={styles.number}>
+          <AppText style={styles.number}>
             {context ? `${Math.round((1 - used) * 100)}%` : '—'}
           </AppText>
         </View>
@@ -90,9 +92,12 @@ export function ChatContext({
                 accessibilityLabel="Context used"
                 accessibilityValue={{ min: 0, max: context.maxContextLen, now: context.pos }}
               >
-                <Animated.View
-                  style={[styles.fill, { backgroundColor: colors.accent }, meterStyle]}
-                />
+                <Animated.View style={[styles.fill, meterStyle]}>
+                  <LinearGradient
+                    colors={tokens.activityAccent[scheme]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
               </View>
               <AppText variant="caption" tone="muted" style={styles.number}>
                 {context.pos} of {context.maxContextLen} used · {Math.round(used * 100)}%
@@ -112,14 +117,14 @@ export function ChatContext({
               }}
               onPressIn={reset.onPressIn}
               onPressOut={reset.onPressOut}
-              style={[
-                styles.reset,
-                { backgroundColor: colors.background },
-                resetDisabled && styles.disabled,
-                reset.animatedStyle,
-              ]}
+              style={[styles.reset, resetDisabled && styles.disabled, reset.animatedStyle]}
             >
-              <AppText variant="secondary" numberOfLines={1}>
+              <BlueActionSurface scheme={scheme} />
+              <AppText
+                variant="secondary"
+                numberOfLines={1}
+                style={{ color: tokens.actionSurface[scheme].foreground }}
+              >
                 New chat
               </AppText>
             </AnimatedPressable>
@@ -133,7 +138,12 @@ export function ChatContext({
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { spacing, layout, radius, borderWidth, opacity } = tokens;
 const styles = StyleSheet.create({
-  button: { minHeight: layout.touchTarget, justifyContent: 'center', alignSelf: 'flex-start' },
+  button: {
+    minWidth: layout.touchTarget,
+    minHeight: layout.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,18 +152,17 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.hairline,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    minHeight: layout.promptSuggestionHeight,
+    minHeight: layout.compactPromptActionSize,
   },
   details: { gap: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.lg },
   balance: { gap: spacing.xs },
   number: { fontVariant: ['tabular-nums'] },
   usage: { gap: spacing.sm },
   track: { height: layout.contextMeterHeight, borderRadius: radius.pill, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: radius.pill },
+  fill: { height: '100%', borderRadius: radius.pill, overflow: 'hidden' },
   reset: {
     minHeight: layout.touchTarget,
     alignSelf: 'center',
-    borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     alignItems: 'center',

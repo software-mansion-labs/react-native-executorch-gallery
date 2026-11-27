@@ -16,37 +16,64 @@ export function ChatResponseError({
 }) {
   const { colors, iconSize } = useTheme();
   return (
-    <View style={styles.root} accessibilityRole="alert" accessibilityLiveRegion="polite">
-      <View style={styles.heading}>
-        <Ionicons name="alert-circle-outline" size={iconSize.small} color={colors.danger} />
-        <AppText variant="secondary">Response unfinished</AppText>
+    <View style={[styles.root, { borderColor: colors.border }]}>
+      <View style={styles.notice}>
+        <Ionicons
+          name="alert-circle-outline"
+          style={styles.icon}
+          size={iconSize.small}
+          color={colors.danger}
+          accessible={false}
+        />
+        <View style={styles.message} accessibilityRole="alert" accessibilityLiveRegion="polite">
+          <AppText variant="title">Response unfinished</AppText>
+          <AppText variant="secondary" tone="muted">
+            {message}
+          </AppText>
+        </View>
       </View>
-      <AppText variant="secondary" tone="muted">
-        {message}
-      </AppText>
       <Pressable
         onPress={onEditPrompt}
         disabled={disabled}
         accessibilityRole="button"
+        accessibilityState={{ disabled }}
         style={({ pressed }) => [
           styles.action,
           pressed && styles.pressed,
           disabled && styles.disabled,
         ]}
       >
-        <AppText variant="secondary" tone="accent">
-          Edit prompt
-        </AppText>
+        <View
+          style={[styles.capsule, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <AppText variant="label">Edit prompt</AppText>
+        </View>
       </Pressable>
     </View>
   );
 }
 
-const { spacing, layout, opacity } = tokens;
+const { spacing, layout, opacity, borderWidth, radius } = tokens;
 const styles = StyleSheet.create({
-  root: { paddingTop: spacing.md, gap: spacing.sm },
-  heading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  action: { minHeight: layout.touchTarget, justifyContent: 'center', alignSelf: 'flex-start' },
+  root: {
+    marginTop: spacing.md,
+    paddingStart: spacing.md,
+    borderStartWidth: borderWidth.thin,
+  },
+  notice: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  icon: { marginTop: spacing.xs },
+  message: { flex: 1, gap: spacing.xxs },
+  action: {
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    minHeight: layout.touchTarget,
+  },
+  capsule: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    borderWidth: borderWidth.thin,
+  },
   pressed: { opacity: opacity.pressed },
   disabled: { opacity: opacity.disabled },
 });

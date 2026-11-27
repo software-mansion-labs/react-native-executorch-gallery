@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 
 import { AppText } from '@/components/AppText';
+import { BlueActionSurface } from '@/components/BlueActionSurface';
 import { useCircularButtonPressAnimation } from '@/hooks/useCircularButtonPressAnimation';
 import { usePromptInputSize } from '@/hooks/usePromptInputSize';
 import { tokens, useTheme } from '@/theme';
@@ -14,9 +15,10 @@ type PromptInputProps = {
   onSubmit: () => void;
   onStop?: () => void;
   suggestions?: readonly { label: string; prompt: string }[];
-  reserveSuggestionSpace?: boolean;
   leadingAccessory?: ReactNode;
+  trailingAccessory?: ReactNode;
   attachment?: ReactNode;
+  layoutMode?: 'inline' | 'toolbar';
   placeholder?: string;
   disabled?: boolean;
   canSubmit: boolean;
@@ -25,16 +27,17 @@ type PromptInputProps = {
   stopLabel?: string;
 };
 
-/** Shared one-line composer that grows with the draft; examples fill it for editing. */
+/** Shared task composer with a growing field and optional examples, attachments, and controls. */
 export function PromptInput({
   value,
   onChangeText,
   onSubmit,
   onStop,
   suggestions,
-  reserveSuggestionSpace = false,
   leadingAccessory,
+  trailingAccessory,
   attachment,
+  layoutMode = 'inline',
   placeholder = 'Ask anything…',
   disabled = false,
   canSubmit,
@@ -42,110 +45,122 @@ export function PromptInput({
   submitLabel = 'Send message',
   stopLabel = 'Stop generating',
 }: PromptInputProps) {
-  const { colors, iconSize } = useTheme();
+  const { colors, iconSize, scheme } = useTheme();
   const input = useRef<TextInput>(null);
   const sizing = usePromptInputSize(value);
+  const inline = layoutMode === 'inline';
   const active = isGenerating ? !!onStop : canSubmit && !disabled;
-  const press = useCircularButtonPressAnimation(!active);
+  const press = useCircularButtonPressAnimation();
+
+  const field = (
+    <View style={[styles.textSlot, inline && styles.inlineTextSlot]}>
+      <Text
+        style={[styles.inputText, styles.measure]}
+        onLayout={sizing.onMeasure}
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        pointerEvents="none"
+      >
+        {value || ' '}
+      </Text>
+      <TextInput
+        ref={input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.muted}
+        cursorColor={colors.accent}
+        selectionColor={colors.accent}
+        accessibilityLabel="Message"
+        multiline
+        scrollEnabled={sizing.scrollEnabled}
+        editable={!disabled && !isGenerating}
+        style={[styles.inputText, styles.input, { color: colors.text, height: sizing.height }]}
+      />
+    </View>
+  );
+  const examples = !!suggestions?.length && !value && !isGenerating && (
+    <Animated.View entering={suggestionEntrance}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.suggestions}
+      >
+        {suggestions.map(({ label, prompt }) => (
+          <Pressable
+            key={label}
+            disabled={disabled}
+            accessibilityRole="button"
+            style={styles.chipTarget}
+            onPress={() => {
+              onChangeText(prompt);
+              input.current?.focus();
+            }}
+          >
+            {({ pressed }) => (
+              <View
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: colors.promptChipBorder,
+                    backgroundColor: colors.promptChip,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <AppText numberOfLines={1}>{label}</AppText>
+              </View>
+            )}
+          </Pressable>
+        ))}
+      </ScrollView>
+    </Animated.View>
+  );
+
   return (
     <View style={styles.root}>
-      {(reserveSuggestionSpace || !!suggestions?.length || !!leadingAccessory) && (
-        <View style={styles.suggestionSpace}>
-          {leadingAccessory}
-          {!!suggestions?.length && (
-            <Animated.View entering={suggestionEntrance} style={styles.suggestionList}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.suggestions}
-              >
-                {suggestions.map(({ label, prompt }) => (
-                  <Pressable
-                    key={label}
-                    disabled={disabled || isGenerating}
-                    accessibilityRole="button"
-                    style={({ pressed }) => [
-                      styles.chip,
-                      {
-                        borderColor: colors.border,
-                        backgroundColor: pressed ? colors.surface : colors.promptSurface,
-                      },
-                      pressed && styles.pressed,
-                    ]}
-                    hitSlop={tokens.spacing.xs}
-                    onPress={() => {
-                      onChangeText(prompt);
-                      input.current?.focus();
-                    }}
-                  >
-                    <AppText variant="secondary" numberOfLines={1}>
-                      {label}
-                    </AppText>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </Animated.View>
-          )}
-        </View>
-      )}
       <View
         style={[
           styles.composer,
           { backgroundColor: colors.promptSurface, borderColor: colors.promptBorder },
         ]}
       >
-        <View style={styles.composerRow}>
-          <View style={styles.inputSlot}>
-            {attachment && <View style={styles.attachment}>{attachment}</View>}
-            <View style={styles.textSlot}>
-              <Text
-                style={[styles.inputText, styles.measure]}
-                onLayout={sizing.onMeasure}
-                accessible={false}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
+        {attachment && <View style={styles.attachment}>{attachment}</View>}
+        {!inline && field}
+        {examples}
+        <View style={[styles.toolbar, !inline && styles.wrapToolbar]}>
+          {leadingAccessory}
+          {inline && field}
+          <View style={styles.actions}>
+            {trailingAccessory}
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={isGenerating ? stopLabel : submitLabel}
+              accessibilityState={{ disabled: !active }}
+              disabled={!active}
+              onPress={isGenerating ? onStop : onSubmit}
+              onPressIn={press.onPressIn}
+              onPressOut={press.onPressOut}
+              style={[styles.action, active && press.animatedStyle]}
+            >
+              <View
                 pointerEvents="none"
-              >
-                {value || ' '}
-              </Text>
-              <TextInput
-                ref={input}
-                value={value}
-                onChangeText={onChangeText}
-                placeholder={placeholder}
-                placeholderTextColor={colors.muted}
-                cursorColor={colors.accent}
-                selectionColor={colors.accent}
-                accessibilityLabel="Message"
-                accessibilityHint={disabled ? 'Load the model to start a conversation' : undefined}
-                multiline
-                scrollEnabled={sizing.scrollEnabled}
-                editable={!disabled && !isGenerating}
                 style={[
-                  styles.inputText,
-                  styles.input,
-                  { color: colors.text, height: sizing.height },
+                  styles.actionFace,
+                  !active && { backgroundColor: colors.promptDisabledAction },
                 ]}
-              />
-            </View>
+              >
+                {active && <BlueActionSurface scheme={scheme} />}
+                <Ionicons
+                  name={isGenerating ? 'stop' : 'arrow-up'}
+                  size={iconSize.medium}
+                  color={active ? tokens.actionSurface[scheme].foreground : colors.muted}
+                />
+              </View>
+            </AnimatedPressable>
           </View>
-          <AnimatedPressable
-            accessibilityRole="button"
-            accessibilityLabel={isGenerating ? stopLabel : submitLabel}
-            accessibilityState={{ disabled: !active }}
-            disabled={!active}
-            onPress={isGenerating ? onStop : onSubmit}
-            onPressIn={press.onPressIn}
-            onPressOut={press.onPressOut}
-            style={[styles.send, { backgroundColor: colors.accent }, press.animatedStyle]}
-          >
-            <Ionicons
-              name={isGenerating ? 'stop' : 'arrow-up'}
-              size={iconSize.medium}
-              color={colors.onAccent}
-            />
-          </AnimatedPressable>
         </View>
       </View>
     </View>
@@ -158,51 +173,68 @@ const suggestionEntrance = FadeIn.duration(tokens.motion.photoRevealDuration).re
   ReduceMotion.System
 );
 const styles = StyleSheet.create({
-  root: { gap: spacing.sm, paddingBottom: spacing.sm },
-  suggestionSpace: {
-    minHeight: layout.touchTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  suggestionList: { flex: 1, minWidth: 0 },
-  suggestions: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  chip: {
-    borderRadius: radius.pill,
-    borderWidth: borderWidth.thin,
-    minHeight: layout.promptSuggestionHeight,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    justifyContent: 'center',
-  },
+  root: { paddingBottom: spacing.sm },
   composer: {
     borderWidth: borderWidth.hairline,
     borderRadius: radius.sheet,
     padding: spacing.sm,
     gap: spacing.sm,
   },
-  composerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   attachment: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  textSlot: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  inlineTextSlot: {
+    flex: 1,
+    minWidth: 0,
+    paddingTop: spacing.sm - spacing.xxs,
+    paddingBottom: spacing.sm + spacing.xxs,
+  },
   inputText: {
     fontFamily,
-    fontSize: typography.body.fontSize,
-    fontWeight: typography.body.fontWeight,
+    ...typography.promptInput,
     includeFontPadding: false,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
   },
-  input: { maxHeight: layout.chatInputMaxHeight, textAlignVertical: 'top' },
-  measure: { position: 'absolute', top: 0, left: 0, right: 0, opacity: 0 },
-  inputSlot: { flex: 1, minHeight: layout.touchTarget, justifyContent: 'center', gap: spacing.sm },
-  textSlot: { minHeight: layout.touchTarget, justifyContent: 'center' },
-  send: {
+  input: { padding: spacing.none, textAlignVertical: 'top' },
+  measure: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.md,
+    right: spacing.md,
+    opacity: 0,
+  },
+  suggestions: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  chipTarget: {
+    minWidth: layout.touchTarget,
+    minHeight: layout.touchTarget,
+    justifyContent: 'center',
+  },
+  chip: {
+    borderRadius: radius.pill,
+    borderWidth: borderWidth.thin,
+    minHeight: layout.promptSuggestionHeight,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  wrapToolbar: { flexWrap: 'wrap' },
+  actions: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
+  action: {
     width: layout.touchTarget,
     height: layout.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionFace: {
+    width: layout.compactPromptActionSize,
+    height: layout.compactPromptActionSize,
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

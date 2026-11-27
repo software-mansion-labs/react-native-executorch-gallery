@@ -46,7 +46,7 @@ export function MultimodalSearchView({
   onClear: () => void;
   onSearch: () => Promise<void>;
 }) {
-  const { colors, iconSize } = useTheme();
+  const { iconSize } = useTheme();
   const { keyboardStyle, heroStyle } = useChatKeyboard();
   const ready = model.prepared && model.loaded && status.isReady;
   const photos = result?.photos ?? collection;
@@ -72,7 +72,6 @@ export function MultimodalSearchView({
                   progress={100}
                   indeterminate
                   size={iconSize.medium}
-                  color={colors.accent}
                   accessibilityLabel="Searching photos"
                 />
               </View>

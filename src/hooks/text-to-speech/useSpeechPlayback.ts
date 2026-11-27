@@ -16,6 +16,22 @@ type Playback = {
 
 type RecordedSpeech = { text: string; chunks: readonly KokoroTtsChunk[] };
 
+// Audio API 1.0.1 can exhaust its event queue after creating several contexts.
+// Reuse the context across playbacks and screen visits; each playback owns its source.
+let playbackContext: AudioContext | undefined;
+let activePlayback: Playback | null = null;
+
+function releaseSource(playback: Playback) {
+  const { source } = playback;
+  if (!source) return;
+  playback.source = undefined;
+  source.onpositionchanged = null;
+  source.onbufferended = null;
+  source.clearBuffers();
+  source.stop();
+  source.disconnect();
+}
+
 /**
  * Plays Kokoro's streamed PCM and follows native playback position with its word timings.
  * Accepts the library's cancellation method and model revision; clears results on deletion
@@ -38,9 +54,7 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
     if (!current || current.cancelled) return;
     current.cancelled = true;
     cancelSynthesis?.();
-    current.source?.clearBuffers();
-    current.source?.stop();
-    current.source = undefined;
+    releaseSource(current);
     current.finish();
     setPlaying(false);
     setActiveWord(-1);
@@ -53,13 +67,14 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
     chunks: AsyncIterable<KokoroTtsChunk>,
     replaying: boolean
   ) => {
-    if (operation.current) return;
+    if (activePlayback) return;
     if (!replaying) setRecording(null);
     let resolveFinished = () => {};
     const finished = new Promise<void>((resolve) => {
       resolveFinished = resolve;
     });
     const current: Playback = { cancelled: false, finish: resolveFinished };
+    activePlayback = current;
     operation.current = current;
     setText(input);
     setWords([]);
@@ -67,7 +82,7 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
     setBusy(true);
     let context: AudioContext | undefined;
     try {
-      context = new AudioContext({ sampleRate: KOKORO_SAMPLE_RATE });
+      context = playbackContext ??= new AudioContext({ sampleRate: KOKORO_SAMPLE_RATE });
       if (context.state === 'suspended') await context.resume();
       if (current.cancelled) return;
       const source = context.createBufferQueueSource();
@@ -120,17 +135,15 @@ export function useSpeechPlayback(cancelSynthesis: (() => void) | undefined, rev
         throw cause;
       }
     } finally {
-      // Keep the run gate closed until the cancelled generator has also unwound.
+      // Keep the run gate closed until the generator and the audio context are idle.
       current.cancelled = true;
-      current.source?.clearBuffers();
-      current.source?.stop();
-      if (context) await context.close().catch(() => {});
-      if (operation.current === current) {
-        operation.current = null;
-        setBusy(false);
-        setPlaying(false);
-        setActiveWord(-1);
-      }
+      releaseSource(current);
+      if (context?.state === 'running') await context.suspend().catch(() => {});
+      activePlayback = null;
+      operation.current = null;
+      setBusy(false);
+      setPlaying(false);
+      setActiveWord(-1);
     }
   };
 

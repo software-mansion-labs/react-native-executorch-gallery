@@ -1,20 +1,39 @@
 import { useMemo } from 'react';
 import { Platform, StyleSheet, useColorScheme } from 'react-native';
+import { interpolateColor } from 'react-native-reanimated';
 
 import { useAppearance } from '@/hooks/useAppearance';
 import { useThemeColors } from '@/hooks/useThemeColors';
+
+// Gradient stops from assets/images/logo-hero.svg.
+const logoGradient = ['#2A47FF', '#D0E2FF'] as const;
+const gradientRange = [0, 1] as const;
+
+function blendColor(from: string, to: string, strength: number) {
+  return interpolateColor(strength, gradientRange, [from, to], 'RGB', { gamma: 1 });
+}
+
+/** Shades a point on the flame gradient toward navy for UI surfaces and strokes. */
+function shadeLogoGradient(position: number, strength: number) {
+  const color = blendColor(...logoGradient, position);
+  return blendColor('#080E28', color, strength);
+}
 
 const palette = {
   light: {
     background: '#FAFAFA',
     surface: '#F0F0F2',
-    promptSurface: Platform.OS === 'ios' ? 'rgba(240, 240, 242, 0.88)' : '#F0F0F2',
+    promptSurface: '#F0F0F2',
+    promptAccessory: '#E0E2EA',
     promptBorder: 'rgba(36, 37, 42, 0.10)',
+    promptChip: '#E6EAF4',
+    promptChipBorder: '#C8D0E1',
+    promptDisabledAction: '#E0E0E4',
     border: '#E1E1E6',
     text: '#24252A',
-    thinkingIndicator: '#000000',
     muted: '#686A73',
-    accent: '#365B9B',
+    accent: shadeLogoGradient(0.15, 0.62),
+    readAlongHighlight: blendColor('#FAFAFA', logoGradient[0], 0.09),
     onAccent: '#FFFFFF',
     danger: '#B3261E',
     scrim: 'rgba(0, 0, 0, 0.4)',
@@ -22,22 +41,55 @@ const palette = {
   dark: {
     background: '#101114',
     surface: '#1B1C20',
-    promptSurface: Platform.OS === 'ios' ? 'rgba(40, 41, 46, 0.86)' : '#28292E',
+    promptSurface: '#28292E',
+    promptAccessory: '#1B1C20',
     promptBorder: 'rgba(242, 242, 243, 0.12)',
+    promptChip: blendColor('#28292E', logoGradient[1], 0.08),
+    promptChipBorder: blendColor('#28292E', logoGradient[1], 0.18),
+    promptDisabledAction: '#38393F',
     border: '#2B2C31',
     text: '#F2F2F3',
-    thinkingIndicator: '#FFFFFF',
     muted: '#A3A4AD',
-    accent: '#A7BDED',
+    accent: blendColor(...logoGradient, 0.82),
+    readAlongHighlight: blendColor('#101114', logoGradient[0], 0.24),
     onAccent: '#162A49',
     danger: '#FFB4AB',
     scrim: 'rgba(0, 0, 0, 0.55)',
   },
 };
 
+const actionCharcoal = '#272628';
+const actionPearl = '#E9EAF0';
+const actionBlue = blendColor(...logoGradient, 0.24);
+const lightActionFillBlue = blendColor(actionPearl, actionBlue, 0.32);
+const lightActionRimBlue = blendColor(actionPearl, actionBlue, 0.49);
+const darkActionFillBlue = blendColor(actionCharcoal, actionBlue, 0.37);
+const darkActionRimBlue = blendColor(actionCharcoal, actionBlue, 0.52);
+
 /** Shared design tokens. Add visual values here rather than in individual components. */
 export const tokens = {
-  toggle: { thumb: { light: '#FFFFFF', dark: '#484A50' } },
+  actionSurface: {
+    light: {
+      fill: [lightActionFillBlue, blendColor(actionPearl, actionBlue, 0.08), actionPearl],
+      rim: [lightActionRimBlue, blendColor(actionPearl, shadeLogoGradient(0.5, 0.4), 0.15)],
+      foreground: '#26326D',
+    },
+    dark: {
+      fill: [darkActionFillBlue, blendColor(actionCharcoal, actionBlue, 0.08), actionCharcoal],
+      rim: [darkActionRimBlue, blendColor(actionCharcoal, logoGradient[1], 0.16)],
+      foreground: '#F2F5FF',
+    },
+    fillStops: [0, 0.47, 1],
+  } as const,
+  activityAccent: {
+    light: [lightActionRimBlue, lightActionFillBlue] satisfies [string, string],
+    dark: [darkActionRimBlue, darkActionFillBlue] satisfies [string, string],
+  },
+  activityForeground: { light: '#000000', dark: '#FFFFFF' },
+  progressTrack: {
+    light: [blendColor(actionPearl, actionBlue, 0.14), actionPearl],
+    dark: [blendColor(actionCharcoal, logoGradient[1], 0.14), actionCharcoal],
+  },
   prompt: {
     blurIntensity: 45,
     fadeMaskColors: [
@@ -165,6 +217,11 @@ export const tokens = {
       lineHeight: 24,
       fontWeight: '400' as const,
     },
+    promptInput: {
+      fontSize: 17,
+      lineHeight: 24,
+      fontWeight: '400' as const,
+    },
     label: {
       fontSize: 15,
       lineHeight: 22,
@@ -203,9 +260,8 @@ export const tokens = {
     taskRowMinHeight: 64,
     photoMinHeight: 240,
     photoControlSize: 64,
-    speechWaveformHeight: 24,
+    speechActivitySize: 104,
     speechLevelGain: 10,
-    speechWaveformBarWidth: 3,
     inpaintingBrushSize: 28,
     liveDetectionStatusWidth: 176,
     depthFocusRadius: 14,
@@ -219,13 +275,14 @@ export const tokens = {
     modelProgressStroke: 4,
     modelProgressCornerInset: 6,
     modelProgressSides: 6,
-    chatInputMaxHeight: 144,
+    promptMaxLines: 3,
+    compactPromptActionSize: 44,
     chatPhotoHeight: 180,
     chatScrollThreshold: 96,
-    contextGaugeStroke: 1.5,
+    contextGaugeStroke: 2,
     contextMeterHeight: 4,
-    promptSuggestionHeight: 40,
-    statusDotSize: 6,
+    promptSuggestionHeight: 38,
+    compactControlHeight: 40,
     thinkingDotSize: 5,
     thinkingIndicatorSize: 18,
   },

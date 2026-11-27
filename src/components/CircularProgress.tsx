@@ -2,15 +2,15 @@ import { Canvas, Group, Path } from '@shopify/react-native-skia';
 import { StyleSheet, View } from 'react-native';
 
 import { useCircularProgress } from '@/hooks/useCircularProgress';
-import { tokens, useTheme } from '@/theme';
+import { tokens, useTheme, type Theme } from '@/theme';
 
 type CircularProgressProps = {
   progress: number;
   indeterminate?: boolean;
   size?: number;
-  color?: string;
   accessible?: boolean;
   accessibilityLabel?: string;
+  appearance?: Theme['scheme'];
 };
 
 /** A rounded hexagon showing download progress and rotating fully colored while preparing. */
@@ -18,11 +18,11 @@ export function CircularProgress({
   progress,
   indeterminate = false,
   size = tokens.layout.modelProgressSize,
-  color,
   accessible = true,
   accessibilityLabel,
+  appearance,
 }: CircularProgressProps) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme(appearance);
   const percentage = Math.max(0, Math.min(100, Number.isFinite(progress) ? progress : 0));
   const { path, end, trackStart, transform } = useCircularProgress(percentage, indeterminate);
 
@@ -60,7 +60,7 @@ export function CircularProgress({
               style="stroke"
               strokeWidth={stroke}
               strokeCap="round"
-              color={color ?? colors.accent}
+              color={tokens.activityForeground[scheme]}
             />
           </Group>
         </Group>

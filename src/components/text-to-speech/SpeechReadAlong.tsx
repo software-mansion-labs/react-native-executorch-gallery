@@ -31,7 +31,11 @@ const Word = memo(function Word({ text, active }: { text: string; active: boolea
     <Animated.Text
       style={[
         style,
-        { textDecorationLine: active ? 'underline' : 'none', textDecorationColor: colors.accent },
+        {
+          backgroundColor: active ? colors.readAlongHighlight : undefined,
+          textDecorationLine: active ? 'underline' : 'none',
+          textDecorationColor: colors.accent,
+        },
       ]}
     >
       {text}

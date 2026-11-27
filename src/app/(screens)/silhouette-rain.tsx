@@ -10,7 +10,7 @@ function RainSession({ model }: { model: ModelControls }) {
   const rain = useSilhouetteRain(model.loaded, model.prepared);
   return (
     <TaskScreen
-      title="Silhouette rain"
+      title="Matrix code rain"
       model={model}
       status={rain.status}
       busy={rain.isActive}

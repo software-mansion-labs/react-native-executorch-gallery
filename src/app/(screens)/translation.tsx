@@ -58,6 +58,7 @@ function TranslationTask() {
         title="Find the words"
         description="Translate English into German, wherever you are. No connection needed after download."
         placeholder="Write in English…"
+        submitLabel="Translate text"
         suggestions={suggestions}
         model={model}
         status={translator}

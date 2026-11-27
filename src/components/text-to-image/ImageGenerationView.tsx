@@ -67,7 +67,6 @@ export function ImageGenerationView({
                   placeholder="Describe an image…"
                   submitLabel="Generate image"
                   suggestions={suggestions}
-                  reserveSuggestionSpace
                 />
               </Animated.View>
             </>
