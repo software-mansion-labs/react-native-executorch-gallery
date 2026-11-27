@@ -29,12 +29,12 @@ export function ChatThinkingToggle({
             source={{
               uri: `data:image/svg+xml;base64,${RNBlobUtil.base64.encode(icons.brain.replace('currentColor', color))}`,
             }}
-            style={{ width: iconSize.small, height: iconSize.small }}
+            style={{ width: iconSize.medium, height: iconSize.medium }}
             contentFit="contain"
             accessible={false}
           />
         ) : (
-          <Ionicons name="flash-outline" size={iconSize.small} color={color} accessible={false} />
+          <Ionicons name="flash-outline" size={iconSize.medium} color={color} accessible={false} />
         )
       }
     />

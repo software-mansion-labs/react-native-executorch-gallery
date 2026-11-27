@@ -69,7 +69,7 @@ export function ChatContext({
           ]}
         >
           {context && <ContextGauge used={progress} />}
-          <AppText variant="secondary" style={styles.number}>
+          <AppText style={styles.number}>
             {context ? `${Math.round((1 - used) * 100)}%` : '—'}
           </AppText>
         </View>
@@ -138,7 +138,12 @@ export function ChatContext({
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const { spacing, layout, radius, borderWidth, opacity } = tokens;
 const styles = StyleSheet.create({
-  button: { minHeight: layout.touchTarget, justifyContent: 'center', alignSelf: 'flex-start' },
+  button: {
+    minWidth: layout.touchTarget,
+    minHeight: layout.touchTarget,
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -147,7 +152,7 @@ const styles = StyleSheet.create({
     borderWidth: borderWidth.hairline,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    minHeight: layout.compactControlHeight,
+    minHeight: layout.compactPromptActionSize,
   },
   details: { gap: spacing.xl, paddingTop: spacing.md, paddingBottom: spacing.lg },
   balance: { gap: spacing.xs },

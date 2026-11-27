@@ -6,7 +6,7 @@ import { tokens } from '@/theme';
 /** Measures a hidden text copy at the input's width, avoiding iOS multiline size under-reporting; caps height before enabling scrolling. */
 export function usePromptInputSize(value: string) {
   const { fontScale } = useWindowDimensions();
-  const lineHeight = tokens.typography.body.lineHeight * fontScale;
+  const lineHeight = tokens.typography.promptInput.lineHeight * fontScale;
   const minHeight = Math.ceil(lineHeight);
   const maxHeight = Math.ceil(lineHeight * tokens.layout.promptMaxLines);
   const [contentHeight, setContentHeight] = useState(minHeight);

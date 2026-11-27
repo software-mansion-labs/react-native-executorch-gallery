@@ -36,7 +36,7 @@ export function PhotoActionButton({
       ? tokens.actionSurface[scheme].foreground
       : colors.text;
   const small = size === 'small';
-  const glyphSize = small ? iconSize.small : iconSize.large;
+  const glyphSize = small ? iconSize.medium : iconSize.large;
   const press = useCircularButtonPressAnimation(disabled && !loading);
   return (
     <AnimatedPressable

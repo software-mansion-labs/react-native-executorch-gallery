@@ -93,23 +93,26 @@ export function PromptInput({
             key={label}
             disabled={disabled}
             accessibilityRole="button"
-            style={({ pressed }) => [
-              styles.chip,
-              {
-                borderColor: colors.promptChipBorder,
-                backgroundColor: colors.promptChip,
-              },
-              pressed && styles.pressed,
-            ]}
-            hitSlop={tokens.spacing.xs}
+            style={styles.chipTarget}
             onPress={() => {
               onChangeText(prompt);
               input.current?.focus();
             }}
           >
-            <AppText variant="secondary" numberOfLines={1}>
-              {label}
-            </AppText>
+            {({ pressed }) => (
+              <View
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: colors.promptChipBorder,
+                    backgroundColor: colors.promptChip,
+                  },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <AppText numberOfLines={1}>{label}</AppText>
+              </View>
+            )}
           </Pressable>
         ))}
       </ScrollView>
@@ -127,7 +130,7 @@ export function PromptInput({
         {attachment && <View style={styles.attachment}>{attachment}</View>}
         {!inline && field}
         {examples}
-        <View style={styles.toolbar}>
+        <View style={[styles.toolbar, !inline && styles.wrapToolbar]}>
           {leadingAccessory}
           {inline && field}
           <View style={styles.actions}>
@@ -152,7 +155,7 @@ export function PromptInput({
                 {active && <BlueActionSurface scheme={scheme} />}
                 <Ionicons
                   name={isGenerating ? 'stop' : 'arrow-up'}
-                  size={iconSize.small}
+                  size={iconSize.medium}
                   color={active ? tokens.actionSurface[scheme].foreground : colors.muted}
                 />
               </View>
@@ -190,9 +193,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontFamily,
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-    fontWeight: typography.body.fontWeight,
+    ...typography.promptInput,
     includeFontPadding: false,
   },
   input: { padding: spacing.none, textAlignVertical: 'top' },
@@ -206,7 +207,12 @@ const styles = StyleSheet.create({
   suggestions: {
     alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  chipTarget: {
+    minWidth: layout.touchTarget,
+    minHeight: layout.touchTarget,
+    justifyContent: 'center',
   },
   chip: {
     borderRadius: radius.pill,
@@ -218,6 +224,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toolbar: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  wrapToolbar: { flexWrap: 'wrap' },
   actions: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
   action: {
     width: layout.touchTarget,
